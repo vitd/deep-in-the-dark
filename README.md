@@ -21,11 +21,21 @@ Dann im Browser öffnen: http://localhost:5173
 | W A S D | Bewegen / Schwimmen |
 | C oder steil nach unten blicken + W | Abtauchen |
 | Leertaste | Auftauchen (beim Tauchen) / Springen (an Deck) |
-| E | Interagieren (Aufheben, Klettern) |
+| E | Interagieren (Aufheben, Fangen, Klettern) |
 | Tab oder I | Inventar |
 | Esc | Pause |
 
 An der Leiter: W/S = hoch/runter klettern.
+
+## Überleben
+
+- **Nahrung (0–100):** Anstrengung (Schwimmen, Tauchen, Gehen) zehrt.
+  Fische fangen (E) und im Inventar anklicken zum Essen. Bei 0 bist du
+  erschöpft und langsam.
+- **Luft (0–100):** Tauchen verbraucht Luft, an der Oberfläche füllt sie
+  sich in wenigen Sekunden wieder. Ohne Luft wird der Blick dunkel und
+  die Nahrung schwindet schnell.
+- Beide Werte werden im HUD links unten angezeigt.
 
 ## Intro-Video
 

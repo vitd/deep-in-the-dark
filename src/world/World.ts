@@ -6,6 +6,7 @@ import { Inventory } from '../systems/Inventory';
 import { UI } from '../ui/UIManager';
 import { buildBoat } from './Boat';
 import { buildCliffs } from './Cliffs';
+import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
 import { Ocean } from './Ocean';
 import { Resources } from './Resources';
@@ -19,6 +20,7 @@ export class World {
   readonly collision = new CollisionWorld();
   readonly ladders: LadderDef[];
   private readonly resources: Resources;
+  private readonly fish: FishManager;
   // Lichter mit Basis-Intensität, damit Unterwasser einheitlich gedimmt wird
   private readonly lights: { light: THREE.Light; base: number }[] = [];
   private readonly fogColor = new THREE.Color(CONFIG.world.fogAbove.color);
@@ -65,6 +67,7 @@ export class World {
     }
 
     this.resources = new Resources(scene, this.ocean, interaction, inventory);
+    this.fish = new FishManager(scene, interaction, inventory);
   }
 
   setUnderwater(under: boolean): void {
@@ -86,5 +89,6 @@ export class World {
   update(dt: number): void {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.resources.update();
+    this.fish.update(dt);
   }
 }

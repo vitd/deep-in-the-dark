@@ -23,6 +23,8 @@ export class PlayerController {
   readonly velocity = new THREE.Vector3();
   state = PlayerState.SwimSurface;
   grounded = false;
+  // 1 = normal; < 1 bei Erschöpfung (siehe Stats)
+  speedFactor = 1;
 
   private ladder: LadderDef | null = null;
   private readonly tmpF = new THREE.Vector3();
@@ -86,7 +88,7 @@ export class PlayerController {
     const move = this.tmpMove.set(0, 0, 0);
     move.addScaledVector(this.look.horizForward(this.tmpF), fwd);
     move.addScaledVector(this.look.right(this.tmpR), strafe);
-    if (move.lengthSq() > 0) move.normalize().multiplyScalar(P.swimSpeed);
+    if (move.lengthSq() > 0) move.normalize().multiplyScalar(P.swimSpeed * this.speedFactor);
 
     // Abtauchen: Taste C oder steil nach unten blicken + vorwärts
     if (keys.has('KeyC') || (fwd > 0 && this.look.pitch < -0.55)) {
@@ -110,7 +112,7 @@ export class PlayerController {
     desired.addScaledVector(this.look.forward(this.tmpF), fwd);
     desired.addScaledVector(this.look.right(this.tmpR), strafe);
     if (keys.has('Space')) desired.y += 0.8;
-    if (desired.lengthSq() > 0) desired.normalize().multiplyScalar(P.diveSpeed);
+    if (desired.lengthSq() > 0) desired.normalize().multiplyScalar(P.diveSpeed * this.speedFactor);
 
     // träge Annäherung an die Wunschgeschwindigkeit + Auftrieb
     const blend = Math.min(1, dt * P.waterAccel);
@@ -137,8 +139,8 @@ export class PlayerController {
     this.position.x = l.standX;
     this.position.z = l.standZ;
 
-    if (keys.has('KeyW')) this.position.y += P.climbSpeed * dt;
-    if (keys.has('KeyS')) this.position.y -= P.climbSpeed * dt;
+    if (keys.has('KeyW')) this.position.y += P.climbSpeed * this.speedFactor * dt;
+    if (keys.has('KeyS')) this.position.y -= P.climbSpeed * this.speedFactor * dt;
 
     if (this.position.y >= l.topY) {
       this.position.copy(l.topExit);
@@ -158,7 +160,7 @@ export class PlayerController {
     const move = this.tmpMove.set(0, 0, 0);
     move.addScaledVector(this.look.horizForward(this.tmpF), fwd);
     move.addScaledVector(this.look.right(this.tmpR), strafe);
-    if (move.lengthSq() > 0) move.normalize().multiplyScalar(P.walkSpeed);
+    if (move.lengthSq() > 0) move.normalize().multiplyScalar(P.walkSpeed * this.speedFactor);
 
     if (this.grounded && keys.has('Space')) {
       this.velocity.y = P.jumpSpeed;

@@ -5,6 +5,8 @@ import { MouseLook } from '../player/MouseLook';
 import { PlayerController, PlayerState } from '../player/PlayerController';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
+import { Stats } from '../systems/Stats';
+import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { World } from '../world/World';
 import { GameState } from './GameState';
@@ -21,8 +23,10 @@ export class PlayState implements GameState {
   private readonly player: PlayerController;
   private readonly interaction = new InteractionSystem();
   private readonly inventory = new Inventory();
+  private readonly stats = new Stats();
   private readonly keys = new Set<string>();
   private readonly eyeTmp = new THREE.Vector3();
+  private exhaustedToastTimer = 0;
 
   private inventoryOpen = false;
   private expectUnlock = false;
@@ -47,6 +51,15 @@ export class PlayState implements GameState {
       this.player.startClimb(ladder),
     );
     this.player = new PlayerController(this.look, this.world.collision, this.world.ocean);
+
+    // Klick auf einen Inventar-Slot: Fische kann man essen.
+    this.inventory.onUse = (id) => {
+      if (id !== 'fisch') return;
+      if (this.inventory.consume('fisch')) {
+        this.stats.eatFish();
+        UI.toast(STR.fischGegessen(CONFIG.stats.nahrungProFisch));
+      }
+    };
 
     // Spawn: schwimmend nahe der Klippen, Blick Richtung Boot (+x)
     const s = CONFIG.world.spawn;
@@ -188,7 +201,26 @@ export class PlayState implements GameState {
 
     // Über-/Unterwasser-Umschaltung exakt an der Augenhöhe
     const waveAtEye = this.world.ocean.height(this.eyeTmp.x, this.eyeTmp.z);
-    this.world.setUnderwater(this.eyeTmp.y < waveAtEye);
+    const eyesUnderwater = this.eyeTmp.y < waveAtEye;
+    this.world.setUnderwater(eyesUnderwater);
+
+    // Überlebenswerte: Nahrung (Anstrengung) und Luft (Tauchen)
+    const moving =
+      this.keys.has('KeyW') || this.keys.has('KeyA') ||
+      this.keys.has('KeyS') || this.keys.has('KeyD');
+    this.stats.update(dt, this.player.state, moving, eyesUnderwater);
+    this.player.speedFactor = this.stats.exhausted ? CONFIG.stats.erschoepftTempo : 1;
+    UI.setBar(UI.barNahrung, this.stats.nahrung);
+    UI.setBar(UI.barLuft, this.stats.luft);
+    // Vignette bei knapper Luft (ab 40 zunehmend dunkler)
+    UI.setLowAir(this.stats.luft < 40 ? (1 - this.stats.luft / 40) * 0.9 : 0);
+    if (this.stats.exhausted) {
+      this.exhaustedToastTimer -= dt;
+      if (this.exhaustedToastTimer <= 0) {
+        UI.toast(STR.erschoepft);
+        this.exhaustedToastTimer = 8;
+      }
+    }
 
     this.world.update(dt);
 

@@ -26,7 +26,7 @@
           <button id="btn-options">Optionen</button>
           <button id="btn-quit">Beenden</button>
         </div>
-        <div class="menu-footer">v0.1 – Milestone 1</div>
+        <div class="menu-footer">v0.2 – Milestone 2</div>
       </div>
 
       <!-- Optionen -->
@@ -59,13 +59,24 @@
       <div id="hud" class="hidden">
         <div id="crosshair"></div>
         <div id="prompt" class="hidden"></div>
+        <div id="lowair"></div>
+        <div id="stats">
+          <div class="stat-row">
+            <span class="stat-label">Nahrung</span>
+            <div class="stat-track"><div id="bar-nahrung" class="stat-fill nahrung"></div></div>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Luft</span>
+            <div class="stat-track"><div id="bar-luft" class="stat-fill luft"></div></div>
+          </div>
+        </div>
       </div>
 
       <!-- Inventar -->
       <div id="inventory" class="overlay hidden">
         <h2>Inventar</h2>
         <div id="inventory-grid"></div>
-        <div class="inv-hint">Tab: Schließen</div>
+        <div class="inv-hint">Fisch anklicken zum Essen · Tab: Schließen</div>
       </div>
 
       <div id="toast" class="hidden"></div>

@@ -58,6 +58,31 @@ export const CONFIG = {
     maxDistance: 3.2,
   },
 
+  stats: {
+    // Nahrungsverbrauch pro Sekunde, je nach Anstrengung
+    nahrungDrain: { idle: 0.08, walk: 0.22, swim: 0.5, dive: 0.75, climb: 0.4 },
+    nahrungProFisch: 35,
+    luftDrain: 5, // pro Sekunde beim Tauchen
+    luftRegen: 28, // pro Sekunde an der Oberfläche (~4 s bis voll)
+    // Ohne Luft schwindet die Nahrung schnell; ohne Nahrung wird man langsam
+    ohneLuftNahrungDrain: 5,
+    erschoepftTempo: 0.5,
+  },
+
+  fish: {
+    count: 12,
+    respawnSeconds: 60,
+    minY: -10.5,
+    maxY: -1.6,
+    speedMin: 0.7,
+    speedMax: 1.5,
+    // bewusst kompakt: der Bereich zwischen Klippen und Boot, wo der
+    // Spieler unterwegs ist – so begegnet man den Fischen wirklich
+    area: { minX: -52, maxX: -10, minZ: -35, maxZ: 35 },
+    // Fische meiden das Bootsinnere
+    avoid: { minX: -33.5, maxX: -22.5, minZ: -16, maxZ: 13 },
+  },
+
   inventory: {
     slots: 12,
     maxStack: 16,

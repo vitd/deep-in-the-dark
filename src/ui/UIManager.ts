@@ -19,6 +19,9 @@ class UIManagerImpl {
   readonly underwater = el('underwater');
   readonly toastEl = el('toast');
   readonly debug = el('debug');
+  readonly barNahrung = el('bar-nahrung');
+  readonly barLuft = el('bar-luft');
+  readonly lowair = el('lowair');
 
   private toastTimer = 0;
 
@@ -32,6 +35,14 @@ class UIManagerImpl {
 
   setVisible(e: HTMLElement, visible: boolean): void {
     e.classList.toggle('hidden', !visible);
+  }
+
+  setBar(bar: HTMLElement, value: number): void {
+    bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+  }
+
+  setLowAir(severity: number): void {
+    this.lowair.style.opacity = String(Math.max(0, Math.min(1, severity)));
   }
 
   setPrompt(text: string | null): void {

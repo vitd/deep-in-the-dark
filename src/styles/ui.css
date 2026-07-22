@@ -181,6 +181,64 @@ input[type='range'] {
   background: rgba(8, 46, 60, 0.35);
 }
 
+/* ------- Überlebenswerte ------- */
+#stats {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-label {
+  width: 80px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: #e8e0c8;
+  text-shadow: 2px 2px 0 #000;
+  text-transform: uppercase;
+}
+
+.stat-track {
+  width: 180px;
+  height: 14px;
+  background: rgba(5, 15, 20, 0.7);
+  border: 2px solid #2b5a66;
+  box-shadow: 2px 2px 0 #051418;
+}
+
+.stat-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.2s steps(8);
+}
+
+.stat-fill.nahrung {
+  background: #d8883c;
+  box-shadow: inset 0 -4px 0 #a8611e;
+}
+
+.stat-fill.luft {
+  background: #4d9ac8;
+  box-shadow: inset 0 -4px 0 #2b6a96;
+}
+
+/* Vignette bei Luftnot */
+#lowair {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(2, 6, 10, 0.95) 100%);
+  opacity: 0;
+}
+
 /* ------- Inventar ------- */
 #inventory {
   background: rgba(4, 10, 16, 0.8);
@@ -224,6 +282,19 @@ input[type='range'] {
 .inv-icon.eisen {
   background: #7a838a;
   box-shadow: inset 0 -6px 0 #4a545c;
+}
+
+.inv-icon.fisch {
+  background: #6a8ea0;
+  box-shadow: inset 0 -6px 0 #46626e;
+}
+
+.inv-slot.usable {
+  cursor: pointer;
+}
+
+.inv-slot.usable:hover {
+  border-color: #4d8a96;
 }
 
 .inv-count {
