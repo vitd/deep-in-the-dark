@@ -21,6 +21,7 @@ interface FishEntity {
   turnTimer: number;
   vertPhase: number;
   entry: Interactable;
+  mixer?: THREE.AnimationMixer;
 }
 
 // Fallback, solange (oder falls) das GLB-Modell nicht geladen ist:
@@ -43,7 +44,10 @@ function makeFallbackFishMesh(colorIdx: number): THREE.Group {
 
 // Lädt das Fisch-Modell des Kunden und normalisiert es: zentriert,
 // auf Spiellänge skaliert, Texturen nearest-gefiltert (Pixel-Look).
-function loadFishTemplate(onReady: (template: THREE.Group) => void): void {
+// Liefert auch die im GLB enthaltenen Animationen (idle/walk/die).
+function loadFishTemplate(
+  onReady: (template: THREE.Group, clips: THREE.AnimationClip[]) => void,
+): void {
   new GLTFLoader().load(
     'assets/models/fish.glb',
     (gltf) => {
@@ -69,7 +73,7 @@ function loadFishTemplate(onReady: (template: THREE.Group) => void): void {
       template.add(inner);
       const maxDim = Math.max(size.x, size.y, size.z, 0.0001);
       template.scale.setScalar(0.6 / maxDim);
-      onReady(template);
+      onReady(template, gltf.animations);
     },
     undefined,
     () => {
@@ -83,6 +87,7 @@ export class FishManager {
   private readonly respawnTimers: number[] = [];
   private spawnedTotal = 0;
   private template: THREE.Group | null = null;
+  private clips: THREE.AnimationClip[] = [];
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -92,20 +97,34 @@ export class FishManager {
     for (let i = 0; i < F.count; i++) {
       this.spawn(i / F.count);
     }
-    loadFishTemplate((template) => {
+    loadFishTemplate((template, clips) => {
       this.template = template;
+      this.clips = clips;
       // bereits schwimmende Box-Fische auf das Modell umrüsten
       for (const f of this.fishes) {
-        f.group.clear();
-        f.group.add(template.clone(true));
+        this.attachModel(f);
       }
     });
   }
 
-  private makeMesh(idx: number): THREE.Group {
-    const g = new THREE.Group();
-    g.add(this.template ? this.template.clone(true) : makeFallbackFishMesh(idx));
-    return g;
+  // Hängt das GLB-Modell (samt laufender Schwimm-Animation) an einen Fisch.
+  private attachModel(fish: FishEntity): void {
+    if (!this.template) return;
+    fish.group.clear();
+    const model = this.template.clone(true);
+    fish.group.add(model);
+
+    const clip =
+      THREE.AnimationClip.findByName(this.clips, 'walk') ?? this.clips[0] ?? null;
+    if (clip) {
+      const mixer = new THREE.AnimationMixer(model);
+      const action = mixer.clipAction(clip);
+      // Animationstempo an die individuelle Schwimmgeschwindigkeit koppeln
+      action.timeScale =
+        0.8 + ((fish.speed - F.speedMin) / (F.speedMax - F.speedMin)) * 0.7;
+      action.play();
+      fish.mixer = mixer;
+    }
   }
 
   // t (0..1) verteilt die Startpositionen deterministisch im Gebiet.
@@ -116,7 +135,7 @@ export class FishManager {
     const r2 = ((idx * 131) % 89) / 89;
     const r3 = ((idx * 37) % 71) / 71;
 
-    const group = this.makeMesh(idx);
+    const group = new THREE.Group();
     const x = F.area.minX + (F.area.maxX - F.area.minX) * ((t + r1) % 1);
     const z = F.area.minZ + (F.area.maxZ - F.area.minZ) * r2;
     const y = F.minY + (F.maxY - F.minY) * r3;
@@ -135,6 +154,11 @@ export class FishManager {
         interact: () => this.catchFish(fish),
       },
     };
+    if (this.template) {
+      this.attachModel(fish);
+    } else {
+      group.add(makeFallbackFishMesh(idx));
+    }
     this.fishes.push(fish);
     this.scene.add(group);
     this.interaction.add(fish.entry);
@@ -207,8 +231,13 @@ export class FishManager {
       p.y = Math.max(F.minY, Math.min(F.maxY, p.y));
 
       f.group.rotation.y = f.heading;
-      // leichtes Schwanzwedeln über Rollwinkel angedeutet
-      f.group.rotation.z = Math.sin(f.vertPhase * 6) * 0.08;
+      if (f.mixer) {
+        // GLB-Schwimmanimation (walk) weiterlaufen lassen
+        f.mixer.update(dt);
+      } else {
+        // Fallback-Boxfisch: Schwanzwedeln über Rollwinkel angedeutet
+        f.group.rotation.z = Math.sin(f.vertPhase * 6) * 0.08;
+      }
     }
   }
 }
