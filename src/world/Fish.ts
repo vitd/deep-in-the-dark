@@ -22,6 +22,8 @@ interface FishEntity {
   vertPhase: number;
   entry: Interactable;
   mixer?: THREE.AnimationMixer;
+  // Restzeit der Sterbe-Animation nach dem Fangen; danach verschwindet er
+  dying?: number;
 }
 
 // Fallback, solange (oder falls) das GLB-Modell nicht geladen ist:
@@ -165,16 +167,27 @@ export class FishManager {
   }
 
   private catchFish(fish: FishEntity): void {
+    if (fish.dying !== undefined) return; // zappelt bereits
     if (!this.inventory.add('fisch')) {
       UI.toast(STR.inventoryFull);
       return;
     }
-    this.scene.remove(fish.group);
     this.interaction.remove(fish.entry);
-    const i = this.fishes.indexOf(fish);
-    if (i >= 0) this.fishes.splice(i, 1);
     this.respawnTimers.push(F.respawnSeconds);
     UI.toast(STR.pickedUp(STR.itemNames.fisch));
+
+    // Sterbe-Animation aus dem GLB abspielen, dann entfernen
+    const die = THREE.AnimationClip.findByName(this.clips, 'die');
+    if (fish.mixer && die) {
+      fish.mixer.stopAllAction();
+      const action = fish.mixer.clipAction(die);
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.play();
+      fish.dying = die.duration + 0.2;
+    } else {
+      fish.dying = 0.5; // Fallback-Boxfisch kippt kurz weg
+    }
   }
 
   // Für den Debug-Teleport (?debug, Taste F)
@@ -182,6 +195,7 @@ export class FishManager {
     let best: THREE.Vector3 | null = null;
     let bestDist = Infinity;
     for (const f of this.fishes) {
+      if (f.dying !== undefined) continue;
       const d = f.group.position.distanceToSquared(from);
       if (d < bestDist) {
         bestDist = d;
@@ -201,7 +215,21 @@ export class FishManager {
       }
     }
 
+    const dead: FishEntity[] = [];
     for (const f of this.fishes) {
+      // Gefangener Fisch: zappelt, sinkt leicht ab und verschwindet dann
+      if (f.dying !== undefined) {
+        f.dying -= dt;
+        f.mixer?.update(dt);
+        f.group.position.y = Math.max(F.minY, f.group.position.y - 0.25 * dt);
+        if (!f.mixer) f.group.rotation.z += 4 * dt;
+        if (f.dying <= 0) {
+          this.scene.remove(f.group);
+          dead.push(f);
+        }
+        continue;
+      }
+
       f.turnTimer -= dt;
       if (f.turnTimer <= 0) {
         f.heading += (Math.sin(f.vertPhase + f.group.position.x) * 1.4);
@@ -238,6 +266,11 @@ export class FishManager {
         // Fallback-Boxfisch: Schwanzwedeln über Rollwinkel angedeutet
         f.group.rotation.z = Math.sin(f.vertPhase * 6) * 0.08;
       }
+    }
+
+    for (const f of dead) {
+      const i = this.fishes.indexOf(f);
+      if (i >= 0) this.fishes.splice(i, 1);
     }
   }
 }
