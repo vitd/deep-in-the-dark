@@ -3,6 +3,7 @@ import { CollisionWorld } from '../systems/Collision';
 import { Interactable, InteractionSystem } from '../systems/Interaction';
 import { STR } from '../ui/strings.de';
 import { RoomDef, WallSide } from './boatLayout';
+import { texturedMat } from '../rendering/Textures';
 
 // Baut einen Raum aus Box-Primitiven. Die Türwand besteht aus drei Boxen
 // um eine echte begehbare Öffnung – kein CSG nötig. Jede Box registriert
@@ -13,8 +14,8 @@ const WALL_T = 0.15;
 const DOOR_W = 1.0;
 const DOOR_H = 2.0;
 
-const wallMat = new THREE.MeshLambertMaterial({ color: 0xc8c0b0 });
-const doorMat = new THREE.MeshLambertMaterial({ color: 0x5a4632 });
+const wallMat = texturedMat('bootswand.png', 2, 1, 0xffffff, 2.4);
+const doorMat = texturedMat('tuer.png', 1, 1, 0xffffff, 1.2);
 
 export interface RoomBuildContext {
   origin: THREE.Vector3; // Weltposition des Boots

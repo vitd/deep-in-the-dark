@@ -6,18 +6,19 @@ import { STR } from '../ui/strings.de';
 import { BOAT_LAYOUT, DECK_Y, ROOF_Y } from './boatLayout';
 import { addBox, buildRoom, RoomBuildContext } from './Room';
 import { buildLadderMesh, LadderDef } from './Ladder';
+import { texturedMat } from '../rendering/Textures';
 
 // Prozedurales Boot: Rumpf, Deck, Reling, Aufbau mit 7 Räumen (aus
 // boatLayout.ts), zwei Leitern und Motorraum-Props.
 
-const hullMat = new THREE.MeshLambertMaterial({ color: 0x8c4a3c });
-const deckMat = new THREE.MeshLambertMaterial({ color: 0xa98960 });
+const hullMat = texturedMat('bootswand.png', 8, 2, 0xffffff, 1.8);
+const deckMat = texturedMat('planken.png', 4, 12);
 const roofMat = new THREE.MeshLambertMaterial({ color: 0xb0a890 });
 const railMat = new THREE.MeshLambertMaterial({ color: 0x7a5c40 });
 const engineMat = new THREE.MeshLambertMaterial({ color: 0x7a2a20 });
 const metalMat = new THREE.MeshLambertMaterial({ color: 0x4a545c });
 const radioMat = new THREE.MeshLambertMaterial({ color: 0x3a4a40 });
-const woodMat = new THREE.MeshLambertMaterial({ color: 0x9c7844 });
+const woodMat = texturedMat('planken.png', 1, 1);
 
 export interface BoatResult {
   group: THREE.Group;

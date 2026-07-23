@@ -5,11 +5,12 @@ import { Inventory, ItemId } from '../systems/Inventory';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { Ocean } from './Ocean';
+import { texturedMat } from '../rendering/Textures';
 
 // Aufsammelbare Ressourcen: Holzplanken treiben auf den Wellen,
 // Eisenbrocken liegen am Meeresboden nahe der Klippen.
 
-const plankMat = new THREE.MeshLambertMaterial({ color: 0x9c7844 });
+const plankMat = texturedMat('planken.png', 1, 1);
 const ironMat = new THREE.MeshLambertMaterial({ color: 0x3e4448 });
 
 const PLANK_SPOTS = [

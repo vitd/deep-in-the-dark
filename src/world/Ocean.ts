@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
+import { pixelTexture } from '../rendering/Textures';
 
 // Animierte Wasserfläche. Die Wellenfunktion existiert zweimal mit
 // identischer Mathematik: einmal im Vertex-Shader (GPU) und einmal in
@@ -42,6 +43,8 @@ uniform vec3 uColorDeep;
 uniform vec3 uColorShallow;
 uniform vec3 uFogColor;
 uniform float uFogDensity;
+uniform sampler2D uWaterTex;
+uniform float uTime;
 varying vec3 vWorldPos;
 
 void main() {
@@ -57,6 +60,13 @@ void main() {
   fresnel = floor(fresnel * 3.0) / 3.0;
 
   vec3 color = mix(uColorDeep, uColorShallow, light * 0.7 + fresnel * 0.3);
+
+  // Wasser-Textur des Kunden: treibt langsam mit zwei überlagerten
+  // Richtungen, damit die Kachelung nicht auffällt
+  vec2 uv1 = vWorldPos.xz * 0.12 + vec2(uTime * 0.015, uTime * 0.009);
+  vec2 uv2 = vWorldPos.xz * 0.055 - vec2(uTime * 0.007, uTime * 0.011);
+  vec3 tex = mix(texture2D(uWaterTex, uv1).rgb, texture2D(uWaterTex, uv2).rgb, 0.5);
+  color = mix(color, tex * (0.55 + light * 0.6), 0.5);
   if (!gl_FrontFacing) {
     // Unterseite der Wasseroberfläche: heller, glasiger
     color = mix(color, vec3(0.55, 0.8, 0.85), 0.35);
@@ -89,6 +99,7 @@ export class Ocean {
         uColorShallow: { value: new THREE.Color(0x3f8a96) },
         uFogColor: { value: new THREE.Color(CONFIG.world.fogAbove.color) },
         uFogDensity: { value: CONFIG.world.fogAbove.density },
+        uWaterTex: { value: pixelTexture('wasser.png') },
       },
       side: THREE.DoubleSide,
       transparent: true,
