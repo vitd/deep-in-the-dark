@@ -86,6 +86,10 @@ export class World {
     UI.setVisible(UI.underwater, under);
   }
 
+  nearestFishPos(from: THREE.Vector3): THREE.Vector3 | null {
+    return this.fish.nearestFishPos(from);
+  }
+
   update(dt: number): void {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.resources.update();

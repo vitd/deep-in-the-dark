@@ -10,7 +10,7 @@ import { texturedMat } from '../rendering/Textures';
 // Aufsammelbare Ressourcen: Holzplanken treiben auf den Wellen,
 // Eisenbrocken liegen am Meeresboden nahe der Klippen.
 
-const plankMat = texturedMat('planken.png', 1, 1);
+const plankMat = texturedMat('plank.png', 1, 1);
 const ironMat = new THREE.MeshLambertMaterial({ color: 0x3e4448 });
 
 const PLANK_SPOTS = [

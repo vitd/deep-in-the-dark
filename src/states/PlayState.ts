@@ -94,6 +94,14 @@ export class PlayState implements GameState {
       this.player.position.set(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y + 1.6, CONFIG.world.boatPos.z + 10);
       this.player.state = PlayerState.Walk;
     }
+    if (e.code === 'KeyF' && this.debugEnabled) {
+      // Debug-Teleport zum nächsten Fisch
+      const p = this.world.nearestFishPos(this.player.position);
+      if (p) {
+        this.player.position.set(p.x - 2, p.y - 1.2, p.z);
+        this.player.state = PlayerState.Dive;
+      }
+    }
     this.keys.add(e.code);
   };
 
@@ -243,7 +251,7 @@ export class PlayState implements GameState {
       `FPS ${this.fps}\n` +
       `Zustand ${this.player.state}\n` +
       `Pos ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}\n` +
-      `T: Teleport aufs Deck`;
+      `T: Deck · F: Fisch`;
   }
 
   render(): void {

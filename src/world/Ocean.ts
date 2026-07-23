@@ -99,7 +99,7 @@ export class Ocean {
         uColorShallow: { value: new THREE.Color(0x3f8a96) },
         uFogColor: { value: new THREE.Color(CONFIG.world.fogAbove.color) },
         uFogDensity: { value: CONFIG.world.fogAbove.density },
-        uWaterTex: { value: pixelTexture('wasser.png') },
+        uWaterTex: { value: pixelTexture('water.png') },
       },
       side: THREE.DoubleSide,
       transparent: true,

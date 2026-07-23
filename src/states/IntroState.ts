@@ -28,7 +28,7 @@ export class IntroState implements GameState {
     document.addEventListener('keydown', this.onKey);
     UI.intro.addEventListener('click', this.onClick);
 
-    video.src = 'assets/intro.mp4';
+    video.src = 'assets/videos/intro.mp4';
     video.play().catch(() => this.finish());
 
     // Sicherheitsnetz: Wenn nach kurzer Zeit nichts abspielbar ist

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CONFIG } from '../config';
 import { Interactable, InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
@@ -22,15 +23,15 @@ interface FishEntity {
   entry: Interactable;
 }
 
-function makeFishMesh(colorIdx: number): THREE.Group {
+// Fallback, solange (oder falls) das GLB-Modell nicht geladen ist:
+// grober Box-Fisch. Blickrichtung ist +z.
+function makeFallbackFishMesh(colorIdx: number): THREE.Group {
   const color = BODY_COLORS[colorIdx % BODY_COLORS.length];
   const bodyMat = new THREE.MeshLambertMaterial({ color });
   const finMat = new THREE.MeshLambertMaterial({
     color: new THREE.Color(color).multiplyScalar(0.7),
   });
   const g = new THREE.Group();
-  // Körper, Schwanz, Rückenflosse – bewusst grob für den Pixel-Look.
-  // Blickrichtung des Fischs ist +z.
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.24, 0.55), bodyMat);
   const tail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.18), finMat);
   tail.position.set(0, 0, -0.34);
@@ -40,10 +41,48 @@ function makeFishMesh(colorIdx: number): THREE.Group {
   return g;
 }
 
+// Lädt das Fisch-Modell des Kunden und normalisiert es: zentriert,
+// auf Spiellänge skaliert, Texturen nearest-gefiltert (Pixel-Look).
+function loadFishTemplate(onReady: (template: THREE.Group) => void): void {
+  new GLTFLoader().load(
+    'assets/models/fish.glb',
+    (gltf) => {
+      const inner = gltf.scene;
+      inner.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const mat of mats) {
+          const std = mat as THREE.MeshStandardMaterial;
+          if (std.map) {
+            std.map.magFilter = THREE.NearestFilter;
+            std.map.minFilter = THREE.NearestFilter;
+            std.map.needsUpdate = true;
+          }
+        }
+      });
+      const box = new THREE.Box3().setFromObject(inner);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      inner.position.sub(center);
+      const template = new THREE.Group();
+      template.add(inner);
+      const maxDim = Math.max(size.x, size.y, size.z, 0.0001);
+      template.scale.setScalar(0.6 / maxDim);
+      onReady(template);
+    },
+    undefined,
+    () => {
+      // Modell nicht ladbar – Box-Fische bleiben im Einsatz.
+    },
+  );
+}
+
 export class FishManager {
   private readonly fishes: FishEntity[] = [];
   private readonly respawnTimers: number[] = [];
   private spawnedTotal = 0;
+  private template: THREE.Group | null = null;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -53,6 +92,20 @@ export class FishManager {
     for (let i = 0; i < F.count; i++) {
       this.spawn(i / F.count);
     }
+    loadFishTemplate((template) => {
+      this.template = template;
+      // bereits schwimmende Box-Fische auf das Modell umrüsten
+      for (const f of this.fishes) {
+        f.group.clear();
+        f.group.add(template.clone(true));
+      }
+    });
+  }
+
+  private makeMesh(idx: number): THREE.Group {
+    const g = new THREE.Group();
+    g.add(this.template ? this.template.clone(true) : makeFallbackFishMesh(idx));
+    return g;
   }
 
   // t (0..1) verteilt die Startpositionen deterministisch im Gebiet.
@@ -63,7 +116,7 @@ export class FishManager {
     const r2 = ((idx * 131) % 89) / 89;
     const r3 = ((idx * 37) % 71) / 71;
 
-    const group = makeFishMesh(idx);
+    const group = this.makeMesh(idx);
     const x = F.area.minX + (F.area.maxX - F.area.minX) * ((t + r1) % 1);
     const z = F.area.minZ + (F.area.maxZ - F.area.minZ) * r2;
     const y = F.minY + (F.maxY - F.minY) * r3;
@@ -98,6 +151,20 @@ export class FishManager {
     if (i >= 0) this.fishes.splice(i, 1);
     this.respawnTimers.push(F.respawnSeconds);
     UI.toast(STR.pickedUp(STR.itemNames.fisch));
+  }
+
+  // Für den Debug-Teleport (?debug, Taste F)
+  nearestFishPos(from: THREE.Vector3): THREE.Vector3 | null {
+    let best: THREE.Vector3 | null = null;
+    let bestDist = Infinity;
+    for (const f of this.fishes) {
+      const d = f.group.position.distanceToSquared(from);
+      if (d < bestDist) {
+        bestDist = d;
+        best = f.group.position;
+      }
+    }
+    return best;
   }
 
   update(dt: number): void {

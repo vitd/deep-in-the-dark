@@ -7,8 +7,8 @@ import { texturedMat } from '../rendering/Textures';
 // verschwindet im Nebel/hinter der Far-Plane und wirkt dadurch endlos.
 
 export function buildCliffs(scene: THREE.Scene, collision: CollisionWorld): void {
-  const mat = texturedMat('fels.png', 40, 24);
-  const matDark = texturedMat('fels.png', 2, 2, 0xb0b0b8);
+  const mat = texturedMat('stone.png', 40, 24);
+  const matDark = texturedMat('stone.png', 2, 2, 0xb0b0b8);
 
   const x = CONFIG.world.cliffX;
   const height = 220;
