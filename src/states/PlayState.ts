@@ -6,6 +6,7 @@ import { PlayerController, PlayerState } from '../player/PlayerController';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
 import { Stats } from '../systems/Stats';
+import { isTouchDevice, TouchControls } from '../systems/TouchControls';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { World } from '../world/World';
@@ -27,6 +28,8 @@ export class PlayState implements GameState {
   private readonly keys = new Set<string>();
   private readonly eyeTmp = new THREE.Vector3();
   private exhaustedToastTimer = 0;
+  private readonly isTouch = isTouchDevice();
+  private readonly touch: TouchControls | null = null;
 
   private inventoryOpen = false;
   private expectUnlock = false;
@@ -51,6 +54,16 @@ export class PlayState implements GameState {
       this.player.startClimb(ladder),
     );
     this.player = new PlayerController(this.look, this.world.collision, this.world.ocean);
+
+    if (this.isTouch) {
+      this.touch = new TouchControls(this.keys, this.look, {
+        onInteract: () => {
+          if (!this.inventoryOpen) this.interaction.interact();
+        },
+        onToggleInventory: () => this.toggleInventory(),
+        onPause: () => this.game.setState(new PauseState(this.game, this)),
+      });
+    }
 
     // Klick auf einen Inventar-Slot: Fische kann man essen.
     this.inventory.onUse = (id) => {
@@ -121,6 +134,10 @@ export class PlayState implements GameState {
     }
   };
 
+  private readonly onInvClose = () => {
+    if (this.inventoryOpen) this.toggleInventory();
+  };
+
   private readonly onCanvasClick = () => {
     if (this.active && !this.inventoryOpen && document.pointerLockElement === null) {
       this.lockPointer();
@@ -128,6 +145,7 @@ export class PlayState implements GameState {
   };
 
   private lockPointer(): void {
+    if (this.isTouch) return; // auf Touch-Geräten gibt es keinen Pointer-Lock
     // In neueren Browsern gibt requestPointerLock ein Promise zurück,
     // das z. B. ohne User-Geste rejecten kann – das darf nicht crashen.
     try {
@@ -143,8 +161,10 @@ export class PlayState implements GameState {
     UI.setVisible(UI.inventory, this.inventoryOpen);
     if (this.inventoryOpen) {
       this.inventory.renderUI();
-      this.expectUnlock = true;
-      document.exitPointerLock();
+      if (!this.isTouch) {
+        this.expectUnlock = true;
+        document.exitPointerLock();
+      }
     } else {
       this.lockPointer();
     }
@@ -159,19 +179,29 @@ export class PlayState implements GameState {
     document.addEventListener('keyup', this.onKeyUp);
     document.addEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.addEventListener('click', this.onCanvasClick);
+    document.getElementById('btn-inv-close')!.addEventListener('click', this.onInvClose);
     this.look.attach();
     this.lockPointer();
+    if (this.isTouch && this.touch) {
+      UI.show(document.getElementById('touch-ui')!);
+      this.touch.attach();
+    }
     if (this.debugEnabled) UI.show(UI.debug);
   }
 
   exit(): void {
     this.active = false;
+    if (this.touch) {
+      this.touch.detach();
+      UI.hide(document.getElementById('touch-ui')!);
+    }
     this.keys.clear();
     this.look.detach();
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.removeEventListener('click', this.onCanvasClick);
+    document.getElementById('btn-inv-close')!.removeEventListener('click', this.onInvClose);
     if (this.inventoryOpen) {
       this.inventoryOpen = false;
       UI.hide(UI.inventory);

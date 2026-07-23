@@ -2,7 +2,10 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><rect width=%2216%22 height=%2216%22 fill=%22%230b3644%22/><rect x=%223%22 y=%227%22 width=%2210%22 height=%224%22 fill=%22%238c4a3c%22/><rect x=%225%22 y=%224%22 width=%224%22 height=%223%22 fill=%22%23c8c0b0%22/></svg>" />
     <title>Deep in the Dark</title>
   </head>
@@ -60,6 +63,15 @@
         <div id="crosshair"></div>
         <div id="prompt" class="hidden"></div>
         <div id="lowair"></div>
+        <!-- Touch-Steuerung (nur auf Touch-Geräten sichtbar) -->
+        <div id="touch-ui" class="hidden">
+          <div id="look-area"></div>
+          <div id="joystick"><div id="joystick-knob"></div></div>
+          <div id="btn-touch-action" class="touch-btn">E</div>
+          <div id="btn-touch-jump" class="touch-btn">▲</div>
+          <div id="btn-touch-inv" class="touch-btn small">INV</div>
+          <div id="btn-touch-pause" class="touch-btn small">❚❚</div>
+        </div>
         <div id="stats">
           <div class="stat-row">
             <span class="stat-label">Nahrung</span>
@@ -77,6 +89,9 @@
         <h2>Inventar</h2>
         <div id="inventory-grid"></div>
         <div class="inv-hint">Fisch anklicken zum Essen · Tab: Schließen</div>
+        <div class="menu-buttons">
+          <button id="btn-inv-close">Schließen</button>
+        </div>
       </div>
 
       <div id="toast" class="hidden"></div>

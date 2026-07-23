@@ -10,11 +10,16 @@ export class MouseLook {
   pitch = 0;
 
   private readonly onMove = (e: MouseEvent) => {
-    const s = 0.0022 * settings.sensitivity;
-    this.yaw -= e.movementX * s;
-    this.pitch -= e.movementY * s;
-    this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
+    this.applyDelta(e.movementX, e.movementY);
   };
+
+  // Gemeinsamer Eingang für Maus- und Touch-Blicksteuerung.
+  applyDelta(dx: number, dy: number): void {
+    const s = 0.0022 * settings.sensitivity;
+    this.yaw -= dx * s;
+    this.pitch -= dy * s;
+    this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
+  }
 
   attach(): void {
     document.addEventListener('mousemove', this.onMove);

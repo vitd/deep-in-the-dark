@@ -181,6 +181,109 @@ input[type='range'] {
   background: rgba(8, 46, 60, 0.35);
 }
 
+/* ------- Touch-Steuerung ------- */
+#touch-ui {
+  position: absolute;
+  inset: 0;
+}
+
+#touch-ui > * {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#look-area {
+  position: absolute;
+  left: 38%;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+#joystick {
+  position: absolute;
+  left: 28px;
+  bottom: 76px;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: rgba(5, 15, 20, 0.4);
+  border: 3px solid rgba(77, 138, 150, 0.6);
+}
+
+#joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: rgba(232, 224, 200, 0.55);
+  border: 3px solid rgba(5, 15, 20, 0.5);
+}
+
+.touch-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: inherit;
+  font-weight: bold;
+  color: #e8e0c8;
+  background: rgba(5, 15, 20, 0.5);
+  border: 3px solid rgba(77, 138, 150, 0.7);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.touch-btn:active {
+  background: rgba(43, 90, 102, 0.7);
+}
+
+#btn-touch-action {
+  right: 26px;
+  bottom: 120px;
+  width: 76px;
+  height: 76px;
+  font-size: 30px;
+}
+
+#btn-touch-jump {
+  right: 118px;
+  bottom: 40px;
+  width: 64px;
+  height: 64px;
+  font-size: 26px;
+}
+
+.touch-btn.small {
+  width: 52px;
+  height: 52px;
+  font-size: 14px;
+}
+
+#btn-touch-pause {
+  right: 16px;
+  top: 16px;
+}
+
+#btn-touch-inv {
+  right: 84px;
+  top: 16px;
+}
+
+/* Auf Touch-Geräten wandern die Balken nach oben Mitte,
+   damit der Joystick unten links Platz hat */
+body.touch-mode #stats {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: auto;
+  top: 14px;
+}
+
 /* ------- Überlebenswerte ------- */
 #stats {
   position: absolute;
