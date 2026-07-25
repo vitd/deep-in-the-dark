@@ -67,10 +67,16 @@ export class PlayState implements GameState {
 
     // Klick auf einen Inventar-Slot: Fische kann man essen.
     this.inventory.onUse = (id) => {
-      if (id !== 'fisch') return;
-      if (this.inventory.consume('fisch')) {
-        this.stats.eatFish();
-        UI.toast(STR.fischGegessen(CONFIG.stats.nahrungProFisch));
+      const plus =
+        id === 'fisch'
+          ? CONFIG.stats.nahrungProFisch
+          : id === 'grossfisch'
+            ? CONFIG.stats.nahrungProGrossfisch
+            : 0;
+      if (plus === 0) return;
+      if (this.inventory.consume(id)) {
+        this.stats.eat(plus);
+        UI.toast(STR.gegessen(STR.itemNames[id], plus));
       }
     };
 

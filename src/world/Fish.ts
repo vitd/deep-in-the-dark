@@ -1,20 +1,67 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CONFIG } from '../config';
+import { loadModel } from '../rendering/Models';
 import { Interactable, InteractionSystem } from '../systems/Interaction';
-import { Inventory } from '../systems/Inventory';
+import { Inventory, ItemId } from '../systems/Inventory';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 
 // Fische mit einfacher Wander-KI: schwimmen unter Wasser umher, ändern
 // gelegentlich die Richtung, meiden das Bootsinnere. Fangen mit E;
-// gefangene Fische respawnen nach einiger Zeit an neuer Position.
+// gefangene Fische zappeln (die-Animation) und respawnen später.
+// Zwei Arten: der kleine Fisch (häufig) und der große Fisch (selten,
+// tiefer unterwegs, gibt beim Essen mehr Nahrung).
 
 const F = CONFIG.fish;
 
+interface SpeciesDef {
+  file: string;
+  size: number;
+  item: ItemId;
+  count: number;
+  respawnSeconds: number;
+  minY: number;
+  maxY: number;
+  speedMin: number;
+  speedMax: number;
+}
+
+const SPECIES: SpeciesDef[] = [
+  {
+    file: 'fish.glb',
+    size: 0.6,
+    item: 'fisch',
+    count: F.count,
+    respawnSeconds: F.respawnSeconds,
+    minY: F.minY,
+    maxY: F.maxY,
+    speedMin: F.speedMin,
+    speedMax: F.speedMax,
+  },
+  {
+    file: 'fish-big.glb',
+    size: CONFIG.fishBig.size,
+    item: 'grossfisch',
+    count: CONFIG.fishBig.count,
+    respawnSeconds: CONFIG.fishBig.respawnSeconds,
+    minY: CONFIG.fishBig.minY,
+    maxY: CONFIG.fishBig.maxY,
+    speedMin: CONFIG.fishBig.speedMin,
+    speedMax: CONFIG.fishBig.speedMax,
+  },
+];
+
 const BODY_COLORS = [0x6a8ea0, 0x8a9a6a, 0xa07a5a];
 
+interface SpeciesState {
+  def: SpeciesDef;
+  template: THREE.Group | null;
+  clips: THREE.AnimationClip[];
+  respawnTimers: number[];
+}
+
 interface FishEntity {
+  species: SpeciesState;
   group: THREE.Group;
   heading: number;
   speed: number;
@@ -26,9 +73,8 @@ interface FishEntity {
   dying?: number;
 }
 
-// Fallback, solange (oder falls) das GLB-Modell nicht geladen ist:
-// grober Box-Fisch. Blickrichtung ist +z.
-function makeFallbackFishMesh(colorIdx: number): THREE.Group {
+// Fallback, solange (oder falls) das GLB-Modell nicht geladen ist.
+function makeFallbackFishMesh(colorIdx: number, scale: number): THREE.Group {
   const color = BODY_COLORS[colorIdx % BODY_COLORS.length];
   const bodyMat = new THREE.MeshLambertMaterial({ color });
   const finMat = new THREE.MeshLambertMaterial({
@@ -41,112 +87,85 @@ function makeFallbackFishMesh(colorIdx: number): THREE.Group {
   const fin = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.2), finMat);
   fin.position.set(0, 0.16, 0.05);
   g.add(body, tail, fin);
+  g.scale.setScalar(scale / 0.6);
   return g;
-}
-
-// Lädt das Fisch-Modell des Kunden und normalisiert es: zentriert,
-// auf Spiellänge skaliert, Texturen nearest-gefiltert (Pixel-Look).
-// Liefert auch die im GLB enthaltenen Animationen (idle/walk/die).
-function loadFishTemplate(
-  onReady: (template: THREE.Group, clips: THREE.AnimationClip[]) => void,
-): void {
-  new GLTFLoader().load(
-    'assets/models/fish.glb',
-    (gltf) => {
-      const inner = gltf.scene;
-      inner.traverse((obj) => {
-        const mesh = obj as THREE.Mesh;
-        if (!mesh.isMesh) return;
-        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-        for (const mat of mats) {
-          const std = mat as THREE.MeshStandardMaterial;
-          if (std.map) {
-            std.map.magFilter = THREE.NearestFilter;
-            std.map.minFilter = THREE.NearestFilter;
-            std.map.needsUpdate = true;
-          }
-        }
-      });
-      const box = new THREE.Box3().setFromObject(inner);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-      inner.position.sub(center);
-      const template = new THREE.Group();
-      template.add(inner);
-      const maxDim = Math.max(size.x, size.y, size.z, 0.0001);
-      template.scale.setScalar(0.6 / maxDim);
-      onReady(template, gltf.animations);
-    },
-    undefined,
-    () => {
-      // Modell nicht ladbar – Box-Fische bleiben im Einsatz.
-    },
-  );
 }
 
 export class FishManager {
   private readonly fishes: FishEntity[] = [];
-  private readonly respawnTimers: number[] = [];
+  private readonly speciesStates: SpeciesState[];
   private spawnedTotal = 0;
-  private template: THREE.Group | null = null;
-  private clips: THREE.AnimationClip[] = [];
 
   constructor(
     private readonly scene: THREE.Scene,
     private readonly interaction: InteractionSystem,
     private readonly inventory: Inventory,
   ) {
-    for (let i = 0; i < F.count; i++) {
-      this.spawn(i / F.count);
-    }
-    loadFishTemplate((template, clips) => {
-      this.template = template;
-      this.clips = clips;
-      // bereits schwimmende Box-Fische auf das Modell umrüsten
-      for (const f of this.fishes) {
-        this.attachModel(f);
+    this.speciesStates = SPECIES.map((def) => ({
+      def,
+      template: null,
+      clips: [],
+      respawnTimers: [],
+    }));
+
+    for (const state of this.speciesStates) {
+      for (let i = 0; i < state.def.count; i++) {
+        this.spawn(state, i / state.def.count);
       }
-    });
+      loadModel(state.def.file, state.def.size)
+        .then(({ template, clips }) => {
+          state.template = template;
+          state.clips = clips;
+          for (const f of this.fishes) {
+            if (f.species === state && f.dying === undefined) this.attachModel(f);
+          }
+        })
+        .catch(() => {
+          // Modell nicht ladbar – Box-Fische bleiben im Einsatz.
+        });
+    }
   }
 
   // Hängt das GLB-Modell (samt laufender Schwimm-Animation) an einen Fisch.
   private attachModel(fish: FishEntity): void {
-    if (!this.template) return;
+    const state = fish.species;
+    if (!state.template) return;
     fish.group.clear();
-    const model = this.template.clone(true);
+    const model = state.template.clone(true);
     fish.group.add(model);
 
-    const clip =
-      THREE.AnimationClip.findByName(this.clips, 'walk') ?? this.clips[0] ?? null;
+    const clip = THREE.AnimationClip.findByName(state.clips, 'walk') ?? state.clips[0] ?? null;
     if (clip) {
       const mixer = new THREE.AnimationMixer(model);
       const action = mixer.clipAction(clip);
       // Animationstempo an die individuelle Schwimmgeschwindigkeit koppeln
-      action.timeScale =
-        0.8 + ((fish.speed - F.speedMin) / (F.speedMax - F.speedMin)) * 0.7;
+      const d = fish.species.def;
+      action.timeScale = 0.8 + ((fish.speed - d.speedMin) / (d.speedMax - d.speedMin)) * 0.7;
       action.play();
       fish.mixer = mixer;
     }
   }
 
   // t (0..1) verteilt die Startpositionen deterministisch im Gebiet.
-  private spawn(t: number): void {
+  private spawn(state: SpeciesState, t: number): void {
     const idx = this.spawnedTotal++;
     // einfache deterministische Pseudozufallswerte aus dem Index
     const r1 = ((idx * 73) % 97) / 97;
     const r2 = ((idx * 131) % 89) / 89;
     const r3 = ((idx * 37) % 71) / 71;
 
+    const d = state.def;
     const group = new THREE.Group();
     const x = F.area.minX + (F.area.maxX - F.area.minX) * ((t + r1) % 1);
     const z = F.area.minZ + (F.area.maxZ - F.area.minZ) * r2;
-    const y = F.minY + (F.maxY - F.minY) * r3;
+    const y = d.minY + (d.maxY - d.minY) * r3;
     group.position.set(x, y, z);
 
     const fish: FishEntity = {
+      species: state,
       group,
       heading: r1 * Math.PI * 2,
-      speed: F.speedMin + (F.speedMax - F.speedMin) * r2,
+      speed: d.speedMin + (d.speedMax - d.speedMin) * r2,
       turnTimer: 2 + r3 * 4,
       vertPhase: r1 * 10,
       entry: {
@@ -156,10 +175,10 @@ export class FishManager {
         interact: () => this.catchFish(fish),
       },
     };
-    if (this.template) {
+    if (state.template) {
       this.attachModel(fish);
     } else {
-      group.add(makeFallbackFishMesh(idx));
+      group.add(makeFallbackFishMesh(idx, d.size));
     }
     this.fishes.push(fish);
     this.scene.add(group);
@@ -168,16 +187,16 @@ export class FishManager {
 
   private catchFish(fish: FishEntity): void {
     if (fish.dying !== undefined) return; // zappelt bereits
-    if (!this.inventory.add('fisch')) {
+    if (!this.inventory.add(fish.species.def.item)) {
       UI.toast(STR.inventoryFull);
       return;
     }
     this.interaction.remove(fish.entry);
-    this.respawnTimers.push(F.respawnSeconds);
-    UI.toast(STR.pickedUp(STR.itemNames.fisch));
+    fish.species.respawnTimers.push(fish.species.def.respawnSeconds);
+    UI.toast(STR.pickedUp(STR.itemNames[fish.species.def.item]));
 
     // Sterbe-Animation aus dem GLB abspielen, dann entfernen
-    const die = THREE.AnimationClip.findByName(this.clips, 'die');
+    const die = THREE.AnimationClip.findByName(fish.species.clips, 'die');
     if (fish.mixer && die) {
       fish.mixer.stopAllAction();
       const action = fish.mixer.clipAction(die);
@@ -206,12 +225,14 @@ export class FishManager {
   }
 
   update(dt: number): void {
-    // Respawns
-    for (let i = this.respawnTimers.length - 1; i >= 0; i--) {
-      this.respawnTimers[i] -= dt;
-      if (this.respawnTimers[i] <= 0) {
-        this.respawnTimers.splice(i, 1);
-        this.spawn((this.spawnedTotal % 7) / 7);
+    // Respawns pro Art
+    for (const state of this.speciesStates) {
+      for (let i = state.respawnTimers.length - 1; i >= 0; i--) {
+        state.respawnTimers[i] -= dt;
+        if (state.respawnTimers[i] <= 0) {
+          state.respawnTimers.splice(i, 1);
+          this.spawn(state, (this.spawnedTotal % 7) / 7);
+        }
       }
     }
 
@@ -221,7 +242,7 @@ export class FishManager {
       if (f.dying !== undefined) {
         f.dying -= dt;
         f.mixer?.update(dt);
-        f.group.position.y = Math.max(F.minY, f.group.position.y - 0.25 * dt);
+        f.group.position.y = Math.max(f.species.def.minY, f.group.position.y - 0.25 * dt);
         if (!f.mixer) f.group.rotation.z += 4 * dt;
         if (f.dying <= 0) {
           this.scene.remove(f.group);
@@ -232,15 +253,15 @@ export class FishManager {
 
       f.turnTimer -= dt;
       if (f.turnTimer <= 0) {
-        f.heading += (Math.sin(f.vertPhase + f.group.position.x) * 1.4);
+        f.heading += Math.sin(f.vertPhase + f.group.position.x) * 1.4;
         f.turnTimer = 2 + ((f.vertPhase * 13) % 5);
       }
 
       const dx = Math.sin(f.heading) * f.speed * dt;
       const dz = Math.cos(f.heading) * f.speed * dt;
       const p = f.group.position;
-      let nx = p.x + dx;
-      let nz = p.z + dz;
+      const nx = p.x + dx;
+      const nz = p.z + dz;
 
       // Gebietsgrenzen und Bootsinneres: umdrehen statt eindringen
       const outside =
@@ -256,7 +277,7 @@ export class FishManager {
       p.z = nz;
       f.vertPhase += dt;
       p.y += Math.sin(f.vertPhase * 0.8) * 0.15 * dt;
-      p.y = Math.max(F.minY, Math.min(F.maxY, p.y));
+      p.y = Math.max(f.species.def.minY, Math.min(f.species.def.maxY, p.y));
 
       f.group.rotation.y = f.heading;
       if (f.mixer) {

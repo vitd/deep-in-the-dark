@@ -4,7 +4,7 @@ export const STR = {
   pickUp: 'E: Aufheben',
   climb: 'E: Klettern',
   catchFish: 'E: Fangen',
-  fischGegessen: (plus: number) => `Fisch gegessen (+${plus} Nahrung)`,
+  gegessen: (name: string, plus: number) => `${name} gegessen (+${plus} Nahrung)`,
   erschoepft: 'Du bist erschöpft – iss etwas!',
   nahrung: 'Nahrung',
   luft: 'Luft',
@@ -19,5 +19,8 @@ export const STR = {
     holzplanke: 'Holzplanke',
     eisen: 'Eisen',
     fisch: 'Fisch',
+    grossfisch: 'Großer Fisch',
+    gold: 'Gold',
+    fass: 'Fass',
   } as Record<string, string>,
 } as const;

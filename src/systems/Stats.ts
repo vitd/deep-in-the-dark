@@ -45,8 +45,8 @@ export class Stats {
     }
   }
 
-  eatFish(): void {
-    this.nahrung = Math.min(100, this.nahrung + S.nahrungProFisch);
+  eat(amount: number): void {
+    this.nahrung = Math.min(100, this.nahrung + amount);
   }
 
   get exhausted(): boolean {

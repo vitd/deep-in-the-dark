@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 
-export type ItemId = 'holzplanke' | 'eisen' | 'fisch';
+export type ItemId = 'holzplanke' | 'eisen' | 'fisch' | 'grossfisch' | 'gold' | 'fass';
 
 interface Slot {
   id: ItemId;
@@ -13,6 +13,9 @@ const ICON_TEXT: Record<ItemId, string> = {
   holzplanke: 'H',
   eisen: 'Fe',
   fisch: 'F',
+  grossfisch: 'GF',
+  gold: 'Au',
+  fass: 'FS',
 };
 
 export class Inventory {

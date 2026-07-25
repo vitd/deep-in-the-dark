@@ -62,6 +62,7 @@ export const CONFIG = {
     // Nahrungsverbrauch pro Sekunde, je nach Anstrengung
     nahrungDrain: { idle: 0.08, walk: 0.22, swim: 0.5, dive: 0.75, climb: 0.4 },
     nahrungProFisch: 35,
+    nahrungProGrossfisch: 70,
     luftDrain: 5, // pro Sekunde beim Tauchen
     luftRegen: 28, // pro Sekunde an der Oberfläche (~4 s bis voll)
     // Ohne Luft schwindet die Nahrung schnell; ohne Nahrung wird man langsam
@@ -81,6 +82,17 @@ export const CONFIG = {
     area: { minX: -52, maxX: -10, minZ: -35, maxZ: 35 },
     // Fische meiden das Bootsinnere
     avoid: { minX: -33.5, maxX: -22.5, minZ: -16, maxZ: 13 },
+  },
+
+  // Großer Fisch: seltener, tiefer, ergiebiger
+  fishBig: {
+    count: 3,
+    respawnSeconds: 120,
+    minY: -10.5,
+    maxY: -6,
+    speedMin: 0.5,
+    speedMax: 0.9,
+    size: 1.35,
   },
 
   inventory: {
