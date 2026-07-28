@@ -59,10 +59,12 @@ export const CONFIG = {
   },
 
   stats: {
-    // Nahrungsverbrauch pro Sekunde, je nach Anstrengung
-    nahrungDrain: { idle: 0.08, walk: 0.22, swim: 0.5, dive: 0.75, climb: 0.4 },
+    // Nahrungsverbrauch pro Sekunde: nur in Bewegung, 1 Punkt / 10 s
+    nahrungDrain: { idle: 0, walk: 0.1, swim: 0.1, dive: 0.1, climb: 0.1 },
     nahrungProFisch: 35,
     nahrungProGrossfisch: 70,
+    // Essen wird über diese Dauer animiert auf den Balken aufgeschlagen
+    essenDauerSekunden: 3,
     luftDrain: 3, // pro Sekunde beim Tauchen
     luftRegen: 12.5, // pro Sekunde an der Oberfläche (0 -> 100 in 8 s)
     // Ohne Luft schwindet die Nahrung schnell; ohne Nahrung wird man langsam

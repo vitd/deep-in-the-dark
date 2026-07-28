@@ -13,7 +13,20 @@ export class Stats {
   nahrung = 100;
   luft = 100;
 
+  // Noch nicht angerechnete Nahrung aus Essen – wird über
+  // essenDauerSekunden animiert auf den Balken aufgeschlagen.
+  private pendingFood = 0;
+  private pendingRate = 0;
+
   update(dt: number, state: PlayerState, moving: boolean, underwater: boolean): void {
+    // Essen langsam anrechnen (animiertes Auffüllen des Balkens)
+    if (this.pendingFood > 0) {
+      const step = Math.min(this.pendingFood, this.pendingRate * dt);
+      this.pendingFood -= step;
+      this.nahrung = Math.min(100, this.nahrung + step);
+      if (this.pendingFood < 0.01) this.pendingFood = 0;
+    }
+
     // Nahrung: Verbrauch nach Aktivität
     let drain: number = S.nahrungDrain.idle;
     if (moving) {
@@ -46,7 +59,9 @@ export class Stats {
   }
 
   eat(amount: number): void {
-    this.nahrung = Math.min(100, this.nahrung + amount);
+    this.pendingFood += amount;
+    // verbleibende Menge in konstanter Zeit vollständig anrechnen
+    this.pendingRate = this.pendingFood / S.essenDauerSekunden;
   }
 
   get exhausted(): boolean {

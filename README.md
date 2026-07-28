@@ -29,9 +29,10 @@ An der Leiter: W/S = hoch/runter klettern.
 
 ## Überleben
 
-- **Nahrung (0–100):** Anstrengung (Schwimmen, Tauchen, Gehen) zehrt.
-  Fische fangen (E) und im Inventar anklicken zum Essen. Bei 0 bist du
-  erschöpft und langsam.
+- **Nahrung (0–100):** Bewegung (Schwimmen, Tauchen, Gehen, Klettern)
+  kostet 1 Punkt pro 10 Sekunden. Fische fangen (E) und im Inventar
+  anklicken zum Essen (+35, großer Fisch +70; wird über 3 Sekunden
+  animiert angerechnet). Bei 0 bist du erschöpft und langsam.
 - **Luft (0–100):** Tauchen verbraucht 3 Punkte pro Sekunde; an der
   Oberfläche regeneriert die Luft in 8 Sekunden vollständig. Ohne Luft
   wird der Blick dunkel und die Nahrung schwindet schnell.
