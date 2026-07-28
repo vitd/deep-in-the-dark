@@ -114,6 +114,9 @@ export class FishManager {
       }
       loadModel(state.def.file, state.def.size)
         .then(({ template, clips }) => {
+          // Die Fisch-Modelle schauen nach -z, unsere Bewegung nimmt +z
+          // als vorwärts an: Vorlage um 180° drehen.
+          template.rotation.y = Math.PI;
           state.template = template;
           state.clips = clips;
           for (const f of this.fishes) {
