@@ -32,9 +32,9 @@ An der Leiter: W/S = hoch/runter klettern.
 - **Nahrung (0–100):** Anstrengung (Schwimmen, Tauchen, Gehen) zehrt.
   Fische fangen (E) und im Inventar anklicken zum Essen. Bei 0 bist du
   erschöpft und langsam.
-- **Luft (0–100):** Tauchen verbraucht Luft, an der Oberfläche füllt sie
-  sich in wenigen Sekunden wieder. Ohne Luft wird der Blick dunkel und
-  die Nahrung schwindet schnell.
+- **Luft (0–100):** Tauchen verbraucht 3 Punkte pro Sekunde; an der
+  Oberfläche regeneriert die Luft in 8 Sekunden vollständig. Ohne Luft
+  wird der Blick dunkel und die Nahrung schwindet schnell.
 - Beide Werte werden im HUD links unten angezeigt.
 
 ## Intro-Video

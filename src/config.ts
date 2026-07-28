@@ -63,8 +63,8 @@ export const CONFIG = {
     nahrungDrain: { idle: 0.08, walk: 0.22, swim: 0.5, dive: 0.75, climb: 0.4 },
     nahrungProFisch: 35,
     nahrungProGrossfisch: 70,
-    luftDrain: 5, // pro Sekunde beim Tauchen
-    luftRegen: 28, // pro Sekunde an der Oberfläche (~4 s bis voll)
+    luftDrain: 3, // pro Sekunde beim Tauchen
+    luftRegen: 12.5, // pro Sekunde an der Oberfläche (0 -> 100 in 8 s)
     // Ohne Luft schwindet die Nahrung schnell; ohne Nahrung wird man langsam
     ohneLuftNahrungDrain: 5,
     erschoepftTempo: 0.5,

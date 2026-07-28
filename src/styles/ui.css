@@ -320,7 +320,8 @@ body.touch-mode #stats {
 .stat-fill {
   height: 100%;
   width: 100%;
-  transition: width 0.2s steps(8);
+  /* weich und kontinuierlich – die Werte werden pro Frame aktualisiert */
+  transition: width 0.15s linear;
 }
 
 .stat-fill.nahrung {
