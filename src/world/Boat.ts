@@ -50,9 +50,18 @@ export function buildBoat(
   // das Heck bleibt offen, damit man ins Wasser springen kann.
   const gaps: Gap[] = [{ side: -1, z0: 9.3, z1: 10.7 }];
 
-  const hull = buildHullMesh(hullMat);
-  const deck = buildDeckMesh(deckMat);
-  const bulwark = buildBulwarkMesh(railMat, gaps);
+  // Rumpf, Deck und Schanzkleid sind dünne Schalen und von beiden Seiten
+  // sichtbar (z. B. Schanzkleid-Innenseite vom Deck aus) – DoubleSide.
+  const hullShellMat = hullMat.clone();
+  hullShellMat.side = THREE.DoubleSide;
+  const deckShellMat = deckMat.clone();
+  deckShellMat.side = THREE.DoubleSide;
+  const bulwarkMat = railMat.clone();
+  bulwarkMat.side = THREE.DoubleSide;
+
+  const hull = buildHullMesh(hullShellMat);
+  const deck = buildDeckMesh(deckShellMat);
+  const bulwark = buildBulwarkMesh(bulwarkMat, gaps);
   for (const mesh of [hull, deck, bulwark]) {
     mesh.position.copy(origin);
     group.add(mesh);

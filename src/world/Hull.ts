@@ -119,12 +119,14 @@ export function buildHullMesh(material: THREE.Material): THREE.Mesh {
     for (let j = 0; j < RING - 1; j++) {
       const u0 = (j / (RING - 1)) * 2;
       const u1 = ((j + 1) / (RING - 1)) * 2;
+      // Winding so, dass die Normalen nach AUSSEN zeigen – sonst ist die
+      // Außenhaut weggecullt und man sieht ins Schiff hinein.
       push(a[j], u0, v0);
+      push(b[j + 1], u1, v1);
       push(b[j], u0, v1);
-      push(b[j + 1], u1, v1);
       push(a[j], u0, v0);
-      push(b[j + 1], u1, v1);
       push(a[j + 1], u1, v0);
+      push(b[j + 1], u1, v1);
     }
   }
 
