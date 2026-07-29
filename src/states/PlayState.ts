@@ -5,6 +5,7 @@ import { MouseLook } from '../player/MouseLook';
 import { PlayerController, PlayerState } from '../player/PlayerController';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
+import { Crafting } from '../systems/Crafting';
 import { Stats } from '../systems/Stats';
 import { isTouchDevice, TouchControls } from '../systems/TouchControls';
 import { STR } from '../ui/strings.de';
@@ -33,6 +34,8 @@ export class PlayState implements GameState {
   private readonly touch: TouchControls | null = null;
 
   private inventoryOpen = false;
+  private readonly crafting = new Crafting(this.inventory);
+  private craftingOpen = false;
   private expectUnlock = false;
   private active = false;
   private disposed = false;
@@ -51,7 +54,9 @@ export class PlayState implements GameState {
       CONFIG.render.farPlane,
     );
 
-    this.world = new World(this.scene, this.interaction, this.inventory);
+    this.world = new World(this.scene, this.interaction, this.inventory, () =>
+      this.openCrafting(),
+    );
     this.player = new PlayerController(
       this.look,
       this.world.collision,
@@ -99,6 +104,13 @@ export class PlayState implements GameState {
   // ---------- Eingabe ----------
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
+    if (this.craftingOpen) {
+      if (e.code === 'Escape' || e.code === 'Tab' || e.code === 'KeyE') {
+        e.preventDefault();
+        this.crafting.close();
+      }
+      return;
+    }
     if (e.code === 'Tab' || e.code === 'KeyI') {
       e.preventDefault();
       this.toggleInventory();
@@ -111,6 +123,13 @@ export class PlayState implements GameState {
     if (e.code === 'KeyE' && !this.inventoryOpen) {
       this.interaction.interact();
       return;
+    }
+    if (e.code === 'KeyB' && this.debugEnabled) {
+      // Debug: Material für den Hammer ins Inventar legen
+      for (let i = 0; i < 3; i++) this.inventory.add('eisen');
+      this.inventory.add('holzplanke');
+      this.inventory.add('holzplanke');
+      UI.toast('Debug: 3x Eisen, 2x Holzplanke');
     }
     if (e.code === 'KeyT' && this.debugEnabled) {
       // Debug-Teleport aufs Deck
@@ -143,7 +162,7 @@ export class PlayState implements GameState {
       this.expectUnlock = false;
       return;
     }
-    if (this.active && !this.inventoryOpen) {
+    if (this.active && !this.inventoryOpen && !this.craftingOpen) {
       this.game.setState(new PauseState(this.game, this));
     }
   };
@@ -168,6 +187,20 @@ export class PlayState implements GameState {
     } catch {
       // Pointer-Lock nicht verfügbar – Spiel bleibt trotzdem bedienbar
     }
+  }
+
+  private openCrafting(): void {
+    if (this.craftingOpen) return;
+    if (this.inventoryOpen) this.toggleInventory();
+    this.craftingOpen = true;
+    if (!this.isTouch) {
+      this.expectUnlock = true;
+      document.exitPointerLock();
+    }
+    this.crafting.open(() => {
+      this.craftingOpen = false;
+      if (this.active) this.lockPointer();
+    });
   }
 
   private toggleInventory(): void {
@@ -220,6 +253,7 @@ export class PlayState implements GameState {
       this.inventoryOpen = false;
       UI.hide(UI.inventory);
     }
+    if (this.craftingOpen) this.crafting.close();
     UI.hide(UI.hud);
     UI.hide(UI.debug);
     UI.setPrompt(null);
@@ -248,7 +282,8 @@ export class PlayState implements GameState {
   // ---------- Loop ----------
 
   update(dt: number): void {
-    if (this.inventoryOpen) return; // Spielwelt pausiert bei offenem Inventar
+    // Spielwelt pausiert bei offenem Inventar oder offener Werkbank
+    if (this.inventoryOpen || this.craftingOpen) return;
 
     this.player.update(dt, this.keys);
     this.player.eye(this.eyeTmp);

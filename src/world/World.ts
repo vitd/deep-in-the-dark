@@ -31,6 +31,7 @@ export class World {
     readonly scene: THREE.Scene,
     interaction: InteractionSystem,
     inventory: Inventory,
+    onCraftingTable: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -52,7 +53,7 @@ export class World {
 
     buildCliffs(scene, this.collision);
 
-    const boat = buildBoat(scene, this.collision, interaction);
+    const boat = buildBoat(scene, this.collision, interaction, { onCraftingTable });
     this.ladders = boat.ladders;
 
     // Innenbeleuchtung der offenen Räume

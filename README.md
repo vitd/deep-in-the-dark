@@ -43,6 +43,19 @@ steigt man automatisch aus, zwischendurch löst die Leertaste.
   wird der Blick dunkel und die Nahrung schwindet schnell.
 - Beide Werte werden im HUD links unten angezeigt.
 
+## Crafting
+
+In der Kajüte steht ein Tisch — die **Werkbank** (E: Benutzen). Sie
+öffnet ein 3×3-Feld: Items per Klick aus dem Inventar hineinlegen,
+passt die Kombination, erscheint rechts das Ergebnis; ein Klick darauf
+stellt es her. Die Anordnung im Feld ist egal, nur die Mengen zählen.
+
+Rezepte:
+
+| Zutaten | Ergebnis |
+|---|---|
+| 3× Eisen + 2× Holzplanke | Hammer |
+
 ## Intro-Video
 
 Eine Datei `public/assets/intro.mp4` wird beim Start abgespielt

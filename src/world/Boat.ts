@@ -37,10 +37,16 @@ export interface BoatResult {
   ladders: LadderDef[];
 }
 
+export interface BoatHooks {
+  // Wird gerufen, wenn der Spieler die Werkbank (Tisch in der Kajüte) benutzt
+  onCraftingTable: () => void;
+}
+
 export function buildBoat(
   scene: THREE.Scene,
   collision: CollisionWorld,
   interaction: InteractionSystem,
+  hooks: BoatHooks,
 ): BoatResult {
   const origin = new THREE.Vector3(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y, CONFIG.world.boatPos.z);
   const group = new THREE.Group();
@@ -250,6 +256,25 @@ export function buildBoat(
   addBox(ctx, -1.95, DECK_Y + 0.25, -8.6, 0.95, 0.5, 2.0, woodMat);
   addBox(ctx, -1.95, DECK_Y + 0.55, -8.6, 0.85, 0.15, 1.9, new THREE.MeshLambertMaterial({ color: 0xc0b090 }));
   addBox(ctx, -2.1, DECK_Y + 0.9, -6.4, 0.7, 1.8, 0.6, metalMat);
+
+  // Kajüte: Tisch = Werkbank (Crafting, Taste E)
+  const craftTable = new THREE.Group();
+  const tableTop = addBox(ctx, 1.55, DECK_Y + 0.78, -9.0, 1.3, 0.08, 0.95, woodMat);
+  for (const [lx, lz] of [[1.0, -9.4], [2.1, -9.4], [1.0, -8.6], [2.1, -8.6]]) {
+    const leg = addBox(ctx, lx, DECK_Y + 0.37, lz, 0.09, 0.74, 0.09, woodMat, false);
+    craftTable.add(leg);
+  }
+  craftTable.add(tableTop);
+  // etwas Werkzeug-Deko auf dem Tisch
+  const tool1 = addBox(ctx, 1.3, DECK_Y + 0.87, -9.1, 0.35, 0.07, 0.14, metalMat, false);
+  const tool2 = addBox(ctx, 1.85, DECK_Y + 0.87, -8.85, 0.16, 0.07, 0.3, railMat, false);
+  craftTable.add(tool1, tool2);
+  group.add(craftTable);
+  interaction.add({
+    object: craftTable,
+    prompt: STR.useCraftingTable,
+    interact: hooks.onCraftingTable,
+  });
 
   // Kombüse: Arbeitszeile + Herd
   addBox(ctx, -2.05, DECK_Y + 0.45, -3.8, 0.9, 0.9, 3.2, woodMat);

@@ -25,6 +25,10 @@ class UIManagerImpl {
   readonly warnTauchauf = el('warn-tauchauf');
   readonly drownTimer = el('drown-timer');
   readonly death = el('death');
+  readonly crafting = el('crafting');
+  readonly craftGrid = el('craft-grid');
+  readonly craftResult = el('craft-result');
+  readonly craftInvGrid = el('craft-inv-grid');
 
   private toastTimer = 0;
 
@@ -72,7 +76,7 @@ class UIManagerImpl {
   }
 
   hideAllOverlays(): void {
-    for (const e of [this.intro, this.menu, this.options, this.pause, this.hud, this.inventory, this.death]) {
+    for (const e of [this.intro, this.menu, this.options, this.pause, this.hud, this.inventory, this.death, this.crafting]) {
       this.hide(e);
     }
     this.hide(this.underwater);

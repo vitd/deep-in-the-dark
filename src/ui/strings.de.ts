@@ -4,6 +4,9 @@ export const STR = {
   pickUp: 'E: Aufheben',
   climbHint: 'Leiter: Blick hoch/runter · Leertaste: loslassen',
   catchFish: 'E: Fangen',
+  useCraftingTable: 'E: Werkbank benutzen',
+  craftingTitle: 'Werkbank',
+  crafted: (name: string) => `${name} hergestellt!`,
   gegessen: (name: string, plus: number) => `${name} gegessen (+${plus} Nahrung)`,
   erschoepft: 'Du bist erschöpft – iss etwas!',
   nahrung: 'Nahrung',
@@ -22,5 +25,6 @@ export const STR = {
     grossfisch: 'Großer Fisch',
     gold: 'Gold',
     fass: 'Fass',
+    hammer: 'Hammer',
   } as Record<string, string>,
 } as const;

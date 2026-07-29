@@ -2,7 +2,14 @@ import { CONFIG } from '../config';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 
-export type ItemId = 'holzplanke' | 'eisen' | 'fisch' | 'grossfisch' | 'gold' | 'fass';
+export type ItemId =
+  | 'holzplanke'
+  | 'eisen'
+  | 'fisch'
+  | 'grossfisch'
+  | 'gold'
+  | 'fass'
+  | 'hammer';
 
 interface Slot {
   id: ItemId;
@@ -16,7 +23,17 @@ const ICON_TEXT: Record<ItemId, string> = {
   grossfisch: 'GF',
   gold: 'Au',
   fass: 'FS',
+  hammer: 'Hm',
 };
+
+// Baut das Icon-Element eines Items (auch vom Crafting-Panel genutzt)
+export function makeItemIcon(id: ItemId): HTMLElement {
+  const icon = document.createElement('div');
+  icon.className = `inv-icon ${id}`;
+  icon.textContent = ICON_TEXT[id];
+  icon.title = STR.itemNames[id];
+  return icon;
+}
 
 export class Inventory {
   private readonly slots: (Slot | null)[] = new Array(CONFIG.inventory.slots).fill(null);
@@ -64,23 +81,24 @@ export class Inventory {
   }
 
   renderUI(): void {
-    const grid = UI.inventoryGrid;
+    this.renderInto(UI.inventoryGrid, (id) => this.onUse?.(id));
+  }
+
+  // Rendert die Slots in ein beliebiges Grid (Inventar-Overlay oder
+  // Crafting-Panel) mit eigenem Klick-Verhalten.
+  renderInto(grid: HTMLElement, onClick: (id: ItemId) => void): void {
     grid.innerHTML = '';
     for (const slot of this.slots) {
       const cell = document.createElement('div');
       cell.className = 'inv-slot';
       if (slot) {
-        const icon = document.createElement('div');
-        icon.className = `inv-icon ${slot.id}`;
-        icon.textContent = ICON_TEXT[slot.id];
-        icon.title = STR.itemNames[slot.id];
         const count = document.createElement('div');
         count.className = 'inv-count';
         count.textContent = String(slot.count);
-        cell.append(icon, count);
+        cell.append(makeItemIcon(slot.id), count);
         const id = slot.id;
         cell.classList.add('usable');
-        cell.addEventListener('click', () => this.onUse?.(id));
+        cell.addEventListener('click', () => onClick(id));
       }
       grid.append(cell);
     }
