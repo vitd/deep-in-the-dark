@@ -114,7 +114,7 @@ export class PlayState implements GameState {
     }
     if (e.code === 'KeyT' && this.debugEnabled) {
       // Debug-Teleport aufs Deck
-      this.player.position.set(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y + 1.6, CONFIG.world.boatPos.z + 10);
+      this.player.position.set(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y + 1.6, CONFIG.world.boatPos.z + 11.2);
       this.player.state = PlayerState.Walk;
     }
     if (e.code === 'KeyL' && this.debugEnabled) {

@@ -58,12 +58,28 @@ export class CollisionWorld {
         continue;
       }
 
+      if (axis === 'x' || axis === 'z') {
+        // Flache Stufen (Decksprung, Treppen) automatisch hinaufsteigen,
+        // statt an ihnen hängen zu bleiben
+        const stepUp = b.max.y - pos.y;
+        if (stepUp > 0 && stepUp <= 0.42) {
+          pos.y = b.max.y;
+          min.set(pos.x - radius, pos.y, pos.z - radius);
+          max.set(pos.x + radius, pos.y + height, pos.z + radius);
+          continue;
+        }
+      }
       if (axis === 'x') {
-        const push = moved > 0 ? b.min.x - max.x : b.max.x - min.x;
-        pos.x += push;
+        // Ohne eigene Bewegung (z. B. schleifende Berührung beim
+        // Entlanggehen an einer schrägen Wand) über die kleinere
+        // Durchdringung hinausschieben – nie durch die Wand hindurch.
+        const penNeg = b.min.x - max.x; // Schub in -x
+        const penPos = b.max.x - min.x; // Schub in +x
+        pos.x += moved > 0 ? penNeg : moved < 0 ? penPos : Math.abs(penNeg) < penPos ? penNeg : penPos;
       } else if (axis === 'z') {
-        const push = moved > 0 ? b.min.z - max.z : b.max.z - min.z;
-        pos.z += push;
+        const penNeg = b.min.z - max.z;
+        const penPos = b.max.z - min.z;
+        pos.z += moved > 0 ? penNeg : moved < 0 ? penPos : Math.abs(penNeg) < penPos ? penNeg : penPos;
       } else {
         if (moved <= 0) {
           // von oben auf eine Box gefallen

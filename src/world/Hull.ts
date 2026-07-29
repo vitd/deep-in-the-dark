@@ -17,18 +17,31 @@ export const KEEL_Y = -1.7;
 // der Aufbau (x bis ±2.95, z -11.15..8.15) überall im Rumpf liegt.
 const STATIONS: { z: number; w: number }[] = [
   { z: -16.5, w: 0.10 },
-  { z: -15.6, w: 0.95 },
-  { z: -14.2, w: 1.95 },
-  { z: -12.6, w: 2.75 },
-  { z: -11.2, w: 3.20 },
-  { z: -9.0, w: 3.62 },
-  { z: -6.0, w: 3.90 },
+  { z: -15.6, w: 1.05 },
+  { z: -14.2, w: 2.15 },
+  { z: -12.6, w: 2.9 },
+  { z: -11.2, w: 3.5 },
+  { z: -9.0, w: 3.78 },
+  { z: -6.0, w: 3.92 },
   { z: -1.0, w: 4.00 },
   { z: 4.0, w: 3.94 },
-  { z: 8.0, w: 3.74 },
-  { z: 11.0, w: 3.56 },
+  { z: 8.0, w: 3.76 },
+  { z: 11.0, w: 3.58 },
   { z: 12.5, w: 3.5 }, // breites Heck: Spiegelheck statt Spitze
 ];
+
+// Decksprung (Sheer): Zum Bug steigt die Decklinie deutlich an – das
+// typische Fischerboot-Profil. Im Bereich des Deckshauses (z >= -9.5)
+// bleibt das Deck eben, damit die Räume unverändert funktionieren.
+export function sheer(z: number): number {
+  if (z >= -9.5) return 0;
+  const f = Math.min(1, (-9.5 - z) / (-9.5 - BOW_Z));
+  return f * f * 0.95;
+}
+
+export function deckHeight(z: number): number {
+  return DECK_Y + sheer(z);
+}
 
 export function halfWidth(z: number): number {
   if (z <= STATIONS[0].z) return STATIONS[0].w;
@@ -81,20 +94,21 @@ export function stationZ(i: number): number {
 }
 
 // Deckskante an Längsposition z (die Linie, auf der Reling und Deck enden)
-export function deckEdge(z: number): { x: number; z: number } {
-  return { x: halfWidth(z) * SECTION[0].f, z: z + rake(z, DECK_Y) };
+export function deckEdge(z: number): { x: number; y: number; z: number } {
+  const y = deckHeight(z);
+  return { x: halfWidth(z) * SECTION[0].f, y, z: z + rake(z, y) };
 }
 
 function ringAt(z: number): THREE.Vector3[] {
   const w = halfWidth(z);
+  const top = deckHeight(z);
   const pts: THREE.Vector3[] = [];
+  const yOf = (i: number) => (i === 0 ? top : SECTION[i].y);
   for (let i = 0; i < SECTION.length; i++) {
-    const s = SECTION[i];
-    pts.push(new THREE.Vector3(-s.f * w, s.y, z + rake(z, s.y)));
+    pts.push(new THREE.Vector3(-SECTION[i].f * w, yOf(i), z + rake(z, yOf(i))));
   }
   for (let i = SECTION.length - 2; i >= 0; i--) {
-    const s = SECTION[i];
-    pts.push(new THREE.Vector3(s.f * w, s.y, z + rake(z, s.y)));
+    pts.push(new THREE.Vector3(SECTION[i].f * w, yOf(i), z + rake(z, yOf(i))));
   }
   return pts;
 }
@@ -161,10 +175,10 @@ export function buildDeckMesh(material: THREE.Material): THREE.Mesh {
     const e0 = deckEdge(stationZ(i));
     const e1 = deckEdge(stationZ(i + 1));
     const p = [
-      new THREE.Vector3(-e0.x, DECK_Y, e0.z),
-      new THREE.Vector3(e0.x, DECK_Y, e0.z),
-      new THREE.Vector3(e1.x, DECK_Y, e1.z),
-      new THREE.Vector3(-e1.x, DECK_Y, e1.z),
+      new THREE.Vector3(-e0.x, e0.y, e0.z),
+      new THREE.Vector3(e0.x, e0.y, e0.z),
+      new THREE.Vector3(e1.x, e1.y, e1.z),
+      new THREE.Vector3(-e1.x, e1.y, e1.z),
     ];
     const quad = [p[0], p[1], p[2], p[0], p[2], p[3]];
     for (const q of quad) {
@@ -186,9 +200,11 @@ export interface Gap {
   z1: number;
 }
 
-// Höhe des Schanzkleids: vorn höher (Sprung), achtern niedriger
+// Höhe des Schanzkleids: durch den Decksprung liefert der Rumpf vorn
+// schon Höhe, das Schanzkleid selbst bleibt fast konstant und wird
+// achtern (Arbeitsdeck) niedriger.
 export function bulwarkHeight(z: number): number {
-  if (z < -11) return 0.95 + Math.min(1, (-11 - z) / 5.5) * 0.55;
+  if (z < -11) return 0.95 + Math.min(1, (-11 - z) / 5.5) * 0.15;
   if (z > 4) return Math.max(0.62, 0.95 - ((z - 4) / 8) * 0.33);
   return 0.95;
 }
@@ -209,11 +225,11 @@ export function buildBulwarkMesh(material: THREE.Material, gaps: Gap[]): THREE.M
       const e1 = deckEdge(z1);
       const h0 = bulwarkHeight(z0);
       const h1 = bulwarkHeight(z1);
-      // Oberkante leicht nach innen geneigt
-      const a = new THREE.Vector3(side * e0.x, DECK_Y, e0.z);
-      const b = new THREE.Vector3(side * e0.x * 0.94, DECK_Y + h0, e0.z);
-      const c = new THREE.Vector3(side * e1.x * 0.94, DECK_Y + h1, e1.z);
-      const d = new THREE.Vector3(side * e1.x, DECK_Y, e1.z);
+      // Oberkante leicht nach innen geneigt; Basis folgt dem Decksprung
+      const a = new THREE.Vector3(side * e0.x, e0.y, e0.z);
+      const b = new THREE.Vector3(side * e0.x * 0.94, e0.y + h0, e0.z);
+      const c = new THREE.Vector3(side * e1.x * 0.94, e1.y + h1, e1.z);
+      const d = new THREE.Vector3(side * e1.x, e1.y, e1.z);
       const v0 = (i / SEGMENTS) * 7;
       const v1 = ((i + 1) / SEGMENTS) * 7;
       const quad: [THREE.Vector3, number, number][] = [
@@ -253,28 +269,58 @@ export function hullCollisionBoxes(gaps: Gap[]): HullBox[] {
     const w = Math.max(e0.x, e1.x);
     const za = Math.min(e0.z, e1.z);
     const zb = Math.max(e0.z, e1.z);
-    // Rumpfscheibe: Oberseite ist das begehbare Deck
+    // Rumpfscheibe: Oberseite ist das begehbare Deck (folgt dem Sprung –
+    // der Spieler steigt die flachen Stufen über die Step-Up-Logik hoch)
+    const top = Math.min(e0.y, e1.y);
     boxes.push({
       cx: 0,
-      cy: (KEEL_Y + DECK_Y) / 2,
+      cy: (KEEL_Y + top) / 2,
       cz: (za + zb) / 2,
       sx: w * 2,
-      sy: DECK_Y - KEEL_Y,
+      sy: top - KEEL_Y,
       sz: Math.max(0.05, zb - za),
     });
     // Schanzkleid als schmale Wände
     for (const side of [-1, 1] as const) {
       if (inGap(side, z0, gaps) || inGap(side, z1, gaps)) continue;
       const h = (bulwarkHeight(z0) + bulwarkHeight(z1)) / 2;
+      // schlank halten, damit der Gang neben dem Deckshaus passierbar bleibt
       boxes.push({
-        cx: side * ((e0.x + e1.x) / 2 - 0.08),
-        cy: DECK_Y + h / 2,
+        cx: side * ((e0.x + e1.x) / 2 - 0.04),
+        cy: top + h / 2,
         cz: (za + zb) / 2,
-        sx: 0.24,
+        sx: 0.16,
         sy: h,
         sz: Math.max(0.05, zb - za),
       });
     }
   }
   return boxes;
+}
+
+// ---- Weißer Scheuerleisten-Streifen entlang der Deckskante ----
+// Das klassische Fischerboot-Merkmal: ein heller Streifen, der der
+// geschwungenen Decklinie folgt und sie sichtbar macht.
+export function buildStrakeMesh(material: THREE.Material): THREE.Mesh {
+  const pos: number[] = [];
+  const uv: number[] = [];
+  for (const side of [-1, 1] as const) {
+    for (let i = 0; i < SEGMENTS; i++) {
+      const e0 = deckEdge(stationZ(i));
+      const e1 = deckEdge(stationZ(i + 1));
+      const a = new THREE.Vector3(side * e0.x * 1.012, e0.y - 0.02, e0.z);
+      const b = new THREE.Vector3(side * e0.x * 1.012, e0.y - 0.28, e0.z);
+      const c = new THREE.Vector3(side * e1.x * 1.012, e1.y - 0.28, e1.z);
+      const d = new THREE.Vector3(side * e1.x * 1.012, e1.y - 0.02, e1.z);
+      for (const p of [a, b, c, a, c, d]) {
+        pos.push(p.x, p.y, p.z);
+        uv.push(p.z / 4, p.y);
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, material);
 }

@@ -33,8 +33,8 @@ const GOLD_SPOTS = [
 // Fässer: Weltkoordinaten. Deck-Fässer stehen auf dem Boot
 // (Boot bei x -28, Deck y 1.5).
 const BARREL_DECK = [
-  { x: -31.2, y: 1.85, z: 5.5 },
-  { x: -25.2, y: 1.85, z: 9.2 },
+  { x: -29.8, y: 1.85, z: 10.9 },
+  { x: -25.6, y: 1.85, z: 10.2 },
 ];
 const BARREL_FLOAT = [
   { x: -34, z: -8 }, { x: -42, z: 8 }, { x: -37, z: 20 },
