@@ -10,6 +10,7 @@ import { isTouchDevice, TouchControls } from '../systems/TouchControls';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { World } from '../world/World';
+import { DeathState } from './DeathState';
 import { GameState } from './GameState';
 import { PauseState } from './PauseState';
 
@@ -112,6 +113,10 @@ export class PlayState implements GameState {
       // Debug-Teleport aufs Deck
       this.player.position.set(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y + 1.6, CONFIG.world.boatPos.z + 10);
       this.player.state = PlayerState.Walk;
+    }
+    if (e.code === 'KeyL' && this.debugEnabled) {
+      // Debug: Luftnot simulieren
+      this.stats.luft = Math.min(this.stats.luft, 8);
     }
     if (e.code === 'KeyF' && this.debugEnabled) {
       // Debug-Teleport zum nächsten Fisch
@@ -216,6 +221,9 @@ export class PlayState implements GameState {
     UI.hide(UI.debug);
     UI.setPrompt(null);
     UI.hide(UI.underwater);
+    UI.hide(UI.warnTauchauf);
+    UI.hide(UI.drownTimer);
+    this.game.canvas.style.filter = '';
   }
 
   // Endgültiges Aufräumen beim Rückweg ins Hauptmenü.
@@ -256,8 +264,11 @@ export class PlayState implements GameState {
     this.player.speedFactor = this.stats.exhausted ? CONFIG.stats.erschoepftTempo : 1;
     UI.setBar(UI.barNahrung, this.stats.nahrung);
     UI.setBar(UI.barLuft, this.stats.luft);
-    // Vignette bei knapper Luft (ab 40 zunehmend dunkler)
-    UI.setLowAir(this.stats.luft < 40 ? (1 - this.stats.luft / 40) * 0.9 : 0);
+    this.updateAirEffects(eyesUnderwater);
+    if (this.stats.drowned) {
+      this.game.setState(new DeathState(this.game, this));
+      return;
+    }
     if (this.stats.exhausted) {
       this.exhaustedToastTimer -= dt;
       if (this.exhaustedToastTimer <= 0) {
@@ -274,6 +285,25 @@ export class PlayState implements GameState {
     if (this.debugEnabled) this.updateDebug(dt);
   }
 
+  // Sicht-Effekte bei Luftnot: Vignette < 25, Unschärfe < 10,
+  // Warnung + Ertrinken-Countdown bei 0.
+  private updateAirEffects(underwater: boolean): void {
+    const S = CONFIG.stats;
+    const luft = this.stats.luft;
+
+    UI.setLowAir(luft < S.luftVignetteAb ? 1 - luft / S.luftVignetteAb : 0);
+
+    const blur = luft < S.luftUnschaerfeAb ? (1 - luft / S.luftUnschaerfeAb) * 4 : 0;
+    this.game.canvas.style.filter = blur > 0.05 ? `blur(${blur.toFixed(1)}px)` : '';
+
+    const drowning = underwater && luft <= 0 && this.stats.drownTimer !== null;
+    UI.setVisible(UI.warnTauchauf, drowning);
+    UI.setVisible(UI.drownTimer, drowning);
+    if (drowning) {
+      UI.drownTimer.textContent = String(Math.ceil(this.stats.drownTimer!));
+    }
+  }
+
   private updateDebug(dt: number): void {
     this.fpsFrames++;
     this.fpsTime += dt;
@@ -287,7 +317,8 @@ export class PlayState implements GameState {
       `FPS ${this.fps}\n` +
       `Zustand ${this.player.state}\n` +
       `Pos ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}\n` +
-      `T: Deck · F: Fisch`;
+      `Luft ${this.stats.luft.toFixed(1)} Ertrinken ${this.stats.drownTimer?.toFixed(1) ?? '-'}\n` +
+      `T: Deck · F: Fisch · L: Luftnot`;
   }
 
   render(): void {

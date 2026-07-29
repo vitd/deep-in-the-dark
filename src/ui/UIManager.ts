@@ -22,6 +22,9 @@ class UIManagerImpl {
   readonly barNahrung = el('bar-nahrung');
   readonly barLuft = el('bar-luft');
   readonly lowair = el('lowair');
+  readonly warnTauchauf = el('warn-tauchauf');
+  readonly drownTimer = el('drown-timer');
+  readonly death = el('death');
 
   private toastTimer = 0;
 
@@ -41,8 +44,15 @@ class UIManagerImpl {
     bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
   }
 
+  // Vignette bei Luftnot: je höher severity (0..1), desto enger das Blickfeld
   setLowAir(severity: number): void {
-    this.lowair.style.opacity = String(Math.max(0, Math.min(1, severity)));
+    const s = Math.max(0, Math.min(1, severity));
+    this.lowair.style.opacity = String(s > 0 ? 0.55 + s * 0.45 : 0);
+    if (s > 0) {
+      const inner = 35 - s * 25; // transparenter Kern schrumpft
+      const outer = 100 - s * 45;
+      this.lowair.style.background = `radial-gradient(ellipse at center, transparent ${inner}%, rgba(2, 6, 10, 0.96) ${outer}%)`;
+    }
   }
 
   setPrompt(text: string | null): void {
@@ -62,7 +72,7 @@ class UIManagerImpl {
   }
 
   hideAllOverlays(): void {
-    for (const e of [this.intro, this.menu, this.options, this.pause, this.hud, this.inventory]) {
+    for (const e of [this.intro, this.menu, this.options, this.pause, this.hud, this.inventory, this.death]) {
       this.hide(e);
     }
     this.hide(this.underwater);

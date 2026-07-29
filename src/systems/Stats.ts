@@ -18,6 +18,9 @@ export class Stats {
   private pendingFood = 0;
   private pendingRate = 0;
 
+  // Countdown bei Luft 0 unter Wasser; null = nicht am Ertrinken
+  drownTimer: number | null = null;
+
   update(dt: number, state: PlayerState, moving: boolean, underwater: boolean): void {
     // Essen langsam anrechnen (animiertes Auffüllen des Balkens)
     if (this.pendingFood > 0) {
@@ -52,10 +55,18 @@ export class Stats {
       this.luft = Math.max(0, this.luft - S.luftDrain * dt);
       if (this.luft <= 0) {
         this.nahrung = Math.max(0, this.nahrung - S.ohneLuftNahrungDrain * dt);
+        // Ertrinken-Countdown starten bzw. weiterzählen
+        if (this.drownTimer === null) this.drownTimer = S.ertrinkenSekunden;
+        this.drownTimer = Math.max(0, this.drownTimer - dt);
       }
     } else {
       this.luft = Math.min(100, this.luft + S.luftRegen * dt);
+      this.drownTimer = null;
     }
+  }
+
+  get drowned(): boolean {
+    return this.drownTimer !== null && this.drownTimer <= 0;
   }
 
   eat(amount: number): void {

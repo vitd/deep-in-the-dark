@@ -30,7 +30,6 @@ export const CONFIG = {
     climbSpeed: 1.9,
     gravity: 18,
     jumpSpeed: 5.5,
-    buoyancy: 2.0, // Auftrieb beim Tauchen (m/s²)
     waterAccel: 6.0, // wie schnell die Schwimmgeschwindigkeit erreicht wird
   },
 
@@ -70,6 +69,10 @@ export const CONFIG = {
     // Ohne Luft schwindet die Nahrung schnell; ohne Nahrung wird man langsam
     ohneLuftNahrungDrain: 5,
     erschoepftTempo: 0.5,
+    // Sicht-Effekte und Ertrinken bei Luftnot
+    luftVignetteAb: 25, // Vignette wird ab diesem Wert stärker
+    luftUnschaerfeAb: 10, // Bild wird ab diesem Wert unscharf
+    ertrinkenSekunden: 10, // Countdown bei Luft 0
   },
 
   fish: {

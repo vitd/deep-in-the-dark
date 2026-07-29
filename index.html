@@ -63,6 +63,8 @@
         <div id="crosshair"></div>
         <div id="prompt" class="hidden"></div>
         <div id="lowair"></div>
+        <div id="drown-timer" class="hidden"></div>
+        <div id="warn-tauchauf" class="hidden">TAUCH AUF!</div>
         <!-- Touch-Steuerung (nur auf Touch-Geräten sichtbar) -->
         <div id="touch-ui" class="hidden">
           <div id="look-area"></div>
@@ -91,6 +93,15 @@
         <div class="inv-hint">Fisch anklicken zum Essen · Tab: Schließen</div>
         <div class="menu-buttons">
           <button id="btn-inv-close">Schließen</button>
+        </div>
+      </div>
+
+      <!-- Tod -->
+      <div id="death" class="overlay hidden">
+        <h2 class="death-title">DU BIST ERTRUNKEN</h2>
+        <div class="menu-buttons">
+          <button id="btn-death-retry">Neuer Versuch</button>
+          <button id="btn-death-menu">Zum Hauptmenü</button>
         </div>
       </div>
 

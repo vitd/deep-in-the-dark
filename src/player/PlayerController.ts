@@ -114,10 +114,10 @@ export class PlayerController {
     if (keys.has('Space')) desired.y += 0.8;
     if (desired.lengthSq() > 0) desired.normalize().multiplyScalar(P.diveSpeed * this.speedFactor);
 
-    // träge Annäherung an die Wunschgeschwindigkeit + Auftrieb
+    // träge Annäherung an die Wunschgeschwindigkeit – kein Auftrieb,
+    // Auftauchen nur aktiv per Leertaste oder Blick nach oben + W
     const blend = Math.min(1, dt * P.waterAccel);
     this.velocity.lerp(desired, blend);
-    this.velocity.y += P.buoyancy * dt * (desired.lengthSq() > 0 ? 0.35 : 1);
 
     this.collision.move(this.position, this.velocity.clone().multiplyScalar(dt), P.radius, P.height);
 
