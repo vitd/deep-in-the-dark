@@ -32,6 +32,7 @@ export class TouchControls {
   private readonly lookArea = el('look-area');
   private readonly btnAction = el('btn-touch-action');
   private readonly btnJump = el('btn-touch-jump');
+  private readonly btnDive = el('btn-touch-dive');
   private readonly btnInv = el('btn-touch-inv');
   private readonly btnPause = el('btn-touch-pause');
 
@@ -146,6 +147,15 @@ export class TouchControls {
     this.keys.delete('Space');
   };
 
+  private readonly onDiveDown = (e: TouchEvent) => {
+    e.preventDefault();
+    this.keys.add('KeyC');
+  };
+
+  private readonly onDiveUp = () => {
+    this.keys.delete('KeyC');
+  };
+
   private readonly onInv = (e: TouchEvent) => {
     e.preventDefault();
     this.hooks.onToggleInventory();
@@ -172,6 +182,9 @@ export class TouchControls {
     this.btnJump.addEventListener('touchstart', this.onJumpDown, { passive: false });
     this.btnJump.addEventListener('touchend', this.onJumpUp);
     this.btnJump.addEventListener('touchcancel', this.onJumpUp);
+    this.btnDive.addEventListener('touchstart', this.onDiveDown, { passive: false });
+    this.btnDive.addEventListener('touchend', this.onDiveUp);
+    this.btnDive.addEventListener('touchcancel', this.onDiveUp);
     this.btnInv.addEventListener('touchstart', this.onInv, { passive: false });
     this.btnPause.addEventListener('touchstart', this.onPause, { passive: false });
   }
@@ -181,6 +194,7 @@ export class TouchControls {
     this.resetJoy();
     this.lookTouchId = null;
     this.keys.delete('Space');
+    this.keys.delete('KeyC');
     this.joystick.removeEventListener('touchstart', this.onJoyStart);
     this.joystick.removeEventListener('touchmove', this.onJoyMove);
     this.joystick.removeEventListener('touchend', this.onJoyEnd);
@@ -193,6 +207,9 @@ export class TouchControls {
     this.btnJump.removeEventListener('touchstart', this.onJumpDown);
     this.btnJump.removeEventListener('touchend', this.onJumpUp);
     this.btnJump.removeEventListener('touchcancel', this.onJumpUp);
+    this.btnDive.removeEventListener('touchstart', this.onDiveDown);
+    this.btnDive.removeEventListener('touchend', this.onDiveUp);
+    this.btnDive.removeEventListener('touchcancel', this.onDiveUp);
     this.btnInv.removeEventListener('touchstart', this.onInv);
     this.btnPause.removeEventListener('touchstart', this.onPause);
   }

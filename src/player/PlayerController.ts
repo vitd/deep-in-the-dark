@@ -90,10 +90,13 @@ export class PlayerController {
     move.addScaledVector(this.look.right(this.tmpR), strafe);
     if (move.lengthSq() > 0) move.normalize().multiplyScalar(P.swimSpeed * this.speedFactor);
 
-    // Abtauchen: Taste C oder steil nach unten blicken + vorwärts
+    // Abtauchen: Taste C oder steil nach unten blicken + vorwärts.
+    // Kräftiger Anfangsstoß nach unten, damit der Kopf sicher unter die
+    // Wellen kommt (ohne Auftrieb gibt es keinen Gegendruck).
     if (keys.has('KeyC') || (fwd > 0 && this.look.pitch < -0.55)) {
       this.state = PlayerState.Dive;
-      this.velocity.set(move.x, -1.6, move.z);
+      this.velocity.set(move.x, -P.diveSpeed, move.z);
+      this.position.y -= 0.45;
       return;
     }
 
@@ -105,25 +108,29 @@ export class PlayerController {
     this.collision.move(this.position, move.clone().multiplyScalar(dt), P.radius, P.height);
   }
 
-  // ---- Tauchen: freie 3D-Bewegung mit leichtem Auftrieb ----
+  // ---- Tauchen: freie 3D-Bewegung, kein Auftrieb ----
   private updateDive(dt: number, keys: Set<string>): void {
     const { fwd, strafe } = this.inputAxes(keys);
+    const sinking = keys.has('KeyC');
     const desired = this.tmpMove.set(0, 0, 0);
     desired.addScaledVector(this.look.forward(this.tmpF), fwd);
     desired.addScaledVector(this.look.right(this.tmpR), strafe);
-    if (keys.has('Space')) desired.y += 0.8;
+    // Leertaste: aufwärts, C: abwärts – symmetrisch, damit man ohne
+    // Auftrieb gezielt tiefer kommt
+    if (keys.has('Space')) desired.y += 1;
+    if (sinking) desired.y -= 1;
     if (desired.lengthSq() > 0) desired.normalize().multiplyScalar(P.diveSpeed * this.speedFactor);
 
-    // träge Annäherung an die Wunschgeschwindigkeit – kein Auftrieb,
-    // Auftauchen nur aktiv per Leertaste oder Blick nach oben + W
     const blend = Math.min(1, dt * P.waterAccel);
     this.velocity.lerp(desired, blend);
 
     this.collision.move(this.position, this.velocity.clone().multiplyScalar(dt), P.radius, P.height);
 
-    // Oberfläche durchbrochen?
+    // Auftauchen erst, wenn der Kopf wirklich über die Welle kommt – und
+    // nie, solange aktiv abgetaucht wird. Sonst schnappt der Spieler
+    // direkt unter der Oberfläche ständig zurück ins Oberflächenschwimmen.
     const wave = this.ocean.height(this.position.x, this.position.z);
-    if (this.eyeY() > wave - 0.05) {
+    if (!sinking && this.eyeY() > wave + 0.1) {
       this.state = PlayerState.SwimSurface;
       this.velocity.set(0, 0, 0);
     }

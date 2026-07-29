@@ -253,7 +253,15 @@ input[type='range'] {
 
 #btn-touch-jump {
   right: 118px;
-  bottom: 40px;
+  bottom: 96px;
+  width: 64px;
+  height: 64px;
+  font-size: 26px;
+}
+
+#btn-touch-dive {
+  right: 118px;
+  bottom: 22px;
   width: 64px;
   height: 64px;
   font-size: 26px;
