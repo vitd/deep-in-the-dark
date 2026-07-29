@@ -7,13 +7,21 @@ import { BOAT_LAYOUT, DECK_Y, ROOF_Y } from './boatLayout';
 import { addBox, buildRoom, RoomBuildContext } from './Room';
 import { buildLadderMesh, LadderDef } from './Ladder';
 import { texturedMat } from '../rendering/Textures';
+import {
+  buildBulwarkMesh,
+  buildDeckMesh,
+  buildHullMesh,
+  Gap,
+  halfWidth,
+  hullCollisionBoxes,
+} from './Hull';
 
 // Prozedurales Boot: Rumpf, Deck, Reling, Aufbau mit 7 Räumen (aus
 // boatLayout.ts), zwei Leitern und Motorraum-Props.
 // Die Leitern liefern nur ihre Definition – gegriffen werden sie
 // automatisch vom PlayerController (siehe Ladder.ts).
 
-const hullMat = texturedMat('boat-wall.png', 8, 2, 0xffffff, 1.8);
+const hullMat = texturedMat('boat-wall.png', 3, 5, 0xffffff, 2.3);
 const deckMat = texturedMat('plank.png', 4, 12);
 const roofMat = new THREE.MeshLambertMaterial({ color: 0xb0a890 });
 const railMat = new THREE.MeshLambertMaterial({ color: 0x7a5c40 });
@@ -36,33 +44,37 @@ export function buildBoat(
   const group = new THREE.Group();
   const ctx: RoomBuildContext = { origin, group, collision, interaction };
 
-  // ---- Rumpf & Deck ----
-  // Rumpfkörper (x -4..4, z -12..12, y -1..1.5); Oberseite = Deck.
-  addBox(ctx, 0, 0.25, 0, 8, 2.5, 24, hullMat);
-  const deck = addBox(ctx, 0, 1.53, 0, 8, 0.06, 24, deckMat, false);
-  deck.position.y += 0.0; // rein optische Deckplatte auf dem Rumpf
+  // ---- Rumpf, Deck und Schanzkleid ----
+  // Geformter Rumpf aus Spanten (siehe Hull.ts) statt eines Quaders.
+  // Lücke im Schanzkleid für die Bordleiter (Backbord, Richtung Klippen);
+  // das Heck bleibt offen, damit man ins Wasser springen kann.
+  const gaps: Gap[] = [{ side: -1, z0: 9.3, z1: 10.7 }];
 
-  // Bug: dekorative Keile + einfacher Kollisionsblock
-  const bowCol = addBox(ctx, 0, 0.25, -13.2, 5, 2.5, 2.4, hullMat);
-  bowCol.visible = true;
-  const wedgeGeo = new THREE.BoxGeometry(4.6, 2.5, 3.2);
-  for (const side of [-1, 1]) {
-    const wedge = new THREE.Mesh(wedgeGeo, hullMat);
-    wedge.position.set(origin.x + side * 1.4, origin.y + 0.25, origin.z - 14.2);
-    wedge.rotation.y = side * 0.55;
-    group.add(wedge);
+  const hull = buildHullMesh(hullMat);
+  const deck = buildDeckMesh(deckMat);
+  const bulwark = buildBulwarkMesh(railMat, gaps);
+  for (const mesh of [hull, deck, bulwark]) {
+    mesh.position.copy(origin);
+    group.add(mesh);
   }
 
-  // ---- Reling (mit Lücke an der Bordleiter, Heck offen) ----
-  const railH = 0.9;
-  const railY = DECK_Y + railH / 2;
-  // Backbord: Lücke bei z 9.4..10.6 (Bordleiter, zeigt Richtung Klippen/Spawn)
-  addBox(ctx, -3.96, railY, -1.3, 0.08, railH, 21.4, railMat); // z -12..9.4
-  addBox(ctx, -3.96, railY, 11.3, 0.08, railH, 1.4, railMat); // z 10.6..12
-  // Steuerbord durchgehend
-  addBox(ctx, 3.96, railY, 0, 0.08, railH, 24, railMat);
-  // Bug-Reling
-  addBox(ctx, 0, railY, -11.96, 8, railH, 0.08, railMat);
+  // Kollision folgt der Rumpfform (unsichtbare Quader)
+  for (const b of hullCollisionBoxes(gaps)) {
+    collision.addBox(
+      new THREE.Box3(
+        new THREE.Vector3(
+          origin.x + b.cx - b.sx / 2,
+          origin.y + b.cy - b.sy / 2,
+          origin.z + b.cz - b.sz / 2,
+        ),
+        new THREE.Vector3(
+          origin.x + b.cx + b.sx / 2,
+          origin.y + b.cy + b.sy / 2,
+          origin.z + b.cz + b.sz / 2,
+        ),
+      ),
+    );
+  }
 
   // ---- Räume aus dem Layout ----
   for (const def of BOAT_LAYOUT) {
@@ -76,19 +88,61 @@ export function buildBoat(
   addBox(ctx, 0, 6.525, -9, 5.9, 0.15, 4.3, roofMat); // Brücke
   addBox(ctx, 1.225, 6.525, -5.75, 3.45, 0.15, 2.8, roofMat); // Kartenraum
 
+  // ---- Runde Aufbauten (brechen die kantige Silhouette) ----
+  const cyl = (
+    rTop: number,
+    rBot: number,
+    h: number,
+    x: number,
+    y: number,
+    z: number,
+    mat: THREE.Material,
+    tiltX = 0,
+  ): THREE.Mesh => {
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, 10), mat);
+    mesh.position.set(origin.x + x, origin.y + y, origin.z + z);
+    mesh.rotation.x = tiltX;
+    group.add(mesh);
+    return mesh;
+  };
+
+  // Schornstein auf dem Achterteil des Dachs, leicht nach achtern geneigt
+  cyl(0.42, 0.5, 1.9, 0.9, 5.05, 4.2, metalMat, 0.09);
+  cyl(0.5, 0.5, 0.18, 0.9, 6.03, 4.28, engineMat, 0.09);
+  // Mast auf dem Vordeck mit Rah
+  cyl(0.07, 0.13, 7.2, 0, DECK_Y + 3.6, -13.2, woodMat);
+  addBox(ctx, 0, DECK_Y + 5.6, -13.2, 3.4, 0.09, 0.09, woodMat, false);
+  // Abgerundete Eckpfosten am Deckshaus
+  for (const sx of [-1, 1]) {
+    for (const cz of [-11.1, 8.1]) {
+      cyl(0.17, 0.19, 2.6, sx * 2.9, DECK_Y + 1.25, cz, railMat);
+    }
+  }
+  // Poller am Heck
+  for (const sx of [-1, 1]) {
+    cyl(0.13, 0.15, 0.5, sx * 2.6, DECK_Y + 0.25, 11.4, metalMat);
+  }
+
   // ---- Leitern ----
   const ladders: LadderDef[] = [];
 
   // Bordleiter: vom Wasser aufs Deck (Backbord, z = 10 – der Klippen-
   // und Spawnseite zugewandt, damit der Spieler sie beim Anschwimmen sieht)
   // Der Standpunkt liegt außerhalb des Rumpfs, die Leiter also in +x.
-  buildLadderMesh(ctx, -4.1, 10, -0.9, DECK_Y + 0.2, -1);
+  // x folgt der gekrümmten Bordwand an dieser Längsposition.
+  const ladderZ = 10;
+  const ladderHullX = halfWidth(ladderZ);
+  buildLadderMesh(ctx, -ladderHullX - 0.1, ladderZ, -0.9, DECK_Y + 0.2, -1);
   const seaLadder: LadderDef = {
-    standX: origin.x - 4.55,
-    standZ: origin.z + 10,
+    standX: origin.x - ladderHullX - 0.55,
+    standZ: origin.z + ladderZ,
     bottomY: origin.y - 1.35,
     topY: origin.y + DECK_Y,
-    topExit: new THREE.Vector3(origin.x - 3.3, origin.y + DECK_Y + 0.05, origin.z + 10),
+    topExit: new THREE.Vector3(
+      origin.x - ladderHullX + 0.8,
+      origin.y + DECK_Y + 0.05,
+      origin.z + ladderZ,
+    ),
     bottomState: 'swim',
     face: { x: 1, z: 0 },
   };
