@@ -20,12 +20,17 @@ Dann im Browser öffnen: http://localhost:5173
 | Maus | Umsehen |
 | W A S D | Bewegen / Schwimmen |
 | C oder steil nach unten blicken + W | Abtauchen |
-| Leertaste | Auftauchen (beim Tauchen) / Springen (an Deck) |
-| E | Interagieren (Aufheben, Fangen, Klettern) |
+| Leertaste | Auftauchen (beim Tauchen) / Springen (an Deck) / Leiter loslassen |
+| E | Interagieren (Aufheben, Fangen) |
 | Tab oder I | Inventar |
 | Esc | Pause |
 
-An der Leiter: W/S = hoch/runter klettern.
+**Leitern** braucht man nicht anzuwählen: Wer nah genug davorsteht und
+zur Leiter blickt, greift sie automatisch. Von oben (Deck- bzw.
+Dachkante) genügt der Blick nach unten. Geklettert wird dann allein mit
+der Maus – Blick nach oben steigt auf, Blick nach unten ab, waagerechter
+Blick hält an; je steiler der Blick, desto schneller. Oben und unten
+steigt man automatisch aus, zwischendurch löst die Leertaste.
 
 ## Überleben
 

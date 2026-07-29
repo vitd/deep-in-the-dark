@@ -31,7 +31,6 @@ export class World {
     readonly scene: THREE.Scene,
     interaction: InteractionSystem,
     inventory: Inventory,
-    onClimb: (ladder: LadderDef) => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -53,7 +52,7 @@ export class World {
 
     buildCliffs(scene, this.collision);
 
-    const boat = buildBoat(scene, this.collision, interaction, onClimb);
+    const boat = buildBoat(scene, this.collision, interaction);
     this.ladders = boat.ladders;
 
     // Innenbeleuchtung der offenen Räume

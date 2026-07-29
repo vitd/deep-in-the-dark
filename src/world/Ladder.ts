@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { RoomBuildContext } from './Room';
 
-// Leiter-Mechanik: Der Spieler wird beim Klettern auf standPos (x/z)
-// fixiert und bewegt sich mit W/S zwischen bottomY und topY. Oben wird
+// Leiter-Mechanik: Wer nah genug am Standpunkt steht und zur Leiter
+// blickt, greift sie automatisch (kein Tastendruck). Beim Klettern ist
+// der Spieler auf standPos (x/z) fixiert und bewegt sich zwischen
+// bottomY und topY – die Richtung bestimmt die Blickneigung. Oben wird
 // er auf topExit gesetzt.
 
 export interface LadderDef {
@@ -12,6 +14,10 @@ export interface LadderDef {
   topY: number;
   topExit: THREE.Vector3;
   bottomState: 'swim' | 'walk';
+  // Horizontale Richtung vom Standpunkt zur Leiter – also die Richtung,
+  // in die der Spieler blickt, wenn er sie vor sich hat. Nur wer grob
+  // dorthin schaut, greift die Leiter automatisch.
+  face: { x: number; z: number };
 }
 
 const railMat = new THREE.MeshLambertMaterial({ color: 0x6a5138 });

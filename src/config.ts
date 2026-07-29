@@ -28,6 +28,12 @@ export const CONFIG = {
     swimSpeed: 3.0,
     diveSpeed: 2.7,
     climbSpeed: 1.9,
+    // Leiter: Umkreis um den Leiter-Standpunkt, in dem automatisch
+    // gegriffen wird. Die Kletterrichtung kommt aus der Blickneigung:
+    // bis zur Totzone passiert nichts, ab `climbLookFull` volle Fahrt.
+    climbGrabRadius: 0.9,
+    climbLookDeadzone: 0.15,
+    climbLookFull: 0.55,
     gravity: 18,
     jumpSpeed: 5.5,
     waterAccel: 6.0, // wie schnell die Schwimmgeschwindigkeit erreicht wird

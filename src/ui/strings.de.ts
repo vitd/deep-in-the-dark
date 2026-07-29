@@ -2,7 +2,7 @@
 
 export const STR = {
   pickUp: 'E: Aufheben',
-  climb: 'E: Klettern',
+  climbHint: 'Leiter: Blick hoch/runter · Leertaste: loslassen',
   catchFish: 'E: Fangen',
   gegessen: (name: string, plus: number) => `${name} gegessen (+${plus} Nahrung)`,
   erschoepft: 'Du bist erschöpft – iss etwas!',

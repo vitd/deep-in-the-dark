@@ -51,10 +51,13 @@ export class PlayState implements GameState {
       CONFIG.render.farPlane,
     );
 
-    this.world = new World(this.scene, this.interaction, this.inventory, (ladder) =>
-      this.player.startClimb(ladder),
+    this.world = new World(this.scene, this.interaction, this.inventory);
+    this.player = new PlayerController(
+      this.look,
+      this.world.collision,
+      this.world.ocean,
+      this.world.ladders,
     );
-    this.player = new PlayerController(this.look, this.world.collision, this.world.ocean);
 
     if (this.isTouch) {
       this.touch = new TouchControls(this.keys, this.look, {
@@ -263,7 +266,8 @@ export class PlayState implements GameState {
     // Überlebenswerte: Nahrung (Anstrengung) und Luft (Tauchen)
     const moving =
       this.keys.has('KeyW') || this.keys.has('KeyA') ||
-      this.keys.has('KeyS') || this.keys.has('KeyD');
+      this.keys.has('KeyS') || this.keys.has('KeyD') ||
+      this.player.climbMoving; // Klettern läuft auch ohne Taste
     this.stats.update(dt, this.player.state, moving, eyesUnderwater);
     this.player.speedFactor = this.stats.exhausted ? CONFIG.stats.erschoepftTempo : 1;
     UI.setBar(UI.barNahrung, this.stats.nahrung);
@@ -284,7 +288,10 @@ export class PlayState implements GameState {
     this.world.update(dt);
 
     this.interaction.update(this.camera);
-    UI.setPrompt(this.interaction.promptText());
+    // Wer auf der Leiter hängt, ohne zu klettern, bekommt die
+    // Blicksteuerung erklärt – sobald es losgeht, ist der Hinweis weg.
+    const hanging = this.player.state === PlayerState.Climb && !this.player.climbMoving;
+    UI.setPrompt(hanging ? STR.climbHint : this.interaction.promptText());
 
     if (this.debugEnabled) this.updateDebug(dt);
   }

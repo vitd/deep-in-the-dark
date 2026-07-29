@@ -10,6 +10,8 @@ import { texturedMat } from '../rendering/Textures';
 
 // Prozedurales Boot: Rumpf, Deck, Reling, Aufbau mit 7 Räumen (aus
 // boatLayout.ts), zwei Leitern und Motorraum-Props.
+// Die Leitern liefern nur ihre Definition – gegriffen werden sie
+// automatisch vom PlayerController (siehe Ladder.ts).
 
 const hullMat = texturedMat('boat-wall.png', 8, 2, 0xffffff, 1.8);
 const deckMat = texturedMat('plank.png', 4, 12);
@@ -29,7 +31,6 @@ export function buildBoat(
   scene: THREE.Scene,
   collision: CollisionWorld,
   interaction: InteractionSystem,
-  onClimb: (ladder: LadderDef) => void,
 ): BoatResult {
   const origin = new THREE.Vector3(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y, CONFIG.world.boatPos.z);
   const group = new THREE.Group();
@@ -80,6 +81,7 @@ export function buildBoat(
 
   // Bordleiter: vom Wasser aufs Deck (Backbord, z = 10 – der Klippen-
   // und Spawnseite zugewandt, damit der Spieler sie beim Anschwimmen sieht)
+  // Der Standpunkt liegt außerhalb des Rumpfs, die Leiter also in +x.
   buildLadderMesh(ctx, -4.1, 10, -0.9, DECK_Y + 0.2, -1);
   const seaLadder: LadderDef = {
     standX: origin.x - 4.55,
@@ -88,18 +90,12 @@ export function buildBoat(
     topY: origin.y + DECK_Y,
     topExit: new THREE.Vector3(origin.x - 3.3, origin.y + DECK_Y + 0.05, origin.z + 10),
     bottomState: 'swim',
+    face: { x: 1, z: 0 },
   };
   ladders.push(seaLadder);
-  const seaLadderHitbox = addBox(ctx, -4.15, 0.5, 10, 0.5, 3.4, 0.9, railMat, false);
-  seaLadderHitbox.visible = false;
-  interaction.add({
-    object: seaLadderHitbox,
-    prompt: STR.climb,
-    interact: () => onClimb(seaLadder),
-    maxDistance: 4,
-  });
 
-  // Deckleiter: vom Hauptdeck aufs Oberdeck (Steuerbord-Aufbauwand, z = -2)
+  // Deckleiter: vom Hauptdeck aufs Oberdeck (Steuerbord-Aufbauwand, z = -2).
+  // Man steht außen davor und blickt zur Wand, also in -x.
   buildLadderMesh(ctx, 3.0, -2, DECK_Y, ROOF_Y + 0.15);
   const deckLadder: LadderDef = {
     standX: origin.x + 3.45,
@@ -108,16 +104,9 @@ export function buildBoat(
     topY: origin.y + ROOF_Y,
     topExit: new THREE.Vector3(origin.x + 2.2, origin.y + ROOF_Y + 0.05, origin.z - 2),
     bottomState: 'walk',
+    face: { x: -1, z: 0 },
   };
   ladders.push(deckLadder);
-  const deckLadderHitbox = addBox(ctx, 3.05, 2.9, -2, 0.4, 2.8, 0.8, railMat, false);
-  deckLadderHitbox.visible = false;
-  interaction.add({
-    object: deckLadderHitbox,
-    prompt: STR.climb,
-    interact: () => onClimb(deckLadder),
-    maxDistance: 3.5,
-  });
 
   // ---- Props ----
   // Kajüte: Koje + Spind
@@ -129,9 +118,10 @@ export function buildBoat(
   addBox(ctx, -2.3, DECK_Y + 0.45, -5, 0.9, 0.9, 3.2, woodMat);
   addBox(ctx, -2.3, DECK_Y + 0.975, -4.2, 0.85, 0.15, 0.9, metalMat);
 
-  // Deck: Kisten
-  addBox(ctx, -3.2, DECK_Y + 0.35, 9.5, 0.7, 0.7, 0.7, woodMat);
-  addBox(ctx, -3.2, DECK_Y + 1.0, 9.6, 0.55, 0.55, 0.55, woodMat);
+  // Deck: Kisten (achtern der Bordleiter – der Ausstieg bei z = 10 muss
+  // frei bleiben, sonst steht man beim Aufentern in der Kiste)
+  addBox(ctx, -3.2, DECK_Y + 0.35, 8.8, 0.7, 0.7, 0.7, woodMat);
+  addBox(ctx, -3.2, DECK_Y + 1.0, 8.9, 0.55, 0.55, 0.55, woodMat);
   addBox(ctx, 3.1, DECK_Y + 0.3, -11.2, 0.6, 0.6, 0.6, woodMat);
 
   // ---- Motorraum: Motor (defekt) + Funkgerät (ohne Strom) ----

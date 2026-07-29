@@ -25,8 +25,16 @@ export class PlayerController {
   grounded = false;
   // 1 = normal; < 1 bei Erschöpfung (siehe Stats)
   speedFactor = 1;
+  // true, solange auf der Leiter wirklich Höhe gewonnen/verloren wird
+  // (zählt für den Nahrungsverbrauch als Bewegung)
+  climbMoving = false;
 
   private ladder: LadderDef | null = null;
+  // Zuletzt verlassene Leiter: Sie greift nicht sofort wieder zu – sonst
+  // klebt man am Ausstieg fest. Freigabe siehe tryGrabLadder().
+  private released: LadderDef | null = null;
+  // Richtung, in der sie verlassen wurde: -1 unten, +1 oben, 0 losgelassen
+  private releasedDir = 0;
   private readonly tmpF = new THREE.Vector3();
   private readonly tmpR = new THREE.Vector3();
   private readonly tmpMove = new THREE.Vector3();
@@ -35,6 +43,7 @@ export class PlayerController {
     readonly look: MouseLook,
     private readonly collision: CollisionWorld,
     private readonly ocean: Ocean,
+    private readonly ladders: readonly LadderDef[] = [],
   ) {}
 
   eye(out: THREE.Vector3): THREE.Vector3 {
@@ -47,6 +56,8 @@ export class PlayerController {
 
   startClimb(ladder: LadderDef): void {
     this.ladder = ladder;
+    this.released = null;
+    this.releasedDir = 0;
     this.state = PlayerState.Climb;
     this.velocity.set(0, 0, 0);
     this.position.x = ladder.standX;
@@ -55,6 +66,12 @@ export class PlayerController {
   }
 
   update(dt: number, keys: Set<string>): void {
+    this.climbMoving = false;
+    // Leitern greifen automatisch – aber nur aus dem Gehen/Schwimmen
+    // heraus, damit ein Tauchgang neben dem Boot nicht unterbrochen wird.
+    if (this.state === PlayerState.Walk || this.state === PlayerState.SwimSurface) {
+      this.tryGrabLadder();
+    }
     switch (this.state) {
       case PlayerState.SwimSurface:
         this.updateSwimSurface(dt, keys);
@@ -137,27 +154,98 @@ export class PlayerController {
   }
 
   // ---- Leiter ----
+
+  // Automatisches Greifen. Zwei Fälle, damit man nicht versehentlich
+  // hängen bleibt, wenn man am Fuß der Leiter nur vorbeigeht:
+  // - von der Seite: nah dran und grob zur Leiter blickend
+  // - von oben (Deck-/Dachkante): nah dran und nach unten blickend
+  private tryGrabLadder(): void {
+    const near = this.ladderInReach();
+    if (near !== this.released) {
+      // außer Reichweite (oder andere Leiter) – Sperre aufheben
+      this.released = null;
+    } else if (this.releasedDir !== 0 && Math.sign(this.climbDirection()) === -this.releasedDir) {
+      // Der Blick zeigt wieder zurück auf die Leiter: Wer unten
+      // abgestiegen ist und gleich wieder hochschaut, greift sofort
+      // erneut zu, ohne erst weglaufen zu müssen.
+      this.released = null;
+    }
+    if (near && !this.released) this.startClimb(near);
+  }
+
+  private ladderInReach(): LadderDef | null {
+    let best: LadderDef | null = null;
+    let bestDist = P.climbGrabRadius * P.climbGrabRadius;
+    for (const l of this.ladders) {
+      if (this.position.y < l.bottomY - 0.6 || this.position.y > l.topY + 0.4) continue;
+      const dx = this.position.x - l.standX;
+      const dz = this.position.z - l.standZ;
+      const dist = dx * dx + dz * dz;
+      if (dist > bestDist) continue;
+
+      const atTop = this.position.y >= l.topY - 0.35;
+      const fwd = this.look.horizForward(this.tmpF);
+      const wants = atTop
+        ? this.look.pitch <= -P.climbLookDeadzone
+        : fwd.x * l.face.x + fwd.z * l.face.z >= 0.25;
+      if (!wants) continue;
+
+      bestDist = dist;
+      best = l;
+    }
+    return best;
+  }
+
+  // Kletterrichtung allein aus der Blickneigung: leicht nach oben blicken
+  // = langsam hoch, steil = volle Fahrt, waagerecht = hängen bleiben.
+  // Bewusst ohne W/S-Alternative – sonst würde die gedrückte Lauftaste
+  // beim Angreifen der Leiter die Blickrichtung überstimmen.
+  private climbDirection(): number {
+    const pitch = this.look.pitch;
+    const steep = Math.abs(pitch);
+    if (steep <= P.climbLookDeadzone) return 0;
+    const t = Math.min(1, (steep - P.climbLookDeadzone) / (P.climbLookFull - P.climbLookDeadzone));
+    return Math.sign(pitch) * (0.4 + 0.6 * t);
+  }
+
+  private leaveLadder(l: LadderDef, state: PlayerState, dir: number): void {
+    this.state = state;
+    this.velocity.set(0, 0, 0);
+    this.ladder = null;
+    this.released = l;
+    this.releasedDir = dir;
+  }
+
   private updateClimb(dt: number, keys: Set<string>): void {
     const l = this.ladder;
     if (!l) {
       this.state = PlayerState.SwimSurface;
       return;
     }
+    // Leertaste: bewusst loslassen (fällt bzw. schwimmt weiter)
+    if (keys.has('Space')) {
+      this.leaveLadder(l, PlayerState.Walk, 0);
+      return;
+    }
     this.position.x = l.standX;
     this.position.z = l.standZ;
 
-    if (keys.has('KeyW')) this.position.y += P.climbSpeed * this.speedFactor * dt;
-    if (keys.has('KeyS')) this.position.y -= P.climbSpeed * this.speedFactor * dt;
+    const dir = this.climbDirection();
+    this.climbMoving = dir !== 0;
+    this.position.y += dir * P.climbSpeed * this.speedFactor * dt;
 
     if (this.position.y >= l.topY) {
       this.position.copy(l.topExit);
-      this.state = PlayerState.Walk;
-      this.velocity.set(0, 0, 0);
-      this.ladder = null;
+      this.leaveLadder(l, PlayerState.Walk, 1);
     } else if (this.position.y <= l.bottomY) {
-      this.state = l.bottomState === 'swim' ? PlayerState.SwimSurface : PlayerState.Walk;
-      this.velocity.set(0, 0, 0);
-      this.ladder = null;
+      // Unten bleibt man auf der letzten Sprosse stehen; erst der Blick
+      // nach unten steigt wirklich ab. Sonst würde man beim Greifen im
+      // Wellental sofort wieder von der Leiter rutschen.
+      this.position.y = l.bottomY;
+      if (dir < 0) {
+        const next = l.bottomState === 'swim' ? PlayerState.SwimSurface : PlayerState.Walk;
+        this.leaveLadder(l, next, -1);
+      }
     }
   }
 
