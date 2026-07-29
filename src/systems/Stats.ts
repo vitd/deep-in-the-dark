@@ -20,6 +20,9 @@ export class Stats {
 
   // Countdown bei Luft 0 unter Wasser; null = nicht am Ertrinken
   drownTimer: number | null = null;
+  // Einmal ertrunken bleibt ertrunken – sonst könnte ein einzelner
+  // Frame am Wasserspiegel den Tod "verschlucken".
+  private dead = false;
 
   update(dt: number, state: PlayerState, moving: boolean, underwater: boolean): void {
     // Essen langsam anrechnen (animiertes Auffüllen des Balkens)
@@ -58,6 +61,7 @@ export class Stats {
         // Ertrinken-Countdown starten bzw. weiterzählen
         if (this.drownTimer === null) this.drownTimer = S.ertrinkenSekunden;
         this.drownTimer = Math.max(0, this.drownTimer - dt);
+        if (this.drownTimer <= 0) this.dead = true;
       }
     } else {
       this.luft = Math.min(100, this.luft + S.luftRegen * dt);
@@ -66,7 +70,7 @@ export class Stats {
   }
 
   get drowned(): boolean {
-    return this.drownTimer !== null && this.drownTimer <= 0;
+    return this.dead;
   }
 
   eat(amount: number): void {

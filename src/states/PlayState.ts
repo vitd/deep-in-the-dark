@@ -251,9 +251,13 @@ export class PlayState implements GameState {
     this.player.eye(this.eyeTmp);
     this.look.applyTo(this.camera, this.eyeTmp);
 
-    // Über-/Unterwasser-Umschaltung exakt an der Augenhöhe
+    // Über-/Unterwasser: im Tauchzustand gilt der Kopf immer als unter
+    // Wasser (dieser Zustand endet erst, wenn er wirklich auftaucht) –
+    // sonst könnte eine Welle über dem Kopf kurz "aufgetaucht" melden
+    // und dabei Luft auffüllen oder den Ertrinken-Countdown abbrechen.
     const waveAtEye = this.world.ocean.height(this.eyeTmp.x, this.eyeTmp.z);
-    const eyesUnderwater = this.eyeTmp.y < waveAtEye;
+    const eyesUnderwater =
+      this.player.state === PlayerState.Dive || this.eyeTmp.y < waveAtEye;
     this.world.setUnderwater(eyesUnderwater);
 
     // Überlebenswerte: Nahrung (Anstrengung) und Luft (Tauchen)
