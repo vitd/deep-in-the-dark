@@ -6,6 +6,7 @@ import { PlayerController, PlayerState } from '../player/PlayerController';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
 import { Crafting } from '../systems/Crafting';
+import { Hotbar, HOTBAR_SLOTS } from '../systems/Hotbar';
 import { Stats } from '../systems/Stats';
 import { isTouchDevice, TouchControls } from '../systems/TouchControls';
 import { STR } from '../ui/strings.de';
@@ -36,6 +37,7 @@ export class PlayState implements GameState {
   private inventoryOpen = false;
   private readonly crafting = new Crafting(this.inventory);
   private craftingOpen = false;
+  private readonly hotbar = new Hotbar();
   private expectUnlock = false;
   private active = false;
   private disposed = false;
@@ -74,19 +76,28 @@ export class PlayState implements GameState {
       });
     }
 
-    // Klick auf einen Inventar-Slot: Fische kann man essen.
+    // Klick auf einen Inventar-Slot: Item ins Schnellinventar verschieben
     this.inventory.onUse = (id) => {
+      if (this.hotbar.add(id)) {
+        this.inventory.consume(id);
+        this.renderHotbarOverlay();
+      } else {
+        UI.toast(STR.hotbarFull);
+      }
+    };
+
+    // Taste 1-6 bzw. Antippen eines Hotbar-Slots: Essbares wird gegessen
+    this.hotbar.onUse = (id) => {
       const plus =
         id === 'fisch'
           ? CONFIG.stats.nahrungProFisch
           : id === 'grossfisch'
             ? CONFIG.stats.nahrungProGrossfisch
             : 0;
-      if (plus === 0) return;
-      if (this.inventory.consume(id)) {
-        this.stats.eat(plus);
-        UI.toast(STR.gegessen(STR.itemNames[id], plus));
-      }
+      if (plus === 0) return false; // nicht essbar: nur auswählen
+      this.stats.eat(plus);
+      UI.toast(STR.gegessen(STR.itemNames[id], plus));
+      return true;
     };
 
     // Spawn: schwimmend nahe der Klippen, Blick Richtung Boot (+x)
@@ -123,6 +134,14 @@ export class PlayState implements GameState {
     if (e.code === 'KeyE' && !this.inventoryOpen) {
       this.interaction.interact();
       return;
+    }
+    // Tasten 1-6: Schnellinventar benutzen
+    if (!this.inventoryOpen && e.code.startsWith('Digit')) {
+      const n = parseInt(e.code.slice(5), 10);
+      if (n >= 1 && n <= HOTBAR_SLOTS) {
+        this.hotbar.use(n - 1);
+        return;
+      }
     }
     if (e.code === 'KeyB' && this.debugEnabled) {
       // Debug: Material für den Hammer ins Inventar legen
@@ -208,6 +227,7 @@ export class PlayState implements GameState {
     UI.setVisible(UI.inventory, this.inventoryOpen);
     if (this.inventoryOpen) {
       this.inventory.renderUI();
+      this.renderHotbarOverlay();
       if (!this.isTouch) {
         this.expectUnlock = true;
         document.exitPointerLock();
@@ -215,6 +235,20 @@ export class PlayState implements GameState {
     } else {
       this.lockPointer();
     }
+  }
+
+  // Schnellinventar-Zeile im Inventar-Overlay: Klick nimmt zurück
+  private renderHotbarOverlay(): void {
+    this.hotbar.renderOverlay((index) => {
+      const id = this.hotbar.peek(index);
+      if (!id) return;
+      if (this.inventory.add(id)) {
+        this.hotbar.removeOne(index);
+        this.renderHotbarOverlay();
+      } else {
+        UI.toast(STR.inventoryFull);
+      }
+    });
   }
 
   // ---------- Zustands-Lebenszyklus ----------
@@ -228,6 +262,7 @@ export class PlayState implements GameState {
     this.game.canvas.addEventListener('click', this.onCanvasClick);
     document.getElementById('btn-inv-close')!.addEventListener('click', this.onInvClose);
     this.look.attach();
+    this.hotbar.renderHUD();
     this.lockPointer();
     if (this.isTouch && this.touch) {
       UI.show(document.getElementById('touch-ui')!);

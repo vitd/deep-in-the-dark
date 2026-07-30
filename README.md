@@ -35,9 +35,12 @@ steigt man automatisch aus, zwischendurch löst die Leertaste.
 ## Überleben
 
 - **Nahrung (0–100):** Bewegung (Schwimmen, Tauchen, Gehen, Klettern)
-  kostet 1 Punkt pro 10 Sekunden. Fische fangen (E) und im Inventar
-  anklicken zum Essen (+35, großer Fisch +70; wird über 3 Sekunden
-  animiert angerechnet). Bei 0 bist du erschöpft und langsam.
+  kostet 1 Punkt pro 10 Sekunden. Fische fangen (E), ins Schnellinventar
+  legen und mit Taste 1–6 essen (+35, großer Fisch +70; wird über
+  3 Sekunden animiert angerechnet). Bei 0 bist du erschöpft und langsam.
+- **Schnellinventar:** 6 Slots am unteren Bildschirmrand. Im Inventar
+  (Tab) verschiebt ein Klick Items dorthin und zurück; die Tasten 1–6
+  benutzen den jeweiligen Slot.
 - **Luft (0–100):** Tauchen verbraucht 3 Punkte pro Sekunde; an der
   Oberfläche regeneriert die Luft in 8 Sekunden vollständig. Ohne Luft
   wird der Blick dunkel und die Nahrung schwindet schnell.

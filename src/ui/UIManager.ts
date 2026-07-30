@@ -29,6 +29,8 @@ class UIManagerImpl {
   readonly craftGrid = el('craft-grid');
   readonly craftResult = el('craft-result');
   readonly craftInvGrid = el('craft-inv-grid');
+  readonly hotbar = el('hotbar');
+  readonly invHotbarGrid = el('inv-hotbar-grid');
 
   private toastTimer = 0;
 

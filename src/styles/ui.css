@@ -485,6 +485,69 @@ body.touch-mode #stats {
   color: #6a8a90;
 }
 
+/* ------- Schnellinventar (Hotbar) ------- */
+#hotbar {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.hotbar-slot {
+  width: 54px;
+  height: 54px;
+  position: relative;
+  background: rgba(16, 38, 46, 0.75);
+}
+
+.hotbar-slot.selected {
+  border-color: #ffe9a8;
+  box-shadow: 3px 3px 0 #051418, 0 0 0 1px #ffe9a8;
+}
+
+.hotbar-num {
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  font-size: 11px;
+  color: #6a8a90;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.hotbar-slot .inv-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+.inv-subtitle {
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: #bfe0d8;
+  text-shadow: 2px 2px 0 #051418;
+  margin-top: 6px;
+}
+
+#inv-hotbar-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 58px);
+  grid-template-rows: 58px;
+  gap: 6px;
+}
+
+#inv-hotbar-grid .inv-slot {
+  width: 58px;
+  height: 58px;
+}
+
+/* Auf Touch-Geräten rückt die Hotbar hoch über die Buttons */
+body.touch-mode #hotbar {
+  bottom: 10px;
+}
+
 /* ------- Werkbank (Crafting) ------- */
 #crafting {
   background: rgba(4, 10, 16, 0.85);

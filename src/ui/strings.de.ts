@@ -17,6 +17,7 @@ export const STR = {
   loadNotAvailable: 'Spiel laden ist noch nicht verfügbar.',
   quitBrowserHint: 'Zum Beenden bitte den Browser-Tab schließen.',
   inventoryFull: 'Inventar voll!',
+  hotbarFull: 'Schnellinventar voll!',
   pickedUp: (name: string) => `${name} +1`,
   itemNames: {
     holzplanke: 'Holzplanke',
