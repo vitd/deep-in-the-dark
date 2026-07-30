@@ -151,10 +151,14 @@ export function buildHullMesh(material: THREE.Material): THREE.Mesh {
     const c = new THREE.Vector3();
     for (const p of ring) c.add(p);
     c.multiplyScalar(1 / ring.length);
-    for (let j = 0; j < RING - 1; j++) {
+    // WICHTIG: einmal ganz herum (mit Wrap-Around) – sonst bleibt oben
+    // zwischen den beiden Deckskanten ein offener Schlitz im Spiegel
+    for (let j = 0; j < RING; j++) {
+      const a = ring[j];
+      const b = ring[(j + 1) % RING];
       push(c, 0.5, 0.5);
-      push(ring[flip ? j : j + 1], 0, 1);
-      push(ring[flip ? j + 1 : j], 1, 1);
+      push(flip ? a : b, 0, 1);
+      push(flip ? b : a, 1, 1);
     }
   };
   capRing(rings[SEGMENTS], false); // Heckspiegel
