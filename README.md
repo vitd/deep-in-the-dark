@@ -23,6 +23,7 @@ Dann im Browser öffnen: http://localhost:5173
 | Leertaste | Auftauchen (beim Tauchen) / Springen (an Deck) / Leiter loslassen |
 | E | Interagieren (Aufheben, Fangen) |
 | Tab oder I | Inventar |
+| 1–6 | Schnellinventar benutzen (Fisch essen) / auswählen |
 | Esc | Pause |
 
 **Leitern** braucht man nicht anzuwählen: Wer nah genug davorsteht und
