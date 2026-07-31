@@ -21,6 +21,9 @@ class UIManagerImpl {
   readonly debug = el('debug');
   readonly barNahrung = el('bar-nahrung');
   readonly barLuft = el('bar-luft');
+  readonly barLeben = el('bar-leben');
+  readonly damageFlashEl = el('damage-flash');
+  readonly deathTitle = el('death-title');
   readonly lowair = el('lowair');
   readonly warnTauchauf = el('warn-tauchauf');
   readonly drownTimer = el('drown-timer');
@@ -44,6 +47,17 @@ class UIManagerImpl {
 
   setVisible(e: HTMLElement, visible: boolean): void {
     e.classList.toggle('hidden', !visible);
+  }
+
+  private flashTimer = 0;
+
+  // Kurzer roter Blitz (Fade-in/out) bei einer Verletzung
+  damageFlash(): void {
+    this.damageFlashEl.classList.add('hit');
+    window.clearTimeout(this.flashTimer);
+    this.flashTimer = window.setTimeout(() => {
+      this.damageFlashEl.classList.remove('hit');
+    }, 220);
   }
 
   setBar(bar: HTMLElement, value: number): void {

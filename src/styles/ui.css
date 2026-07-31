@@ -332,6 +332,11 @@ body.touch-mode #stats {
   transition: width 0.15s linear;
 }
 
+.stat-fill.leben {
+  background: #c84a3c;
+  box-shadow: inset 0 -4px 0 #96281e;
+}
+
 .stat-fill.nahrung {
   background: #d8883c;
   box-shadow: inset 0 -4px 0 #a8611e;
@@ -340,6 +345,21 @@ body.touch-mode #stats {
 .stat-fill.luft {
   background: #4d9ac8;
   box-shadow: inset 0 -4px 0 #2b6a96;
+}
+
+/* Roter Verletzungs-Blitz bei Treffern */
+#damage-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(180, 20, 10, 0.35) 0%, rgba(140, 10, 5, 0.75) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+#damage-flash.hit {
+  opacity: 1;
+  transition: opacity 0.1s ease-in;
 }
 
 /* Vignette bei Luftnot: Hintergrund wird per JS enger gezogen */

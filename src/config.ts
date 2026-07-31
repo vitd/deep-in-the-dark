@@ -95,6 +95,22 @@ export const CONFIG = {
     avoid: { minX: -33.5, maxX: -22.5, minZ: -16, maxZ: 13 },
   },
 
+  // Der Hai: einer, aggressiv, nur im Wasser gefährlich
+  shark: {
+    size: 3.2,
+    speed: 3.4, // Angriffs-Tempo
+    patrolSpeed: 1.1,
+    aggroRadius: 15, // ab dieser Distanz nimmt er den Spieler ins Visier
+    attackRange: 1.8, // Biss-Distanz
+    swingRange: 3.0, // Reichweite des Hammerschlags
+    damage: 30,
+    retreatSeconds: 6, // Pause nach einem Biss
+    repelSeconds: 18, // Pause nach Hammer-Abwehr
+    minY: -10,
+    maxY: -1.0,
+    spawn: { x: -46, y: -6, z: -22 },
+  },
+
   // Großer Fisch: seltener, tiefer, ergiebiger
   fishBig: {
     count: 3,

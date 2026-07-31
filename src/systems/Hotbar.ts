@@ -21,6 +21,8 @@ export class Hotbar {
 
   // Rückgabe true = ein Exemplar wurde verbraucht (z. B. gegessen)
   onUse: ((id: ItemId) => boolean) | null = null;
+  // Nach jeder Änderung (Auswahl oder Inhalt) – z. B. fürs Hand-Item
+  onChanged: (() => void) | null = null;
 
   add(id: ItemId): boolean {
     for (const slot of this.slots) {
@@ -85,6 +87,7 @@ export class Hotbar {
       cell.addEventListener('click', () => this.use(i));
       bar.append(cell);
     });
+    this.onChanged?.();
   }
 
   // Zeile im Inventar-Overlay: Klick nimmt das Item zurück ins Inventar

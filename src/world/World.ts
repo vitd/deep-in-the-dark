@@ -10,6 +10,7 @@ import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
 import { Ocean } from './Ocean';
 import { Resources } from './Resources';
+import { Shark } from './Shark';
 import { BOAT_LAYOUT } from './boatLayout';
 
 // Setzt die komplette Spielwelt zusammen und verwaltet den
@@ -21,6 +22,7 @@ export class World {
   readonly ladders: LadderDef[];
   private readonly resources: Resources;
   private readonly fish: FishManager;
+  readonly shark: Shark;
   // Lichter mit Basis-Intensität, damit Unterwasser einheitlich gedimmt wird
   private readonly lights: { light: THREE.Light; base: number }[] = [];
   private readonly fogColor = new THREE.Color(CONFIG.world.fogAbove.color);
@@ -32,6 +34,7 @@ export class World {
     interaction: InteractionSystem,
     inventory: Inventory,
     onCraftingTable: () => void,
+    onSharkBite: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -68,6 +71,7 @@ export class World {
 
     this.resources = new Resources(scene, this.ocean, interaction, inventory);
     this.fish = new FishManager(scene, interaction, inventory);
+    this.shark = new Shark(scene, onSharkBite);
   }
 
   setUnderwater(under: boolean): void {
@@ -90,9 +94,10 @@ export class World {
     return this.fish.nearestFishPos(from);
   }
 
-  update(dt: number): void {
+  update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean): void {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.resources.update();
     this.fish.update(dt);
+    this.shark.update(dt, playerPos, playerInWater);
   }
 }

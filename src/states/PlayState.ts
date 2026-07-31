@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import type { Game } from '../Game';
+import { HeldItem } from '../player/HeldItem';
 import { MouseLook } from '../player/MouseLook';
 import { PlayerController, PlayerState } from '../player/PlayerController';
 import { InteractionSystem } from '../systems/Interaction';
@@ -38,6 +39,7 @@ export class PlayState implements GameState {
   private readonly crafting = new Crafting(this.inventory);
   private craftingOpen = false;
   private readonly hotbar = new Hotbar();
+  private readonly heldItem: HeldItem;
   private expectUnlock = false;
   private active = false;
   private disposed = false;
@@ -56,9 +58,18 @@ export class PlayState implements GameState {
       CONFIG.render.farPlane,
     );
 
-    this.world = new World(this.scene, this.interaction, this.inventory, () =>
-      this.openCrafting(),
+    this.world = new World(
+      this.scene,
+      this.interaction,
+      this.inventory,
+      () => this.openCrafting(),
+      () => this.onSharkBite(),
     );
+
+    // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
+    this.scene.add(this.camera);
+    this.heldItem = new HeldItem(this.camera);
+    this.hotbar.onChanged = () => this.heldItem.setItem(this.hotbar.selectedItem);
     this.player = new PlayerController(
       this.look,
       this.world.collision,
@@ -132,7 +143,12 @@ export class PlayState implements GameState {
       return;
     }
     if (e.code === 'KeyE' && !this.inventoryOpen) {
-      this.interaction.interact();
+      if (this.interaction.current) {
+        this.interaction.interact();
+      } else {
+        // nichts anvisiert: mit dem Hammer zuschlagen (auch für Touch)
+        this.swingHammer();
+      }
       return;
     }
     // Tasten 1-6: Schnellinventar benutzen
@@ -144,11 +160,17 @@ export class PlayState implements GameState {
       }
     }
     if (e.code === 'KeyB' && this.debugEnabled) {
-      // Debug: Material für den Hammer ins Inventar legen
+      // Debug: Material für den Hammer + fertiger Hammer
       for (let i = 0; i < 3; i++) this.inventory.add('eisen');
       this.inventory.add('holzplanke');
       this.inventory.add('holzplanke');
-      UI.toast('Debug: 3x Eisen, 2x Holzplanke');
+      this.hotbar.add('hammer');
+      UI.toast('Debug: Material + Hammer (Hotbar)');
+    }
+    if (e.code === 'KeyH' && this.debugEnabled) {
+      // Debug: Hai herbeirufen
+      this.world.shark.teleportNear(this.player.position);
+      UI.toast('Debug: Hai ist unterwegs');
     }
     if (e.code === 'KeyT' && this.debugEnabled) {
       // Debug-Teleport aufs Deck
@@ -208,6 +230,29 @@ export class PlayState implements GameState {
     }
   }
 
+  private onSharkBite(): void {
+    this.stats.damage(CONFIG.shark.damage);
+    UI.damageFlash();
+    UI.toast(STR.sharkBite(CONFIG.shark.damage));
+  }
+
+  // Hammerschlag: Hand-Animation + Abwehrversuch gegen den Hai
+  private swingHammer(): void {
+    if (this.hotbar.selectedItem !== 'hammer' || this.heldItem.isSwinging) return;
+    this.heldItem.swing();
+    this.player.eye(this.eyeTmp);
+    const dir = this.look.forward(new THREE.Vector3());
+    if (this.world.shark.trySwing(this.eyeTmp, dir)) {
+      UI.toast(STR.sharkRepelled);
+    }
+  }
+
+  private readonly onMouseDown = (e: MouseEvent) => {
+    if (e.button !== 0 || !this.active || this.inventoryOpen || this.craftingOpen) return;
+    if (!this.isTouch && document.pointerLockElement === null) return; // Klick galt dem Re-Lock
+    this.swingHammer();
+  };
+
   private openCrafting(): void {
     if (this.craftingOpen) return;
     if (this.inventoryOpen) this.toggleInventory();
@@ -258,6 +303,7 @@ export class PlayState implements GameState {
     UI.show(UI.hud);
     document.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('keyup', this.onKeyUp);
+    document.addEventListener('mousedown', this.onMouseDown);
     document.addEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.addEventListener('click', this.onCanvasClick);
     document.getElementById('btn-inv-close')!.addEventListener('click', this.onInvClose);
@@ -281,6 +327,7 @@ export class PlayState implements GameState {
     this.look.detach();
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
+    document.removeEventListener('mousedown', this.onMouseDown);
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.removeEventListener('click', this.onCanvasClick);
     document.getElementById('btn-inv-close')!.removeEventListener('click', this.onInvClose);
@@ -342,9 +389,14 @@ export class PlayState implements GameState {
     this.player.speedFactor = this.stats.exhausted ? CONFIG.stats.erschoepftTempo : 1;
     UI.setBar(UI.barNahrung, this.stats.nahrung);
     UI.setBar(UI.barLuft, this.stats.luft);
+    UI.setBar(UI.barLeben, this.stats.leben);
     this.updateAirEffects(eyesUnderwater);
     if (this.stats.drowned) {
-      this.game.setState(new DeathState(this.game, this));
+      this.game.setState(new DeathState(this.game, this, STR.drownedTitle));
+      return;
+    }
+    if (this.stats.leben <= 0) {
+      this.game.setState(new DeathState(this.game, this, STR.diedTitle));
       return;
     }
     if (this.stats.exhausted) {
@@ -355,7 +407,11 @@ export class PlayState implements GameState {
       }
     }
 
-    this.world.update(dt);
+    // Der Hai interessiert sich nur für Spieler im Wasser
+    const playerInWater =
+      this.player.state === PlayerState.SwimSurface || this.player.state === PlayerState.Dive;
+    this.world.update(dt, this.player.position, playerInWater);
+    this.heldItem.update(dt);
 
     this.interaction.update(this.camera);
     // Wer auf der Leiter hängt, ohne zu klettern, bekommt die

@@ -24,10 +24,12 @@ export class DeathState implements GameState {
   constructor(
     private readonly game: Game,
     private readonly playState: PlayState,
+    private readonly title: string,
   ) {}
 
   enter(): void {
     document.exitPointerLock();
+    UI.deathTitle.textContent = this.title;
     UI.show(UI.death);
     this.btnRetry.addEventListener('click', this.onRetry);
     this.btnMenu.addEventListener('click', this.onMenu);

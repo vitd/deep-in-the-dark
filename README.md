@@ -41,7 +41,15 @@ steigt man automatisch aus, zwischendurch löst die Leertaste.
   3 Sekunden animiert angerechnet). Bei 0 bist du erschöpft und langsam.
 - **Schnellinventar:** 6 Slots am unteren Bildschirmrand. Im Inventar
   (Tab) verschiebt ein Klick Items dorthin und zurück; die Tasten 1–6
-  benutzen den jeweiligen Slot.
+  benutzen den jeweiligen Slot. Das ausgewählte Item hält der Spieler
+  sichtbar in der Hand.
+- **Leben (0–100):** Der Hai zieht pro Biss 30 Leben ab (roter
+  Verletzungs-Blitz). Bei 0 stirbst du.
+- **Der Hai:** Es gibt genau einen. Er patrouilliert im Meer und greift
+  an, sobald du ihm im Wasser zu nahe kommst. Mit dem **Hammer in der
+  Hand** wehrst du ihn ab: Linksklick (bzw. E ohne Ziel) schlägt zu —
+  trifft der Schlag, flieht der Hai für längere Zeit. An Bord bist du
+  sicher.
 - **Luft (0–100):** Tauchen verbraucht 3 Punkte pro Sekunde; an der
   Oberfläche regeneriert die Luft in 8 Sekunden vollständig. Ohne Luft
   wird der Blick dunkel und die Nahrung schwindet schnell.

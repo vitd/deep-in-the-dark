@@ -76,7 +76,12 @@
           <div id="btn-touch-pause" class="touch-btn small">❚❚</div>
         </div>
         <div id="hotbar"></div>
+        <div id="damage-flash"></div>
         <div id="stats">
+          <div class="stat-row">
+            <span class="stat-label">Leben</span>
+            <div class="stat-track"><div id="bar-leben" class="stat-fill leben"></div></div>
+          </div>
           <div class="stat-row">
             <span class="stat-label">Nahrung</span>
             <div class="stat-track"><div id="bar-nahrung" class="stat-fill nahrung"></div></div>
@@ -118,7 +123,7 @@
 
       <!-- Tod -->
       <div id="death" class="overlay hidden">
-        <h2 class="death-title">DU BIST ERTRUNKEN</h2>
+        <h2 id="death-title" class="death-title">DU BIST ERTRUNKEN</h2>
         <div class="menu-buttons">
           <button id="btn-death-retry">Neuer Versuch</button>
           <button id="btn-death-menu">Zum Hauptmenü</button>

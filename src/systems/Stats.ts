@@ -12,6 +12,7 @@ const S = CONFIG.stats;
 export class Stats {
   nahrung = 100;
   luft = 100;
+  leben = 100;
 
   // Noch nicht angerechnete Nahrung aus Essen – wird über
   // essenDauerSekunden animiert auf den Balken aufgeschlagen.
@@ -71,6 +72,10 @@ export class Stats {
 
   get drowned(): boolean {
     return this.dead;
+  }
+
+  damage(amount: number): void {
+    this.leben = Math.max(0, this.leben - amount);
   }
 
   eat(amount: number): void {
