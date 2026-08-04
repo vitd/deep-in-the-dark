@@ -505,6 +505,70 @@ body.touch-mode #stats {
   color: #6a8a90;
 }
 
+/* ------- Motor-Reparatur-Panel ------- */
+#motor-panel {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(5, 15, 20, 0.8);
+  border: 3px solid #2b5a66;
+  box-shadow: 3px 3px 0 #051418;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 280px;
+}
+
+.mp-title {
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: #ffe9a8;
+  text-shadow: 2px 2px 0 #000;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.mp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-label {
+  width: 92px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #e8e0c8;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.mp-track {
+  width: 110px;
+  height: 10px;
+  background: rgba(16, 38, 46, 0.9);
+  border: 2px solid #2b5a66;
+}
+
+.mp-fill {
+  height: 100%;
+  background: #d8883c;
+  transition: width 0.2s linear;
+}
+
+.mp-fill.done {
+  background: #5aa06a;
+}
+
+.mp-num {
+  font-size: 12px;
+  color: #9ab0a8;
+  text-shadow: 1px 1px 0 #000;
+  min-width: 52px;
+  text-align: right;
+}
+
 /* ------- Schnellinventar (Hotbar) ------- */
 #hotbar {
   position: absolute;

@@ -58,6 +58,17 @@ export class Hotbar {
     return this.peek(this.selected);
   }
 
+  // Entnimmt bis zu `max` Stück aus dem ausgewählten Slot
+  takeSelected(max: number): number {
+    const slot = this.slots[this.selected];
+    if (!slot) return 0;
+    const take = Math.min(max, slot.count);
+    slot.count -= take;
+    if (slot.count <= 0) this.slots[this.selected] = null;
+    this.renderHUD();
+    return take;
+  }
+
   // Scrollrad: nur die Auswahl weiterdrehen (mit Umlauf), nichts benutzen
   scroll(direction: 1 | -1): void {
     this.selected = (this.selected + direction + HOTBAR_SLOTS) % HOTBAR_SLOTS;

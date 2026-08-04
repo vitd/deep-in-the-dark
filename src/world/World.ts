@@ -4,7 +4,7 @@ import { CollisionWorld } from '../systems/Collision';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
 import { UI } from '../ui/UIManager';
-import { buildBoat } from './Boat';
+import { buildBoat, MotorRef } from './Boat';
 import { buildCliffs } from './Cliffs';
 import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
@@ -23,6 +23,9 @@ export class World {
   private readonly resources: Resources;
   private readonly fish: FishManager;
   readonly shark: Shark;
+  readonly motor: MotorRef;
+  private motorRunning = false;
+  private motorBaseY = 0;
   // Lichter mit Basis-Intensität, damit Unterwasser einheitlich gedimmt wird
   private readonly lights: { light: THREE.Light; base: number }[] = [];
   private readonly fogColor = new THREE.Color(CONFIG.world.fogAbove.color);
@@ -36,6 +39,8 @@ export class World {
     onCraftingTable: () => void,
     onSharkBite: () => void,
     onFuelFound: (liter: number) => void,
+    motorPrompt: () => string,
+    onMotorInteract: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -57,7 +62,12 @@ export class World {
 
     buildCliffs(scene, this.collision);
 
-    const boat = buildBoat(scene, this.collision, interaction, { onCraftingTable });
+    const boat = buildBoat(scene, this.collision, interaction, {
+      onCraftingTable,
+      motorPrompt,
+      onMotorInteract,
+    });
+    this.motor = boat.motor;
     this.ladders = boat.ladders;
 
     // Innenbeleuchtung der offenen Räume
@@ -100,5 +110,18 @@ export class World {
     this.resources.update();
     this.fish.update(dt);
     this.shark.update(dt, playerPos, playerInWater);
+    if (this.motorRunning) {
+      // leichtes Vibrieren + pulsierendes Glühen des laufenden Motors
+      const t = performance.now() / 1000;
+      this.motor.group.position.y = this.motorBaseY + Math.sin(t * 55) * 0.004;
+      this.motor.light.intensity = 5.2 + Math.sin(t * 9) * 1.4;
+    }
+  }
+
+  startMotor(): void {
+    if (this.motorRunning) return;
+    this.motorRunning = true;
+    this.motorBaseY = this.motor.group.position.y;
+    this.motor.setRunning();
   }
 }

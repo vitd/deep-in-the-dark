@@ -6,6 +6,7 @@ import { STR } from '../ui/strings.de';
 import { BOAT_LAYOUT, DECK_Y, ROOF_Y } from './boatLayout';
 import { addBox, buildRoom, RoomBuildContext } from './Room';
 import { buildLadderMesh, LadderDef } from './Ladder';
+import { loadModel } from '../rendering/Models';
 import { texturedMat } from '../rendering/Textures';
 import {
   buildBulwarkMesh,
@@ -35,11 +36,21 @@ const woodMat = texturedMat('plank.png', 1, 1);
 export interface BoatResult {
   group: THREE.Group;
   ladders: LadderDef[];
+  motor: MotorRef;
 }
 
 export interface BoatHooks {
   // Wird gerufen, wenn der Spieler die Werkbank (Tisch in der Kajüte) benutzt
   onCraftingTable: () => void;
+  // Motor: dynamischer Prompt + Interaktion (Material anwenden)
+  motorPrompt: () => string;
+  onMotorInteract: () => void;
+}
+
+export interface MotorRef {
+  group: THREE.Group;
+  light: THREE.PointLight;
+  setRunning: () => void;
 }
 
 export function buildBoat(
@@ -286,15 +297,64 @@ export function buildBoat(
   addBox(ctx, -2.9, DECK_Y + 1.0, 11.7, 0.55, 0.55, 0.55, woodMat);
   addBox(ctx, 2.0, DECK_Y + 0.35, -10.9, 0.6, 0.6, 0.6, woodMat);
 
-  // ---- Motorraum: Motor (defekt) + Funkgerät (ohne Strom) ----
+  // ---- Motorraum: Motor (motor.glb) + Funkgerät (ohne Strom) ----
+  // Der Motor ist das Reparatur-Ziel: Prompt und Interaktion kommen aus
+  // dem Spielzustand (hooks), das rote Glühen + Licht schaltet
+  // motor.setRunning() ein.
   const engineGroup = new THREE.Group();
-  const engineBlock = addBox(ctx, 0, DECK_Y + 0.6, 6.7, 1.5, 1.2, 2.4, engineMat);
-  const engineTop = addBox(ctx, 0, DECK_Y + 1.35, 6.2, 0.9, 0.3, 1.0, metalMat, false);
-  const pipe1 = addBox(ctx, 0.5, DECK_Y + 1.7, 7.4, 0.15, 1.0, 0.15, metalMat, false);
-  const pipe2 = addBox(ctx, -0.5, DECK_Y + 1.5, 7.6, 0.15, 0.6, 0.15, metalMat, false);
-  engineGroup.add(engineBlock, engineTop, pipe1, pipe2);
-  interaction.add({ object: engineGroup, prompt: STR.engineBroken });
+  engineGroup.position.set(origin.x, origin.y + DECK_Y, origin.z + 6.7);
   group.add(engineGroup);
+  const glowMats: THREE.MeshStandardMaterial[] = [];
+  loadModel('motor.glb', 2.3)
+    .then(({ template }) => {
+      const model = template.clone(true);
+      // Modell sitzt zentriert – auf den Boden stellen
+      const box = new THREE.Box3().setFromObject(model);
+      model.position.y = -box.min.y;
+      engineGroup.add(model);
+      model.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        // Materialien klonen, damit das Glühen nur diesen Motor trifft
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        const cloned = mats.map((m) => {
+          const c = (m as THREE.MeshStandardMaterial).clone();
+          glowMats.push(c);
+          return c;
+        });
+        mesh.material = Array.isArray(mesh.material) ? cloned : cloned[0];
+      });
+    })
+    .catch(() => {
+      const block = addBox(ctx, 0, DECK_Y + 0.6, 6.7, 1.5, 1.2, 2.4, engineMat, false);
+      engineGroup.attach(block);
+    });
+  // Kollision: grober Block an der Motorposition
+  collision.addBox(
+    new THREE.Box3(
+      new THREE.Vector3(origin.x - 0.9, origin.y + DECK_Y, origin.z + 5.5),
+      new THREE.Vector3(origin.x + 0.9, origin.y + DECK_Y + 1.4, origin.z + 7.9),
+    ),
+  );
+  const motorLight = new THREE.PointLight(0xff2a12, 0, 5, 1.8);
+  motorLight.position.set(origin.x, origin.y + DECK_Y + 1.0, origin.z + 6.7);
+  group.add(motorLight);
+  const motor: MotorRef = {
+    group: engineGroup,
+    light: motorLight,
+    setRunning() {
+      for (const m of glowMats) {
+        m.emissive = new THREE.Color(0xb01808);
+        m.emissiveIntensity = 0.9;
+      }
+      motorLight.intensity = 6;
+    },
+  };
+  interaction.add({
+    object: engineGroup,
+    prompt: hooks.motorPrompt,
+    interact: hooks.onMotorInteract,
+  });
 
   const radioGroup = new THREE.Group();
   const radioBody = addBox(ctx, 2.2, DECK_Y + 1.4, 4.8, 0.5, 0.35, 0.7, radioMat, false);
@@ -308,5 +368,5 @@ export function buildBoat(
   addBox(ctx, -2.05, DECK_Y + 0.45, 7.7, 0.9, 0.9, 2.0, woodMat);
 
   scene.add(group);
-  return { group, ladders };
+  return { group, ladders, motor };
 }

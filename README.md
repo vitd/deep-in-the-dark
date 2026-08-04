@@ -77,8 +77,17 @@ Stein bis 5, Nahrung bis 6, Plastik bis 11). Nahrung ist essbar (+25).
 **Treibstoff:** Seltene Treibstofffässer (rote Fässer, weit draußen)
 enthalten 0–76 Liter — beim Aufsammeln wandert der Inhalt in den
 Treibstoff-Vorrat (im Inventar sichtbar), das leere Fass bleibt als
-Item. Für die Motor-Reparatur werden gebraucht: 50 Eisen, 50 Gold,
-20 Nyzerin, 20 Glyzerin und 100 Liter Treibstoff.
+Item.
+
+## Motor-Reparatur
+
+Der Motor im Motorraum braucht: **50 Eisen, 50 Gold, 20 Nyzerin,
+20 Glyzerin und 100 Liter Treibstoff**. Wer ihn anvisiert, sieht die
+Materialliste mit Fortschrittsbalken. Material anwenden: gewünschtes
+Material im Schnellinventar auswählen und **E** am Motor drücken — der
+gewählte Stapel wird verbaut, Treibstoff fließt automatisch aus dem
+Vorrat. Sind alle Balken voll, springt der Motor an: Er brummt und
+glüht rot.
 
 ## Intro-Video
 

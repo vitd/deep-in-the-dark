@@ -6,8 +6,10 @@ import { MouseLook } from '../player/MouseLook';
 import { PlayerController, PlayerState } from '../player/PlayerController';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
+import { Audio } from '../systems/AudioManager';
 import { Crafting } from '../systems/Crafting';
 import { Hotbar, HOTBAR_SLOTS } from '../systems/Hotbar';
+import { MotorMaterial, MotorRepair } from '../systems/MotorRepair';
 import { Stats } from '../systems/Stats';
 import { isTouchDevice, TouchControls } from '../systems/TouchControls';
 import { STR } from '../ui/strings.de';
@@ -40,6 +42,7 @@ export class PlayState implements GameState {
   private craftingOpen = false;
   private readonly hotbar = new Hotbar();
   private readonly heldItem: HeldItem;
+  private readonly motorRepair = new MotorRepair();
   private expectUnlock = false;
   private active = false;
   private disposed = false;
@@ -68,6 +71,8 @@ export class PlayState implements GameState {
         this.stats.treibstoff += liter;
         UI.toast(STR.fuelFound(liter));
       },
+      () => (this.motorRepair.complete ? STR.motorRunning : STR.motorApply),
+      () => this.applyToMotor(),
     );
 
     // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
@@ -175,6 +180,16 @@ export class PlayState implements GameState {
       this.hotbar.add('hammer');
       UI.toast('Debug: Material + Hammer + 2 Fässer');
     }
+    if (e.code === 'KeyM' && this.debugEnabled) {
+      // Debug: Motor fast fertig - nur 1 Glyzerin fehlt (liegt in der Hotbar)
+      this.motorRepair.apply('eisen', 50);
+      this.motorRepair.apply('gold', 50);
+      this.motorRepair.apply('nyzerin', 20);
+      this.motorRepair.apply('glyzerin', 19);
+      this.motorRepair.applyFuel(100);
+      this.hotbar.add('glyzerin');
+      UI.toast('Debug: Motor fast fertig - 1 Glyzerin anwenden');
+    }
     if (e.code === 'KeyH' && this.debugEnabled) {
       // Debug: Hai herbeirufen
       this.world.shark.teleportNear(this.player.position);
@@ -235,6 +250,45 @@ export class PlayState implements GameState {
       (result as Promise<void> | undefined)?.catch?.(() => {});
     } catch {
       // Pointer-Lock nicht verfügbar – Spiel bleibt trotzdem bedienbar
+    }
+  }
+
+  // E am Motor: Treibstoff aus dem Vorrat + gewähltes Hotbar-Material anwenden
+  private applyToMotor(): void {
+    const m = this.motorRepair;
+    if (m.complete) return;
+    let didSomething = false;
+
+    // Treibstoff fließt automatisch aus dem Vorrat
+    const fuel = Math.min(this.stats.treibstoff, m.fuelRemaining);
+    if (fuel > 0) {
+      m.applyFuel(fuel);
+      this.stats.treibstoff -= fuel;
+      UI.toast(STR.motorFuelApplied(fuel));
+      didSomething = true;
+    }
+
+    // gewähltes Material aus der Hotbar verbauen
+    const id = this.hotbar.selectedItem;
+    if (id && m.needs(id)) {
+      const want = m.remaining(id as MotorMaterial);
+      const taken = this.hotbar.takeSelected(want);
+      if (taken > 0) {
+        m.apply(id as MotorMaterial, taken);
+        UI.toast(STR.motorApplied(STR.itemNames[id], taken));
+        didSomething = true;
+      }
+    }
+
+    if (!didSomething) {
+      UI.toast(STR.motorNothingToApply);
+    }
+    m.renderPanel();
+
+    if (m.complete) {
+      this.world.startMotor();
+      Audio.startHum();
+      UI.toast(STR.motorComplete);
     }
   }
 
@@ -359,6 +413,8 @@ export class PlayState implements GameState {
     UI.hide(UI.underwater);
     UI.hide(UI.warnTauchauf);
     UI.hide(UI.drownTimer);
+    UI.hide(UI.motorPanel);
+    Audio.stopHum();
     this.game.canvas.style.filter = '';
   }
 
@@ -435,6 +491,11 @@ export class PlayState implements GameState {
     // Blicksteuerung erklärt – sobald es losgeht, ist der Hinweis weg.
     const hanging = this.player.state === PlayerState.Climb && !this.player.climbMoving;
     UI.setPrompt(hanging ? STR.climbHint : this.interaction.promptText());
+
+    // Reparatur-Panel zeigen, solange der Motor anvisiert ist
+    const lookingAtMotor = this.interaction.current?.object === this.world.motor.group;
+    UI.setVisible(UI.motorPanel, lookingAtMotor);
+    if (lookingAtMotor) this.motorRepair.renderPanel();
 
     if (this.debugEnabled) this.updateDebug(dt);
   }
