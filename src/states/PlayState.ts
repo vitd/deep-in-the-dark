@@ -255,6 +255,12 @@ export class PlayState implements GameState {
     }
   }
 
+  private readonly onWheel = (e: WheelEvent) => {
+    if (!this.active || this.inventoryOpen || this.craftingOpen) return;
+    if (e.deltaY === 0) return;
+    this.hotbar.scroll(e.deltaY > 0 ? 1 : -1);
+  };
+
   private readonly onMouseDown = (e: MouseEvent) => {
     if (e.button !== 0 || !this.active || this.inventoryOpen || this.craftingOpen) return;
     if (!this.isTouch && document.pointerLockElement === null) return; // Klick galt dem Re-Lock
@@ -313,6 +319,7 @@ export class PlayState implements GameState {
     document.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('keyup', this.onKeyUp);
     document.addEventListener('mousedown', this.onMouseDown);
+    document.addEventListener('wheel', this.onWheel);
     document.addEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.addEventListener('click', this.onCanvasClick);
     document.getElementById('btn-inv-close')!.addEventListener('click', this.onInvClose);
@@ -337,6 +344,7 @@ export class PlayState implements GameState {
     document.removeEventListener('keydown', this.onKeyDown);
     document.removeEventListener('keyup', this.onKeyUp);
     document.removeEventListener('mousedown', this.onMouseDown);
+    document.removeEventListener('wheel', this.onWheel);
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.removeEventListener('click', this.onCanvasClick);
     document.getElementById('btn-inv-close')!.removeEventListener('click', this.onInvClose);

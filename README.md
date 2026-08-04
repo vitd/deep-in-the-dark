@@ -24,6 +24,7 @@ Dann im Browser öffnen: http://localhost:5173
 | E | Interagieren (Aufheben, Fangen) |
 | Tab oder I | Inventar |
 | 1–6 | Schnellinventar benutzen (Fisch essen) / auswählen |
+| Scrollrad | Schnellinventar-Slot wechseln |
 | Esc | Pause |
 
 **Leitern** braucht man nicht anzuwählen: Wer nah genug davorsteht und

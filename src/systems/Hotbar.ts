@@ -58,6 +58,12 @@ export class Hotbar {
     return this.peek(this.selected);
   }
 
+  // Scrollrad: nur die Auswahl weiterdrehen (mit Umlauf), nichts benutzen
+  scroll(direction: 1 | -1): void {
+    this.selected = (this.selected + direction + HOTBAR_SLOTS) % HOTBAR_SLOTS;
+    this.renderHUD();
+  }
+
   // Taste 1-6 bzw. Antippen: auswählen und ggf. benutzen
   use(index: number): void {
     this.selected = index;
