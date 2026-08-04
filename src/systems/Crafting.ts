@@ -119,10 +119,11 @@ export class Crafting {
     for (const [id, n] of Object.entries(B.fixedYield) as [ItemId, number][]) {
       yields.set(id, n);
     }
-    for (const [id, max] of Object.entries(B.randomLoot) as [ItemId, number][]) {
-      const n = Math.floor(Math.random() * (max + 1));
-      if (n > 0) yields.set(id, (yields.get(id) ?? 0) + n);
-    }
+    // Jedes Fass enthält genau EINE zufällige Ressourcen-Sorte (1..max)
+    const lootEntries = Object.entries(B.randomLoot) as [ItemId, number][];
+    const [lootId, lootMax] = lootEntries[Math.floor(Math.random() * lootEntries.length)];
+    const n = 1 + Math.floor(Math.random() * lootMax);
+    yields.set(lootId, (yields.get(lootId) ?? 0) + n);
 
     // rechter Slot zeigt kurz das zerlegte Fass, links liegt die Ausbeute
     let i = 0;

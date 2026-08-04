@@ -70,8 +70,8 @@ Rezepte:
 
 **Fässer zerlegen:** Ein Klick auf ein Fass legt es in den rechten
 Slot; die Ausbeute erscheint links im Feld — immer 4 Planken + 4 Eisen,
-dazu der Zufallsinhalt (bis zu 3 Nyzerin, 3 Glyzerin, 3 Gold, 5 Stein,
-6 Nahrung, 11 Plastik). Nahrung ist essbar (+25).
+dazu genau eine zufällige Ressourcen-Sorte (Nyzerin/Glyzerin/Gold bis 3,
+Stein bis 5, Nahrung bis 6, Plastik bis 11). Nahrung ist essbar (+25).
 
 **Treibstoff:** Seltene Treibstofffässer (rote Fässer, weit draußen)
 enthalten 0–76 Liter — beim Aufsammeln wandert der Inhalt in den
