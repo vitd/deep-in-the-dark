@@ -68,6 +68,17 @@ Rezepte:
 |---|---|
 | 3× Eisen + 2× Holzplanke | Hammer |
 
+**Fässer zerlegen:** Ein Klick auf ein Fass legt es in den rechten
+Slot; die Ausbeute erscheint links im Feld — immer 4 Planken + 4 Eisen,
+dazu der Zufallsinhalt (bis zu 3 Nyzerin, 3 Glyzerin, 3 Gold, 5 Stein,
+6 Nahrung, 11 Plastik). Nahrung ist essbar (+25).
+
+**Treibstoff:** Seltene Treibstofffässer (rote Fässer, weit draußen)
+enthalten 0–76 Liter — beim Aufsammeln wandert der Inhalt in den
+Treibstoff-Vorrat (im Inventar sichtbar), das leere Fass bleibt als
+Item. Für die Motor-Reparatur werden gebraucht: 50 Eisen, 50 Gold,
+20 Nyzerin, 20 Glyzerin und 100 Liter Treibstoff.
+
 ## Intro-Video
 
 Eine Datei `public/assets/intro.mp4` wird beim Start abgespielt

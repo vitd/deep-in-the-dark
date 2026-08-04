@@ -68,6 +68,7 @@ export const CONFIG = {
     nahrungDrain: { idle: 0, walk: 0.1, swim: 0.1, dive: 0.1, climb: 0.1 },
     nahrungProFisch: 35,
     nahrungProGrossfisch: 70,
+    nahrungProKonserve: 25, // Item "Nahrung" aus Fässern
     // Essen wird über diese Dauer animiert auf den Balken aufgeschlagen
     essenDauerSekunden: 3,
     luftDrain: 3, // pro Sekunde beim Tauchen
@@ -125,6 +126,24 @@ export const CONFIG = {
   inventory: {
     slots: 12,
     maxStack: 16,
+  },
+
+  // Fässer und Treibstoff
+  barrels: {
+    // Zerlegen an der Werkbank: feste Ausbeute + Zufallsinhalt (0..max)
+    fixedYield: { holzplanke: 4, eisen: 4 },
+    randomLoot: { nyzerin: 3, glyzerin: 3, gold: 3, stein: 5, nahrung: 6, plastik: 11 },
+    // Treibstofffass (selten): zufällige Füllung in Litern
+    fuelMaxLiter: 76,
+  },
+
+  // Materialbedarf der Motor-Reparatur (Mechanik folgt)
+  motorRepair: {
+    eisen: 50,
+    gold: 50,
+    nyzerin: 20,
+    glyzerin: 20,
+    treibstoffLiter: 100,
   },
 } as const;
 

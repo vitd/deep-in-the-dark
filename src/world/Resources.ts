@@ -43,6 +43,14 @@ const BARREL_SEABED = [
   { x: -49, z: 8 }, { x: -43, z: -20 }, { x: -30, z: 28 },
 ];
 
+// Treibstofffässer: selten, weit draußen bzw. tief
+const FUEL_BARREL_SEABED = [
+  { x: -52, z: -32 }, { x: -36, z: 42 },
+];
+const FUEL_BARREL_FLOAT = [
+  { x: -44, z: -30 },
+];
+
 interface FloatingItem {
   obj: THREE.Object3D;
   phase: number;
@@ -56,6 +64,7 @@ export class Resources {
     private readonly ocean: Ocean,
     private readonly interaction: InteractionSystem,
     private readonly inventory: Inventory,
+    private readonly onFuelFound: (liter: number) => void,
   ) {
     // Holzplanken (einfache Boxen mit Planken-Textur, treiben)
     for (const [i, spot] of PLANK_SPOTS.entries()) {
@@ -92,6 +101,54 @@ export class Resources {
       );
       group.rotation.x = i % 2 === 0 ? Math.PI / 2 - 0.2 : 0; // teils umgekippt
     }
+
+    // Treibstofffässer: beim Aufsammeln wird die zufällige Füllung
+    // (0..max Liter) dem Vorrat gutgeschrieben, das leere Fass bleibt
+    // als normales Fass-Item (zerlegbar an der Werkbank)
+    for (const [i, spot] of FUEL_BARREL_SEABED.entries()) {
+      this.spawnFuelBarrel(spot.x, CONFIG.world.seabedY + 0.35, spot.z, i * 1.9);
+    }
+    for (const [i, spot] of FUEL_BARREL_FLOAT.entries()) {
+      const group = this.spawnFuelBarrel(spot.x, 0, spot.z, i * 0.7);
+      group.rotation.x = Math.PI / 2 - 0.1;
+      this.floaters.push({ obj: group, phase: 2.2 });
+    }
+  }
+
+  private spawnFuelBarrel(x: number, y: number, z: number, yaw: number): THREE.Group {
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    group.rotation.y = yaw;
+    this.scene.add(group);
+    loadModel('barrel-fuel.glb', 0.75)
+      .then(({ template }) => {
+        if (group.parent) group.add(template.clone(true));
+      })
+      .catch(() => {
+        const box = new THREE.Mesh(
+          new THREE.BoxGeometry(0.6, 0.75, 0.6),
+          new THREE.MeshLambertMaterial({ color: 0x8a2a20 }),
+        );
+        if (group.parent) group.add(box);
+      });
+    const entry: Interactable = {
+      object: group,
+      prompt: STR.pickUp,
+      interact: () => {
+        if (!this.inventory.add('fass')) {
+          UI.toast(STR.inventoryFull);
+          return;
+        }
+        this.scene.remove(group);
+        this.interaction.remove(entry);
+        const idx = this.floaters.findIndex((f) => f.obj === group);
+        if (idx >= 0) this.floaters.splice(idx, 1);
+        const liter = Math.floor(Math.random() * (CONFIG.barrels.fuelMaxLiter + 1));
+        this.onFuelFound(liter);
+      },
+    };
+    this.interaction.add(entry);
+    return group;
   }
 
   // Erzeugt eine leere Gruppe an der Zielposition, registriert sie als

@@ -9,7 +9,12 @@ export type ItemId =
   | 'grossfisch'
   | 'gold'
   | 'fass'
-  | 'hammer';
+  | 'hammer'
+  | 'nyzerin'
+  | 'glyzerin'
+  | 'stein'
+  | 'nahrung'
+  | 'plastik';
 
 interface Slot {
   id: ItemId;
@@ -24,6 +29,11 @@ const ICON_TEXT: Record<ItemId, string> = {
   gold: 'Au',
   fass: 'FS',
   hammer: 'Hm',
+  nyzerin: 'Ny',
+  glyzerin: 'Gl',
+  stein: 'St',
+  nahrung: 'Na',
+  plastik: 'Pl',
 };
 
 // Baut das Icon-Element eines Items (auch vom Crafting-Panel genutzt)

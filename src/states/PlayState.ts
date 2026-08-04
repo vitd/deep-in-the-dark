@@ -64,6 +64,10 @@ export class PlayState implements GameState {
       this.inventory,
       () => this.openCrafting(),
       () => this.onSharkBite(),
+      (liter) => {
+        this.stats.treibstoff += liter;
+        UI.toast(STR.fuelFound(liter));
+      },
     );
 
     // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
@@ -104,7 +108,9 @@ export class PlayState implements GameState {
           ? CONFIG.stats.nahrungProFisch
           : id === 'grossfisch'
             ? CONFIG.stats.nahrungProGrossfisch
-            : 0;
+            : id === 'nahrung'
+              ? CONFIG.stats.nahrungProKonserve
+              : 0;
       if (plus === 0) return false; // nicht essbar: nur auswählen
       this.stats.eat(plus);
       UI.toast(STR.gegessen(STR.itemNames[id], plus));
@@ -160,12 +166,14 @@ export class PlayState implements GameState {
       }
     }
     if (e.code === 'KeyB' && this.debugEnabled) {
-      // Debug: Material für den Hammer + fertiger Hammer
+      // Debug: Material, Hammer und Fässer zum Testen
       for (let i = 0; i < 3; i++) this.inventory.add('eisen');
       this.inventory.add('holzplanke');
       this.inventory.add('holzplanke');
+      this.inventory.add('fass');
+      this.inventory.add('fass');
       this.hotbar.add('hammer');
-      UI.toast('Debug: Material + Hammer (Hotbar)');
+      UI.toast('Debug: Material + Hammer + 2 Fässer');
     }
     if (e.code === 'KeyH' && this.debugEnabled) {
       // Debug: Hai herbeirufen
@@ -273,6 +281,7 @@ export class PlayState implements GameState {
     if (this.inventoryOpen) {
       this.inventory.renderUI();
       this.renderHotbarOverlay();
+      UI.fuelLine.textContent = STR.fuelLabel(this.stats.treibstoff);
       if (!this.isTouch) {
         this.expectUnlock = true;
         document.exitPointerLock();

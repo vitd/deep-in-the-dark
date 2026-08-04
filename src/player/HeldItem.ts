@@ -12,6 +12,15 @@ const MODEL_FILES: Partial<Record<ItemId, string>> = {
   fass: 'barrel.glb',
   fisch: 'fish.glb',
   grossfisch: 'fish-big.glb',
+  nyzerin: 'nyzerine.glb',
+  glyzerin: 'glyzerine.glb',
+};
+
+// Items ohne eigenes Modell: einfacher farbiger Würfel in der Hand
+const BOX_COLORS: Partial<Record<ItemId, number>> = {
+  stein: 0x8a8a8a,
+  nahrung: 0xc8a040,
+  plastik: 0xc8d4dc,
 };
 
 function makeHammerMesh(): THREE.Group {
@@ -57,6 +66,13 @@ export class HeldItem {
       this.anchor.add(makeHammerMesh());
     } else if (id === 'holzplanke') {
       this.anchor.add(makePlankMesh());
+    } else if (BOX_COLORS[id] !== undefined) {
+      this.anchor.add(
+        new THREE.Mesh(
+          new THREE.BoxGeometry(0.2, 0.2, 0.2),
+          new THREE.MeshLambertMaterial({ color: BOX_COLORS[id] }),
+        ),
+      );
     } else {
       const file = MODEL_FILES[id];
       if (!file) return;

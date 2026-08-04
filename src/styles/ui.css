@@ -626,6 +626,32 @@ body.touch-mode #hotbar {
   box-shadow: inset 0 -6px 0 #8a6a44;
 }
 
+.inv-icon.nyzerin {
+  background: #8a5aa0;
+  box-shadow: inset 0 -6px 0 #64387a;
+}
+
+.inv-icon.glyzerin {
+  background: #5aa06a;
+  box-shadow: inset 0 -6px 0 #38784a;
+}
+
+.inv-icon.stein {
+  background: #8a8a8a;
+  box-shadow: inset 0 -6px 0 #5c5c5c;
+}
+
+.inv-icon.nahrung {
+  background: #c8a040;
+  box-shadow: inset 0 -6px 0 #967420;
+}
+
+.inv-icon.plastik {
+  background: #c8d4dc;
+  box-shadow: inset 0 -6px 0 #94a4ac;
+  color: #3a4448;
+}
+
 /* ------- Toast / Debug ------- */
 #toast {
   position: fixed;

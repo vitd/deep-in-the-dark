@@ -35,6 +35,7 @@ export class World {
     inventory: Inventory,
     onCraftingTable: () => void,
     onSharkBite: () => void,
+    onFuelFound: (liter: number) => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -69,7 +70,7 @@ export class World {
       scene.add(light);
     }
 
-    this.resources = new Resources(scene, this.ocean, interaction, inventory);
+    this.resources = new Resources(scene, this.ocean, interaction, inventory, onFuelFound);
     this.fish = new FishManager(scene, interaction, inventory);
     this.shark = new Shark(scene, onSharkBite);
   }

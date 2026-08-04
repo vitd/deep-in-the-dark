@@ -13,6 +13,8 @@ export class Stats {
   nahrung = 100;
   luft = 100;
   leben = 100;
+  // Gesammelter Treibstoff in Litern (aus Treibstofffässern)
+  treibstoff = 0;
 
   // Noch nicht angerechnete Nahrung aus Essen – wird über
   // essenDauerSekunden animiert auf den Balken aufgeschlagen.
