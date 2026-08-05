@@ -385,7 +385,7 @@ export function buildBoat(
     object: phoneGroup,
     prompt: STR.pickUp,
     interact: () => {
-      if (!inventory.add('telefon')) {
+      if (!inventory.pickup('telefon')) {
         UI.toast(STR.inventoryFull);
         return;
       }

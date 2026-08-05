@@ -135,7 +135,7 @@ export class Resources {
       object: group,
       prompt: STR.pickUp,
       interact: () => {
-        if (!this.inventory.add('fass')) {
+        if (!this.inventory.pickup('fass')) {
           UI.toast(STR.inventoryFull);
           return;
         }
@@ -186,7 +186,7 @@ export class Resources {
       object: obj,
       prompt: STR.pickUp,
       interact: () => {
-        if (!this.inventory.add(id)) {
+        if (!this.inventory.pickup(id)) {
           UI.toast(STR.inventoryFull);
           return;
         }

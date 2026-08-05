@@ -190,7 +190,7 @@ export class FishManager {
 
   private catchFish(fish: FishEntity): void {
     if (fish.dying !== undefined) return; // zappelt bereits
-    if (!this.inventory.add(fish.species.def.item)) {
+    if (!this.inventory.pickup(fish.species.def.item)) {
       UI.toast(STR.inventoryFull);
       return;
     }

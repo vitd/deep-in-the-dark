@@ -23,6 +23,13 @@ const BOX_COLORS: Partial<Record<ItemId, number>> = {
   plastik: 0xc8d4dc,
 };
 
+// Korrektur-Drehung um die Hochachse: GLB-Modelle schauen in -z, daher
+// zeigen manche Items (z. B. das Telefon) sonst ihre Rückseite in
+// Inventar-Icon und Hand.
+const ROTATE_Y: Partial<Record<ItemId, number>> = {
+  telefon: Math.PI,
+};
+
 // Planken-Material erst nach fertig geladener Textur, damit auch die
 // Icon-Renderings (einmalige Snapshots) die Textur sicher zeigen.
 let plankMatPromise: Promise<THREE.MeshLambertMaterial> | null = null;
@@ -78,5 +85,15 @@ export function buildItemObject(id: ItemId, modelSize: number): Promise<THREE.Ob
 
   const file = MODEL_FILES[id];
   if (!file) return Promise.reject(new Error(`Kein Modell für Item "${id}"`));
-  return loadModel(file, modelSize).then(({ template }) => template.clone(true));
+  return loadModel(file, modelSize).then(({ template }) => {
+    // Klon drehen, nie das gecachte Template (wird auch anderswo genutzt,
+    // z. B. das Telefon an der Wandhalterung im Motorraum)
+    const clone = template.clone(true);
+    const yaw = ROTATE_Y[id];
+    if (yaw === undefined) return clone;
+    const wrapper = new THREE.Group();
+    wrapper.add(clone);
+    wrapper.rotation.y = yaw;
+    return wrapper;
+  });
 }

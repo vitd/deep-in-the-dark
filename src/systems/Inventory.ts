@@ -67,6 +67,16 @@ export class Inventory {
   // Wird vom Spielzustand gesetzt: Klick auf einen Slot mit diesem Item.
   onUse: ((id: ItemId) => void) | null = null;
 
+  // Schnellinventar (vom Spielzustand gesetzt); strukturell typisiert,
+  // um keinen Import-Zyklus mit Hotbar zu erzeugen.
+  hotbar: { add(id: ItemId): boolean } | null = null;
+
+  // Aufsammeln aus der Welt: erst ins Schnellinventar, nur wenn dort
+  // kein Platz ist, ins Inventar. false, wenn beides voll ist.
+  pickup(id: ItemId): boolean {
+    return (this.hotbar?.add(id) ?? false) || this.add(id);
+  }
+
   // Legt ein Item ins Inventar. false, wenn kein Platz mehr ist.
   add(id: ItemId): boolean {
     // erst vorhandene Stapel auffüllen

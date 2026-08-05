@@ -81,6 +81,9 @@ export class PlayState implements GameState {
     this.scene.add(this.camera);
     this.heldItem = new HeldItem(this.camera);
     this.hotbar.onChanged = () => this.heldItem.setItem(this.hotbar.selectedItem);
+    // Aufgesammelte Items landen zuerst im Schnellinventar (siehe
+    // Inventory.pickup), erst bei vollem Schnellinventar im Inventar
+    this.inventory.hotbar = this.hotbar;
     this.player = new PlayerController(
       this.look,
       this.world.collision,
