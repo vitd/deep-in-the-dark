@@ -452,6 +452,19 @@ body.touch-mode #stats {
   color: #0a1418;
 }
 
+/* 3D-Thumbnail des Items; ersetzt den farbigen Buchstaben-Platzhalter */
+.inv-icon.has-image {
+  background: none;
+  box-shadow: none;
+}
+
+.inv-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .inv-icon.holzplanke {
   background: #9c7844;
   box-shadow: inset 0 -6px 0 #7a5c30;

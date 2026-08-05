@@ -1,49 +1,9 @@
 import * as THREE from 'three';
-import { loadModel } from '../rendering/Models';
-import { texturedMat } from '../rendering/Textures';
+import { buildItemObject } from '../rendering/ItemVisuals';
 import { ItemId } from '../systems/Inventory';
 
 // First-Person-Hand: zeigt das im Schnellinventar ausgewählte Item
 // unten rechts im Blickfeld. Der Hammer hat eine Schlag-Animation.
-
-const MODEL_FILES: Partial<Record<ItemId, string>> = {
-  eisen: 'iron.glb',
-  gold: 'gold.glb',
-  fass: 'barrel.glb',
-  fisch: 'fish.glb',
-  grossfisch: 'fish-big.glb',
-  nyzerin: 'nyzerine.glb',
-  glyzerin: 'glyzerine.glb',
-  telefon: 'telephone.glb',
-};
-
-// Items ohne eigenes Modell: einfacher farbiger Würfel in der Hand
-const BOX_COLORS: Partial<Record<ItemId, number>> = {
-  stein: 0x8a8a8a,
-  nahrung: 0xc8a040,
-  plastik: 0xc8d4dc,
-};
-
-function makeHammerMesh(): THREE.Group {
-  const g = new THREE.Group();
-  const handle = new THREE.Mesh(
-    new THREE.BoxGeometry(0.045, 0.42, 0.045),
-    texturedMat('plank.png', 1, 1),
-  );
-  const head = new THREE.Mesh(
-    new THREE.BoxGeometry(0.2, 0.09, 0.09),
-    new THREE.MeshLambertMaterial({ color: 0x5a646c }),
-  );
-  head.position.y = 0.21;
-  g.add(handle, head);
-  return g;
-}
-
-function makePlankMesh(): THREE.Group {
-  const g = new THREE.Group();
-  g.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.2), texturedMat('plank.png', 1, 1)));
-  return g;
-}
 
 export class HeldItem {
   private readonly anchor = new THREE.Group();
@@ -63,27 +23,11 @@ export class HeldItem {
     this.anchor.clear();
     if (!id) return;
 
-    if (id === 'hammer') {
-      this.anchor.add(makeHammerMesh());
-    } else if (id === 'holzplanke') {
-      this.anchor.add(makePlankMesh());
-    } else if (BOX_COLORS[id] !== undefined) {
-      this.anchor.add(
-        new THREE.Mesh(
-          new THREE.BoxGeometry(0.2, 0.2, 0.2),
-          new THREE.MeshLambertMaterial({ color: BOX_COLORS[id] }),
-        ),
-      );
-    } else {
-      const file = MODEL_FILES[id];
-      if (!file) return;
-      const wanted = id;
-      loadModel(file, 0.35)
-        .then(({ template }) => {
-          if (this.current === wanted) this.anchor.add(template.clone(true));
-        })
-        .catch(() => {});
-    }
+    buildItemObject(id, 0.35)
+      .then((obj) => {
+        if (this.current === id) this.anchor.add(obj);
+      })
+      .catch(() => {});
   }
 
   swing(): void {

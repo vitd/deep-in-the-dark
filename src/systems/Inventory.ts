@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { itemIconUrl } from '../rendering/ItemIcons';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 
@@ -22,6 +23,7 @@ interface Slot {
   count: number;
 }
 
+// Buchstaben-Fallback, falls das 3D-Icon nicht gerendert werden kann
 const ICON_TEXT: Record<ItemId, string> = {
   holzplanke: 'H',
   eisen: 'Fe',
@@ -38,12 +40,24 @@ const ICON_TEXT: Record<ItemId, string> = {
   telefon: 'Te',
 };
 
-// Baut das Icon-Element eines Items (auch vom Crafting-Panel genutzt)
+// Baut das Icon-Element eines Items (auch vom Crafting-Panel genutzt):
+// ein offscreen gerendertes Thumbnail des 3D-Modells; solange das noch
+// nicht bereit ist (bzw. bei Fehlern) der Buchstaben-Platzhalter.
 export function makeItemIcon(id: ItemId): HTMLElement {
   const icon = document.createElement('div');
   icon.className = `inv-icon ${id}`;
-  icon.textContent = ICON_TEXT[id];
   icon.title = STR.itemNames[id];
+  icon.textContent = ICON_TEXT[id];
+  itemIconUrl(id).then((url) => {
+    if (!url) return;
+    icon.textContent = '';
+    icon.classList.add('has-image');
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = STR.itemNames[id];
+    img.draggable = false;
+    icon.append(img);
+  });
   return icon;
 }
 
