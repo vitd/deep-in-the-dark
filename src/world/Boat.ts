@@ -369,7 +369,9 @@ export function buildBoat(
     });
 
   const phoneGroup = new THREE.Group();
-  phoneGroup.position.set(origin.x + PHONE_WALL_X - 0.2, origin.y + PHONE_Y, origin.z + PHONE_Z);
+  // 0.2 tiefer als die Halterungsmitte: so sitzt das Telefon ganz in der
+  // Halterung und ist genau durch deren Öffnung sichtbar
+  phoneGroup.position.set(origin.x + PHONE_WALL_X - 0.2, origin.y + PHONE_Y - 0.2, origin.z + PHONE_Z);
   phoneGroup.rotation.y = Math.PI / 2;
   group.add(phoneGroup);
   loadModel('telephone.glb', 0.5)
