@@ -47,8 +47,10 @@ export class PlayState implements GameState {
   private active = false;
   private disposed = false;
 
-  // Debug (?debug in der URL): FPS, Spielerzustand, Kollisions-Helfer
-  private readonly debugEnabled = new URLSearchParams(window.location.search).has('debug');
+  // Cheat-Menü (Taste L) und Debug-Anzeigen – immer verfügbar
+  private cheatsOpen = false;
+  private debugVisible = false;
+  private debugHelpers: THREE.Group | null = null;
   private fpsTime = 0;
   private fpsFrames = 0;
   private fps = 0;
@@ -127,16 +129,147 @@ export class PlayState implements GameState {
     this.player.position.set(s.x, CONFIG.world.seaLevel - 1.3, s.z);
     this.look.yaw = -Math.PI / 2;
 
-    if (this.debugEnabled) {
-      for (const box of this.world.collision.boxes) {
-        this.scene.add(new THREE.Box3Helper(box, 0xffff00));
+  }
+
+  // ---------- Cheat-Menü (Taste L, immer verfügbar) ----------
+
+  private cheatActions(): { label: string; action: () => void }[] {
+    return [
+      {
+        label: 'Debug-Anzeige an/aus (FPS, Position)',
+        action: () => {
+          this.debugVisible = !this.debugVisible;
+          UI.setVisible(UI.debug, this.debugVisible);
+        },
+      },
+      {
+        label: 'Kollisionsboxen an/aus',
+        action: () => {
+          if (!this.debugHelpers) {
+            this.debugHelpers = new THREE.Group();
+            for (const box of this.world.collision.boxes) {
+              this.debugHelpers.add(new THREE.Box3Helper(box, 0xffff00));
+            }
+            this.scene.add(this.debugHelpers);
+          } else {
+            this.debugHelpers.visible = !this.debugHelpers.visible;
+          }
+        },
+      },
+      {
+        label: 'Teleport: aufs Deck',
+        action: () => {
+          this.player.position.set(
+            CONFIG.world.boatPos.x,
+            CONFIG.world.boatPos.y + 1.6,
+            CONFIG.world.boatPos.z + 11.2,
+          );
+          this.player.state = PlayerState.Walk;
+        },
+      },
+      {
+        label: 'Teleport: zum nächsten Fisch',
+        action: () => {
+          const p = this.world.nearestFishPos(this.player.position);
+          if (p) {
+            this.player.position.set(p.x - 2, p.y - 1.2, p.z);
+            this.player.state = PlayerState.Dive;
+          }
+        },
+      },
+      {
+        label: 'Werte auffüllen (Leben, Nahrung, Luft)',
+        action: () => {
+          this.stats.leben = 100;
+          this.stats.nahrung = 100;
+          this.stats.luft = 100;
+          UI.toast('Cheat: Werte aufgefüllt');
+        },
+      },
+      {
+        label: 'Luftnot simulieren (Luft = 8)',
+        action: () => {
+          this.stats.luft = Math.min(this.stats.luft, 8);
+        },
+      },
+      {
+        label: 'Materialpaket (Hammer, Eisen, Planken, 2 Fässer)',
+        action: () => {
+          for (let i = 0; i < 3; i++) this.inventory.add('eisen');
+          this.inventory.add('holzplanke');
+          this.inventory.add('holzplanke');
+          this.inventory.add('fass');
+          this.inventory.add('fass');
+          this.hotbar.add('hammer');
+          UI.toast('Cheat: Material + Hammer + 2 Fässer');
+        },
+      },
+      {
+        label: '+100 L Treibstoff',
+        action: () => {
+          this.stats.treibstoff += 100;
+          UI.toast('Cheat: +100 L Treibstoff');
+        },
+      },
+      {
+        label: 'Motor fast fertig (1 Glyzerin fehlt)',
+        action: () => {
+          this.motorRepair.apply('eisen', 50);
+          this.motorRepair.apply('gold', 50);
+          this.motorRepair.apply('nyzerin', 20);
+          this.motorRepair.apply('glyzerin', 19);
+          this.motorRepair.applyFuel(100);
+          this.hotbar.add('glyzerin');
+          UI.toast('Cheat: Motor fast fertig – 1 Glyzerin anwenden');
+        },
+      },
+      {
+        label: 'Hai herbeirufen',
+        action: () => {
+          this.world.shark.teleportNear(this.player.position);
+          UI.toast('Cheat: Hai ist unterwegs');
+        },
+      },
+    ];
+  }
+
+  private toggleCheats(): void {
+    this.cheatsOpen = !this.cheatsOpen;
+    UI.setVisible(UI.cheats, this.cheatsOpen);
+    if (this.cheatsOpen) {
+      UI.cheatList.innerHTML = '';
+      for (const cheat of this.cheatActions()) {
+        const btn = document.createElement('button');
+        btn.textContent = cheat.label;
+        btn.addEventListener('click', () => {
+          cheat.action();
+          if (this.cheatsOpen) this.toggleCheats();
+        });
+        UI.cheatList.append(btn);
       }
+      if (!this.isTouch) {
+        this.expectUnlock = true;
+        document.exitPointerLock();
+      }
+    } else {
+      this.lockPointer();
     }
   }
 
   // ---------- Eingabe ----------
 
   private readonly onKeyDown = (e: KeyboardEvent) => {
+    if (this.cheatsOpen) {
+      if (e.code === 'Escape' || e.code === 'KeyL') {
+        e.preventDefault();
+        this.toggleCheats();
+      }
+      return;
+    }
+    if (e.code === 'KeyL' && !this.inventoryOpen && !this.craftingOpen) {
+      this.toggleCheats();
+      return;
+    }
     if (this.craftingOpen) {
       if (e.code === 'Escape' || e.code === 'Tab' || e.code === 'KeyE') {
         e.preventDefault();
@@ -170,48 +303,6 @@ export class PlayState implements GameState {
         return;
       }
     }
-    if (e.code === 'KeyB' && this.debugEnabled) {
-      // Debug: Material, Hammer und Fässer zum Testen
-      for (let i = 0; i < 3; i++) this.inventory.add('eisen');
-      this.inventory.add('holzplanke');
-      this.inventory.add('holzplanke');
-      this.inventory.add('fass');
-      this.inventory.add('fass');
-      this.hotbar.add('hammer');
-      UI.toast('Debug: Material + Hammer + 2 Fässer');
-    }
-    if (e.code === 'KeyM' && this.debugEnabled) {
-      // Debug: Motor fast fertig - nur 1 Glyzerin fehlt (liegt in der Hotbar)
-      this.motorRepair.apply('eisen', 50);
-      this.motorRepair.apply('gold', 50);
-      this.motorRepair.apply('nyzerin', 20);
-      this.motorRepair.apply('glyzerin', 19);
-      this.motorRepair.applyFuel(100);
-      this.hotbar.add('glyzerin');
-      UI.toast('Debug: Motor fast fertig - 1 Glyzerin anwenden');
-    }
-    if (e.code === 'KeyH' && this.debugEnabled) {
-      // Debug: Hai herbeirufen
-      this.world.shark.teleportNear(this.player.position);
-      UI.toast('Debug: Hai ist unterwegs');
-    }
-    if (e.code === 'KeyT' && this.debugEnabled) {
-      // Debug-Teleport aufs Deck
-      this.player.position.set(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y + 1.6, CONFIG.world.boatPos.z + 11.2);
-      this.player.state = PlayerState.Walk;
-    }
-    if (e.code === 'KeyL' && this.debugEnabled) {
-      // Debug: Luftnot simulieren
-      this.stats.luft = Math.min(this.stats.luft, 8);
-    }
-    if (e.code === 'KeyF' && this.debugEnabled) {
-      // Debug-Teleport zum nächsten Fisch
-      const p = this.world.nearestFishPos(this.player.position);
-      if (p) {
-        this.player.position.set(p.x - 2, p.y - 1.2, p.z);
-        this.player.state = PlayerState.Dive;
-      }
-    }
     this.keys.add(e.code);
   };
 
@@ -226,13 +317,17 @@ export class PlayState implements GameState {
       this.expectUnlock = false;
       return;
     }
-    if (this.active && !this.inventoryOpen && !this.craftingOpen) {
+    if (this.active && !this.inventoryOpen && !this.craftingOpen && !this.cheatsOpen) {
       this.game.setState(new PauseState(this.game, this));
     }
   };
 
   private readonly onInvClose = () => {
     if (this.inventoryOpen) this.toggleInventory();
+  };
+
+  private readonly onCheatsClose = () => {
+    if (this.cheatsOpen) this.toggleCheats();
   };
 
   private readonly onCanvasClick = () => {
@@ -310,13 +405,13 @@ export class PlayState implements GameState {
   }
 
   private readonly onWheel = (e: WheelEvent) => {
-    if (!this.active || this.inventoryOpen || this.craftingOpen) return;
+    if (!this.active || this.inventoryOpen || this.craftingOpen || this.cheatsOpen) return;
     if (e.deltaY === 0) return;
     this.hotbar.scroll(e.deltaY > 0 ? 1 : -1);
   };
 
   private readonly onMouseDown = (e: MouseEvent) => {
-    if (e.button !== 0 || !this.active || this.inventoryOpen || this.craftingOpen) return;
+    if (e.button !== 0 || !this.active || this.inventoryOpen || this.craftingOpen || this.cheatsOpen) return;
     if (!this.isTouch && document.pointerLockElement === null) return; // Klick galt dem Re-Lock
     this.swingHammer();
   };
@@ -377,6 +472,7 @@ export class PlayState implements GameState {
     document.addEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.addEventListener('click', this.onCanvasClick);
     document.getElementById('btn-inv-close')!.addEventListener('click', this.onInvClose);
+    document.getElementById('btn-cheats-close')!.addEventListener('click', this.onCheatsClose);
     this.look.attach();
     this.hotbar.renderHUD();
     this.lockPointer();
@@ -384,7 +480,7 @@ export class PlayState implements GameState {
       UI.show(document.getElementById('touch-ui')!);
       this.touch.attach();
     }
-    if (this.debugEnabled) UI.show(UI.debug);
+    if (this.debugVisible) UI.show(UI.debug);
   }
 
   exit(): void {
@@ -402,11 +498,13 @@ export class PlayState implements GameState {
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
     this.game.canvas.removeEventListener('click', this.onCanvasClick);
     document.getElementById('btn-inv-close')!.removeEventListener('click', this.onInvClose);
+    document.getElementById('btn-cheats-close')!.removeEventListener('click', this.onCheatsClose);
     if (this.inventoryOpen) {
       this.inventoryOpen = false;
       UI.hide(UI.inventory);
     }
     if (this.craftingOpen) this.crafting.close();
+    if (this.cheatsOpen) { this.cheatsOpen = false; UI.hide(UI.cheats); }
     UI.hide(UI.hud);
     UI.hide(UI.debug);
     UI.setPrompt(null);
@@ -438,7 +536,7 @@ export class PlayState implements GameState {
 
   update(dt: number): void {
     // Spielwelt pausiert bei offenem Inventar oder offener Werkbank
-    if (this.inventoryOpen || this.craftingOpen) return;
+    if (this.inventoryOpen || this.craftingOpen || this.cheatsOpen) return;
 
     this.player.update(dt, this.keys);
     this.player.eye(this.eyeTmp);
@@ -497,7 +595,7 @@ export class PlayState implements GameState {
     UI.setVisible(UI.motorPanel, lookingAtMotor);
     if (lookingAtMotor) this.motorRepair.renderPanel();
 
-    if (this.debugEnabled) this.updateDebug(dt);
+    if (this.debugVisible) this.updateDebug(dt);
   }
 
   // Sicht-Effekte bei Luftnot: Vignette < 25, Unschärfe < 10,

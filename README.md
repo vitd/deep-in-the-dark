@@ -95,10 +95,12 @@ Eine Datei `public/assets/intro.mp4` wird beim Start abgespielt
 (überspringbar mit Esc/Leertaste/Klick). Fehlt sie, geht es direkt
 ins Hauptmenü.
 
-## Debug-Modus
+## Cheats / Debug
 
-http://localhost:5173/?debug zeigt FPS, Spielerzustand und
-Kollisionsboxen; Taste T teleportiert aufs Bootsdeck.
+Die Taste **L** öffnet jederzeit das Cheat-Menü: Debug-Anzeige
+(FPS/Position), Kollisionsboxen, Teleports, Werte auffüllen,
+Materialpakete, Motor-Schnellreparatur, Hai herbeirufen u. a. —
+kein URL-Parameter nötig.
 
 ## Technik
 

@@ -36,6 +36,8 @@ class UIManagerImpl {
   readonly invHotbarGrid = el('inv-hotbar-grid');
   readonly fuelLine = el('fuel-line');
   readonly motorPanel = el('motor-panel');
+  readonly cheats = el('cheats');
+  readonly cheatList = el('cheat-list');
 
   private toastTimer = 0;
 

@@ -632,6 +632,24 @@ body.touch-mode #hotbar {
   bottom: 10px;
 }
 
+/* ------- Cheats / Debug ------- */
+#cheats {
+  background: rgba(4, 10, 16, 0.88);
+  gap: 14px;
+}
+
+#cheat-list {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+#cheat-list button {
+  font-size: 14px;
+  padding: 9px 18px;
+  text-transform: none;
+  letter-spacing: 1px;
+}
+
 /* ------- Werkbank (Crafting) ------- */
 #crafting {
   background: rgba(4, 10, 16, 0.85);
