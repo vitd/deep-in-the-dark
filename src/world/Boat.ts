@@ -299,14 +299,20 @@ export function buildBoat(
 
   // ---- Motorraum: Motor (motor.glb) + Funkgerät (ohne Strom) ----
   // Der Motor ist das Reparatur-Ziel: Prompt und Interaktion kommen aus
-  // dem Spielzustand (hooks), das rote Glühen + Licht schaltet
-  // motor.setRunning() ein.
+  // dem Spielzustand (hooks). motor.setRunning() tauscht das Modell gegen
+  // motor-running.glb und schaltet das rote Glühen + Licht ein.
+  // Er steht bündig an der vorderen Wand (gegenüber der Tür, die achtern
+  // liegt) und ist um 180° gedreht, damit die Front zur Tür zeigt.
+  const MOTOR_Z = 5.4; // Kollisionsbox (±1.2) endet an der Wand bei z = 4.2
   const engineGroup = new THREE.Group();
-  engineGroup.position.set(origin.x, origin.y + DECK_Y, origin.z + 6.7);
+  engineGroup.position.set(origin.x, origin.y + DECK_Y, origin.z + MOTOR_Z);
+  engineGroup.rotation.y = Math.PI;
   group.add(engineGroup);
   const glowMats: THREE.MeshStandardMaterial[] = [];
-  loadModel('motor.glb', 2.3)
-    .then(({ template }) => {
+  const showMotorModel = (file: string): Promise<void> =>
+    loadModel(file, 2.3).then(({ template }) => {
+      engineGroup.clear();
+      glowMats.length = 0;
       const model = template.clone(true);
       // Modell sitzt zentriert – auf den Boden stellen
       const box = new THREE.Box3().setFromObject(model);
@@ -324,29 +330,34 @@ export function buildBoat(
         });
         mesh.material = Array.isArray(mesh.material) ? cloned : cloned[0];
       });
-    })
-    .catch(() => {
-      const block = addBox(ctx, 0, DECK_Y + 0.6, 6.7, 1.5, 1.2, 2.4, engineMat, false);
-      engineGroup.attach(block);
     });
+  showMotorModel('motor.glb').catch(() => {
+    const block = addBox(ctx, 0, DECK_Y + 0.6, MOTOR_Z, 1.5, 1.2, 2.4, engineMat, false);
+    engineGroup.attach(block);
+  });
   // Kollision: grober Block an der Motorposition
   collision.addBox(
     new THREE.Box3(
-      new THREE.Vector3(origin.x - 0.9, origin.y + DECK_Y, origin.z + 5.5),
-      new THREE.Vector3(origin.x + 0.9, origin.y + DECK_Y + 1.4, origin.z + 7.9),
+      new THREE.Vector3(origin.x - 0.9, origin.y + DECK_Y, origin.z + MOTOR_Z - 1.2),
+      new THREE.Vector3(origin.x + 0.9, origin.y + DECK_Y + 1.4, origin.z + MOTOR_Z + 1.2),
     ),
   );
   const motorLight = new THREE.PointLight(0xff2a12, 0, 5, 1.8);
-  motorLight.position.set(origin.x, origin.y + DECK_Y + 1.0, origin.z + 6.7);
+  motorLight.position.set(origin.x, origin.y + DECK_Y + 1.0, origin.z + MOTOR_Z);
   group.add(motorLight);
+  const glow = (): void => {
+    for (const m of glowMats) {
+      m.emissive = new THREE.Color(0xb01808);
+      m.emissiveIntensity = 0.9;
+    }
+  };
   const motor: MotorRef = {
     group: engineGroup,
     light: motorLight,
     setRunning() {
-      for (const m of glowMats) {
-        m.emissive = new THREE.Color(0xb01808);
-        m.emissiveIntensity = 0.9;
-      }
+      // laufendes Modell einwechseln; das Glühen erst danach setzen,
+      // weil showMotorModel die glowMats neu befüllt
+      showMotorModel('motor-running.glb').then(glow).catch(glow);
       motorLight.intensity = 6;
     },
   };
