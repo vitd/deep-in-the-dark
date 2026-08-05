@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { CollisionWorld } from '../systems/Collision';
-import { InteractionSystem } from '../systems/Interaction';
+import { InteractionSystem, Interactable } from '../systems/Interaction';
+import { Inventory } from '../systems/Inventory';
 import { STR } from '../ui/strings.de';
+import { UI } from '../ui/UIManager';
 import { BOAT_LAYOUT, DECK_Y, ROOF_Y } from './boatLayout';
 import { addBox, buildRoom, RoomBuildContext } from './Room';
 import { buildLadderMesh, LadderDef } from './Ladder';
@@ -30,7 +32,7 @@ const roofMat = new THREE.MeshLambertMaterial({ color: 0xb0a890 });
 const railMat = new THREE.MeshLambertMaterial({ color: 0x7a5c40 });
 const engineMat = new THREE.MeshLambertMaterial({ color: 0x7a2a20 });
 const metalMat = new THREE.MeshLambertMaterial({ color: 0x4a545c });
-const radioMat = new THREE.MeshLambertMaterial({ color: 0x3a4a40 });
+const phoneMat = new THREE.MeshLambertMaterial({ color: 0x3a4a40 });
 const woodMat = texturedMat('plank.png', 1, 1);
 
 export interface BoatResult {
@@ -57,6 +59,7 @@ export function buildBoat(
   scene: THREE.Scene,
   collision: CollisionWorld,
   interaction: InteractionSystem,
+  inventory: Inventory,
   hooks: BoatHooks,
 ): BoatResult {
   const origin = new THREE.Vector3(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y, CONFIG.world.boatPos.z);
@@ -345,13 +348,51 @@ export function buildBoat(
     interact: hooks.onMotorInteract,
   });
 
-  const radioGroup = new THREE.Group();
-  const radioBody = addBox(ctx, 2.2, DECK_Y + 1.4, 4.8, 0.5, 0.35, 0.7, radioMat, false);
-  const antenna = addBox(ctx, 2.3, DECK_Y + 1.95, 4.6, 0.05, 0.75, 0.05, metalMat, false);
-  const radioShelf = addBox(ctx, 2.25, DECK_Y + 1.18, 4.8, 0.55, 0.08, 0.8, woodMat, false);
-  radioGroup.add(radioBody, antenna, radioShelf);
-  interaction.add({ object: radioGroup, prompt: STR.radioDead });
-  group.add(radioGroup);
+  // ---- Telefon an der Steuerbordwand (statt des alten Funkgeräts) ----
+  // Die Halterung (telephone-mount.glb) hängt fest an der Wand; das
+  // Telefon (telephone.glb) sitzt darauf und lässt sich wie ein normales
+  // Item aufheben (Taste E).
+  const PHONE_WALL_X = 2.55; // Innenkante Steuerbordwand des Motorraums
+  const PHONE_Z = 4.8;
+  const PHONE_Y = DECK_Y + 1.45;
+
+  const mountGroup = new THREE.Group();
+  mountGroup.position.set(origin.x + PHONE_WALL_X - 0.15, origin.y + PHONE_Y, origin.z + PHONE_Z);
+  mountGroup.rotation.y = Math.PI / 2; // Rückwand zur Wand, Front in den Raum
+  group.add(mountGroup);
+  loadModel('telephone-mount.glb', 1.05)
+    .then(({ template }) => {
+      mountGroup.add(template.clone(true));
+    })
+    .catch(() => {
+      mountGroup.add(new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.0, 0.55), metalMat));
+    });
+
+  const phoneGroup = new THREE.Group();
+  phoneGroup.position.set(origin.x + PHONE_WALL_X - 0.2, origin.y + PHONE_Y, origin.z + PHONE_Z);
+  phoneGroup.rotation.y = Math.PI / 2;
+  group.add(phoneGroup);
+  loadModel('telephone.glb', 0.5)
+    .then(({ template }) => {
+      phoneGroup.add(template.clone(true));
+    })
+    .catch(() => {
+      phoneGroup.add(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.3), phoneMat));
+    });
+  const phoneEntry: Interactable = {
+    object: phoneGroup,
+    prompt: STR.pickUp,
+    interact: () => {
+      if (!inventory.add('telefon')) {
+        UI.toast(STR.inventoryFull);
+        return;
+      }
+      group.remove(phoneGroup);
+      interaction.remove(phoneEntry);
+      UI.toast(STR.pickedUp(STR.itemNames.telefon));
+    },
+  };
+  interaction.add(phoneEntry);
 
   // Werkbank im Motorraum
   addBox(ctx, -2.05, DECK_Y + 0.45, 7.7, 0.9, 0.9, 2.0, woodMat);

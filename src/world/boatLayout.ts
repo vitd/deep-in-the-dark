@@ -70,7 +70,7 @@ export const BOAT_LAYOUT: RoomDef[] = [
     min: [-2.55, DECK_Y, 4.2],
     max: [2.55, CEIL_Y, 9.2],
     door: { wall: 'aft' },
-    props: ['engine', 'radio', 'workbench'],
+    props: ['engine', 'telephone', 'workbench'],
   },
 
   // ----- Oberdeck (auf der Dachplatte) -----

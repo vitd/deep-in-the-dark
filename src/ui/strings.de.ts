@@ -29,7 +29,6 @@ export const STR = {
   motorApplied: (name: string, n: number) => `${n}x ${name} verbaut`,
   motorFuelApplied: (l: number) => `+${l} L Treibstoff eingefüllt`,
   motorComplete: 'Der Motor brummt!',
-  radioDead: 'Funkgerät (ohne Strom)',
   loadNotAvailable: 'Spiel laden ist noch nicht verfügbar.',
   quitBrowserHint: 'Zum Beenden bitte den Browser-Tab schließen.',
   inventoryFull: 'Inventar voll!',
@@ -48,5 +47,6 @@ export const STR = {
     stein: 'Stein',
     nahrung: 'Nahrung',
     plastik: 'Plastik',
+    telefon: 'Telefon',
   } as Record<string, string>,
 } as const;

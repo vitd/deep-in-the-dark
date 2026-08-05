@@ -734,6 +734,11 @@ body.touch-mode #hotbar {
   color: #3a4448;
 }
 
+.inv-icon.telefon {
+  background: #3a4a40;
+  box-shadow: inset 0 -6px 0 #26322a;
+}
+
 /* ------- Toast / Debug ------- */
 #toast {
   position: fixed;

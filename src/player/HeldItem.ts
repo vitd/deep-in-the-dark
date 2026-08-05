@@ -14,6 +14,7 @@ const MODEL_FILES: Partial<Record<ItemId, string>> = {
   grossfisch: 'fish-big.glb',
   nyzerin: 'nyzerine.glb',
   glyzerin: 'glyzerine.glb',
+  telefon: 'telephone.glb',
 };
 
 // Items ohne eigenes Modell: einfacher farbiger Würfel in der Hand

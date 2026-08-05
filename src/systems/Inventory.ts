@@ -14,7 +14,8 @@ export type ItemId =
   | 'glyzerin'
   | 'stein'
   | 'nahrung'
-  | 'plastik';
+  | 'plastik'
+  | 'telefon';
 
 interface Slot {
   id: ItemId;
@@ -34,6 +35,7 @@ const ICON_TEXT: Record<ItemId, string> = {
   stein: 'St',
   nahrung: 'Na',
   plastik: 'Pl',
+  telefon: 'Te',
 };
 
 // Baut das Icon-Element eines Items (auch vom Crafting-Panel genutzt)

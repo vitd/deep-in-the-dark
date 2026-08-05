@@ -62,7 +62,7 @@ export class World {
 
     buildCliffs(scene, this.collision);
 
-    const boat = buildBoat(scene, this.collision, interaction, {
+    const boat = buildBoat(scene, this.collision, interaction, inventory, {
       onCraftingTable,
       motorPrompt,
       onMotorInteract,
