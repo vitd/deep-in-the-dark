@@ -45,7 +45,8 @@ export const CONFIG = {
     cliffX: -55, // Klippenwand entlang dieser x-Ebene
     boatPos: { x: -28, y: 0, z: 0 },
     spawn: { x: -38, z: 6 }, // Spieler startet schwimmend nahe der Klippen
-    bounds: { minX: -54.2, maxX: 30, minZ: -80, maxZ: 80, minY: -11.4 },
+    // weit genug für Bootsfahrten aufs offene Meer (siehe boot.bounds)
+    bounds: { minX: -54.2, maxX: 130, minZ: -160, maxZ: 160, minY: -11.4 },
     fogAbove: { color: 0x9fb8c8, density: 0.011 },
     fogBelow: { color: 0x0b3644, density: 0.075 },
     skyAbove: 0x9fb8c8,
@@ -135,6 +136,18 @@ export const CONFIG = {
     randomLoot: { nyzerin: 3, glyzerin: 3, gold: 3, stein: 5, nahrung: 6, plastik: 11 },
     // Treibstofffass (selten): zufällige Füllung in Litern
     fuelMaxLiter: 76,
+  },
+
+  // Fahrverhalten des Boots (Steuerstand auf der Brücke)
+  boot: {
+    maxSpeed: 6, // Vorausfahrt in m/s bei vollem Hebel
+    rueckSpeed: 2.2, // Rückwärtsfahrt
+    accel: 0.8, // Annäherungsrate an die Zielgeschwindigkeit
+    turnRate: 0.55, // rad/s bei vollem Einschlag und voller Fahrt
+    leverRate: 1.2, // Hebelweg pro Sekunde (W/S)
+    wheelRate: 1.5, // Steuerrad-Einschlag pro Sekunde (A/D)
+    // Fahrbereich des Bootszentrums (Klippen im Westen, Kartenrand sonst)
+    bounds: { minX: -36, maxX: 120, minZ: -150, maxZ: 150 },
   },
 
   // Materialbedarf der Motor-Reparatur (Mechanik folgt)

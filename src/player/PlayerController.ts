@@ -38,6 +38,7 @@ export class PlayerController {
   private readonly tmpF = new THREE.Vector3();
   private readonly tmpR = new THREE.Vector3();
   private readonly tmpMove = new THREE.Vector3();
+  private readonly tmpL = new THREE.Vector3();
 
   constructor(
     readonly look: MouseLook,
@@ -54,14 +55,30 @@ export class PlayerController {
     return this.position.y + P.eyeHeight;
   }
 
+  // Leiter-Standpunkt in aktuellen Weltkoordinaten: Die Leitern sind in
+  // der Original-Bootspose definiert; ist das Boot gefahren, rechnet der
+  // Boots-Rahmen der Kollisionswelt sie auf die aktuelle Pose um.
+  private ladderStand(l: LadderDef, out: THREE.Vector3): THREE.Vector3 {
+    out.set(l.standX, 0, l.standZ);
+    this.collision.frame?.toWorld(out);
+    return out;
+  }
+
+  private ladderFace(l: LadderDef, out: THREE.Vector3): THREE.Vector3 {
+    out.set(l.face.x, 0, l.face.z);
+    this.collision.frame?.rotateDir(out);
+    return out;
+  }
+
   startClimb(ladder: LadderDef): void {
     this.ladder = ladder;
     this.released = null;
     this.releasedDir = 0;
     this.state = PlayerState.Climb;
     this.velocity.set(0, 0, 0);
-    this.position.x = ladder.standX;
-    this.position.z = ladder.standZ;
+    const stand = this.ladderStand(ladder, this.tmpL);
+    this.position.x = stand.x;
+    this.position.z = stand.z;
     this.position.y = Math.max(ladder.bottomY, Math.min(this.position.y, ladder.topY - 0.2));
   }
 
@@ -178,16 +195,18 @@ export class PlayerController {
     let bestDist = P.climbGrabRadius * P.climbGrabRadius;
     for (const l of this.ladders) {
       if (this.position.y < l.bottomY - 0.6 || this.position.y > l.topY + 0.4) continue;
-      const dx = this.position.x - l.standX;
-      const dz = this.position.z - l.standZ;
+      const stand = this.ladderStand(l, this.tmpL);
+      const dx = this.position.x - stand.x;
+      const dz = this.position.z - stand.z;
       const dist = dx * dx + dz * dz;
       if (dist > bestDist) continue;
 
       const atTop = this.position.y >= l.topY - 0.35;
       const fwd = this.look.horizForward(this.tmpF);
+      const face = this.ladderFace(l, this.tmpR);
       const wants = atTop
         ? this.look.pitch <= -P.climbLookDeadzone
-        : fwd.x * l.face.x + fwd.z * l.face.z >= 0.25;
+        : fwd.x * face.x + fwd.z * face.z >= 0.25;
       if (!wants) continue;
 
       bestDist = dist;
@@ -227,8 +246,9 @@ export class PlayerController {
       this.leaveLadder(l, PlayerState.Walk, 0);
       return;
     }
-    this.position.x = l.standX;
-    this.position.z = l.standZ;
+    const stand = this.ladderStand(l, this.tmpL);
+    this.position.x = stand.x;
+    this.position.z = stand.z;
 
     const dir = this.climbDirection();
     this.climbMoving = dir !== 0;
@@ -236,6 +256,7 @@ export class PlayerController {
 
     if (this.position.y >= l.topY) {
       this.position.copy(l.topExit);
+      this.collision.frame?.toWorld(this.position);
       this.leaveLadder(l, PlayerState.Walk, 1);
     } else if (this.position.y <= l.bottomY) {
       // Unten bleibt man auf der letzten Sprosse stehen; erst der Blick

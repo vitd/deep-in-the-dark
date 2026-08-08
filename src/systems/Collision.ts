@@ -1,8 +1,16 @@
 import * as THREE from 'three';
+import { BoatFrame } from '../world/BoatFrame';
 
 // Sehr einfache, robuste Kollisionswelt: alle festen Flächen sind
 // achsenparallele Boxen (AABB). Der Spieler wird als Box (Kapsel-
 // Näherung) achsenweise bewegt und bei Überlappung herausgeschoben.
+//
+// Zwei Box-Listen: `boxes` für die statische Welt (Klippen, Felsen,
+// Meeresboden) und `frameBoxes` für das Boot. Letztere sind in den
+// Originalkoordinaten der Startpose definiert; fährt das Boot (frame
+// gesetzt und bewegt), wird der Spieler zum Auflösen in den Boots-
+// Rahmen transformiert. Die Spieler-Grundfläche ist dabei näherungs-
+// weise rotationssymmetrisch – der Fehler der gedrehten Box ist klein.
 
 export interface MoveResult {
   grounded: boolean;
@@ -11,13 +19,26 @@ export interface MoveResult {
 
 export class CollisionWorld {
   readonly boxes: THREE.Box3[] = [];
+  readonly frameBoxes: THREE.Box3[] = [];
+  frame: BoatFrame | null = null;
 
   addBox(box: THREE.Box3): void {
     this.boxes.push(box);
   }
 
+  addFrameBox(box: THREE.Box3): void {
+    this.frameBoxes.push(box);
+  }
+
+  removeFrameBox(box: THREE.Box3): void {
+    const idx = this.frameBoxes.indexOf(box);
+    if (idx >= 0) this.frameBoxes.splice(idx, 1);
+  }
+
   clear(): void {
     this.boxes.length = 0;
+    this.frameBoxes.length = 0;
+    this.frame = null;
   }
 
   // Bewegt die Spieler-Fußposition `pos` um `delta` und löst Kollisionen
@@ -25,17 +46,41 @@ export class CollisionWorld {
   move(pos: THREE.Vector3, delta: THREE.Vector3, radius: number, height: number): MoveResult {
     const result: MoveResult = { grounded: false, hitHead: false };
 
-    // X-Achse
-    pos.x += delta.x;
-    this.resolveAxis(pos, radius, height, 'x', delta.x, result);
-    // Z-Achse
-    pos.z += delta.z;
-    this.resolveAxis(pos, radius, height, 'z', delta.z, result);
-    // Y-Achse
-    pos.y += delta.y;
-    this.resolveAxis(pos, radius, height, 'y', delta.y, result);
+    // 1) Boot-Boxen – bei bewegtem Boot im Boots-Rahmen
+    if (this.frame && this.frame.moved) {
+      const local = this.frame.toLocal(pos.clone());
+      const localDelta = this.frame.rotateDirInverse(delta.clone());
+      this.movePass(local, localDelta, radius, height, this.frameBoxes, result);
+      pos.copy(this.frame.toWorld(local));
+    } else {
+      this.movePass(pos, delta, radius, height, this.frameBoxes, result);
+    }
+
+    // 2) Statische Welt: delta wurde bereits integriert, hier wird nur
+    // noch herausgeschoben. Das Vorzeichen der Bewegung (für die
+    // Schubrichtung) kommt aus dem Original-Delta.
+    this.resolveAxis(pos, radius, height, 'x', delta.x, result, this.boxes);
+    this.resolveAxis(pos, radius, height, 'z', delta.z, result, this.boxes);
+    this.resolveAxis(pos, radius, height, 'y', delta.y, result, this.boxes);
 
     return result;
+  }
+
+  // Achsenweise integrieren und gegen `boxes` auflösen
+  private movePass(
+    pos: THREE.Vector3,
+    delta: THREE.Vector3,
+    radius: number,
+    height: number,
+    boxes: readonly THREE.Box3[],
+    result: MoveResult,
+  ): void {
+    pos.x += delta.x;
+    this.resolveAxis(pos, radius, height, 'x', delta.x, result, boxes);
+    pos.z += delta.z;
+    this.resolveAxis(pos, radius, height, 'z', delta.z, result, boxes);
+    pos.y += delta.y;
+    this.resolveAxis(pos, radius, height, 'y', delta.y, result, boxes);
   }
 
   private resolveAxis(
@@ -45,11 +90,12 @@ export class CollisionWorld {
     axis: 'x' | 'y' | 'z',
     moved: number,
     result: MoveResult,
+    boxes: readonly THREE.Box3[],
   ): void {
     const min = new THREE.Vector3(pos.x - radius, pos.y, pos.z - radius);
     const max = new THREE.Vector3(pos.x + radius, pos.y + height, pos.z + radius);
 
-    for (const b of this.boxes) {
+    for (const b of boxes) {
       if (
         min.x >= b.max.x || max.x <= b.min.x ||
         min.y >= b.max.y || max.y <= b.min.y ||

@@ -4,7 +4,9 @@ import { CollisionWorld } from '../systems/Collision';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
 import { UI } from '../ui/UIManager';
-import { buildBoat, MotorRef } from './Boat';
+import { buildBoat, HelmRef, MotorRef } from './Boat';
+import { BoatController } from './BoatController';
+import { BoatFrame } from './BoatFrame';
 import { buildCliffs } from './Cliffs';
 import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
@@ -24,6 +26,12 @@ export class World {
   private readonly fish: FishManager;
   readonly shark: Shark;
   readonly motor: MotorRef;
+  readonly helm: HelmRef;
+  readonly frame: BoatFrame;
+  readonly boat: BoatController;
+  // Boot-Gruppe in Originalkoordinaten (für Debug-Helfer u. Ä.)
+  readonly boatGroup: THREE.Group;
+  private readonly unlockRoom: (id: string) => boolean;
   private motorRunning = false;
   private motorBaseY = 0;
   // Lichter mit Basis-Intensität, damit Unterwasser einheitlich gedimmt wird
@@ -41,6 +49,8 @@ export class World {
     onFuelFound: (liter: number) => void,
     motorPrompt: () => string,
     onMotorInteract: () => void,
+    helmPrompt: () => string,
+    onHelmInteract: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -66,23 +76,56 @@ export class World {
       onCraftingTable,
       motorPrompt,
       onMotorInteract,
+      helmPrompt,
+      onHelmInteract,
     });
     this.motor = boat.motor;
+    this.helm = boat.helm;
     this.ladders = boat.ladders;
+    this.boatGroup = boat.group;
+    this.unlockRoom = boat.unlock;
 
-    // Innenbeleuchtung der offenen Räume
+    // Fahr-Rahmen: verbindet Bootsbewegung und Kollisionswelt
+    this.frame = new BoatFrame(
+      new THREE.Vector3(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y, CONFIG.world.boatPos.z),
+    );
+    this.collision.frame = this.frame;
+    this.boat = new BoatController(this.frame, boat.pivot, boat.helm);
+
+    // Innenbeleuchtung der offenen Räume – hängt am Boot, damit sie
+    // bei Fahrten mitwandert
     for (const def of BOAT_LAYOUT) {
       if (def.locked) continue;
-      const cx = (def.min[0] + def.max[0]) / 2 + CONFIG.world.boatPos.x;
-      const cz = (def.min[2] + def.max[2]) / 2 + CONFIG.world.boatPos.z;
-      const light = new THREE.PointLight(0xffd9a0, 7, 8, 1.6);
-      light.position.set(cx, def.max[1] - 0.4 + CONFIG.world.boatPos.y, cz);
-      scene.add(light);
+      this.addRoomLight(def.min, def.max);
     }
 
-    this.resources = new Resources(scene, this.ocean, interaction, inventory, onFuelFound);
+    this.resources = new Resources(scene, this.ocean, interaction, inventory, onFuelFound, boat.group);
     this.fish = new FishManager(scene, interaction, inventory);
     this.shark = new Shark(scene, onSharkBite);
+  }
+
+  private addRoomLight(min: readonly number[], max: readonly number[]): void {
+    const b = CONFIG.world.boatPos;
+    const light = new THREE.PointLight(0xffd9a0, 7, 8, 1.6);
+    light.position.set(
+      (min[0] + max[0]) / 2 + b.x,
+      max[1] - 0.4 + b.y,
+      (min[2] + max[2]) / 2 + b.z,
+    );
+    this.boatGroup.add(light);
+  }
+
+  // Motor läuft: Brücke aufschließen und beleuchten
+  unlockBruecke(): boolean {
+    const def = BOAT_LAYOUT.find((d) => d.id === 'bruecke');
+    if (!def || !this.unlockRoom('bruecke')) return false;
+    this.addRoomLight(def.min, def.max);
+    return true;
+  }
+
+  // Aktuelle Weltposition des Steuermann-Standpunkts
+  helmStandWorld(out: THREE.Vector3): THREE.Vector3 {
+    return this.frame.toWorld(out.copy(this.helm.stand));
   }
 
   setUnderwater(under: boolean): void {

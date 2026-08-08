@@ -17,11 +17,20 @@ const DOOR_H = 2.0;
 const wallMat = texturedMat('boat-wall.png', 2, 1, 0xffffff, 2.4);
 const doorMat = texturedMat('door.png', 1, 1, 0xffffff, 1.2);
 
+// Referenzen einer versperrten Tür – zum späteren Freischalten
+// (Mesh entfernen, Kollisionsbox lösen, "Versperrt"-Prompt abmelden).
+export interface DoorRef {
+  mesh: THREE.Mesh;
+  box: THREE.Box3;
+  entry: Interactable;
+}
+
 export interface RoomBuildContext {
   origin: THREE.Vector3; // Weltposition des Boots
   group: THREE.Group;
   collision: CollisionWorld;
   interaction: InteractionSystem;
+  doors: Map<string, DoorRef>;
 }
 
 function addBox(
@@ -39,7 +48,9 @@ function addBox(
   mesh.position.set(ctx.origin.x + cx, ctx.origin.y + cy, ctx.origin.z + cz);
   ctx.group.add(mesh);
   if (collide) {
-    ctx.collision.addBox(
+    // Alles am Boot ist eine Frame-Box: fährt das Boot, wird die
+    // Kollision im Boots-Rahmen aufgelöst (siehe CollisionWorld).
+    ctx.collision.addFrameBox(
       new THREE.Box3(
         new THREE.Vector3(mesh.position.x - sx / 2, mesh.position.y - sy / 2, mesh.position.z - sz / 2),
         new THREE.Vector3(mesh.position.x + sx / 2, mesh.position.y + sy / 2, mesh.position.z + sz / 2),
@@ -81,23 +92,31 @@ export function buildRoom(ctx: RoomBuildContext, def: RoomDef): void {
   const walls: WallSide[] = ['port', 'starboard', 'fore', 'aft'];
   for (const wall of walls) {
     const hasDoor = def.door.wall === wall;
+    const win = !hasDoor && def.window?.wall === wall ? def.window : null;
     if (wall === 'port' || wall === 'starboard') {
       const wx = wall === 'port' ? ix0 - WALL_T / 2 : ix1 + WALL_T / 2;
       const len = iz1 - iz0 + 2 * WALL_T;
       const cz = (iz0 + iz1) / 2;
-      if (!hasDoor) {
-        addBox(ctx, wx, cy, cz, WALL_T, h, len, wallMat);
-      } else {
+      if (hasDoor) {
         buildDoorWall(ctx, def, 'z', wx, cz, len, iy0, iy1);
+      } else if (win) {
+        // Wand mit offenem Fensterschlitz: Brüstung unten, Sturz oben
+        addBox(ctx, wx, (iy0 + win.y0) / 2, cz, WALL_T, win.y0 - iy0, len, wallMat);
+        addBox(ctx, wx, (win.y1 + iy1) / 2, cz, WALL_T, iy1 - win.y1, len, wallMat);
+      } else {
+        addBox(ctx, wx, cy, cz, WALL_T, h, len, wallMat);
       }
     } else {
       const wz = wall === 'fore' ? iz0 - WALL_T / 2 : iz1 + WALL_T / 2;
       const len = ix1 - ix0 + 2 * WALL_T;
       const cx = (ix0 + ix1) / 2;
-      if (!hasDoor) {
-        addBox(ctx, cx, cy, wz, len, h, WALL_T, wallMat);
-      } else {
+      if (hasDoor) {
         buildDoorWall(ctx, def, 'x', wz, cx, len, iy0, iy1);
+      } else if (win) {
+        addBox(ctx, cx, (iy0 + win.y0) / 2, wz, len, win.y0 - iy0, WALL_T, wallMat);
+        addBox(ctx, cx, (win.y1 + iy1) / 2, wz, len, iy1 - win.y1, WALL_T, wallMat);
+      } else {
+        addBox(ctx, cx, cy, wz, len, h, WALL_T, wallMat);
       }
     }
   }
@@ -142,13 +161,26 @@ function buildDoorWall(
   }
 
   // Versperrte Räume bekommen eine geschlossene Tür in der Öffnung.
+  // Mesh, Kollisionsbox und Prompt werden registriert, damit die Tür
+  // später freigeschaltet werden kann (z. B. Brücke bei laufendem Motor).
   if (def.locked) {
     const doorMesh =
       axis === 'z'
-        ? addBox(ctx, wallCoord, floorY + DOOR_H / 2, doorCenter, WALL_T, DOOR_H, DOOR_W, doorMat)
-        : addBox(ctx, doorCenter, floorY + DOOR_H / 2, wallCoord, DOOR_W, DOOR_H, WALL_T, doorMat);
+        ? addBox(ctx, wallCoord, floorY + DOOR_H / 2, doorCenter, WALL_T, DOOR_H, DOOR_W, doorMat, false)
+        : addBox(ctx, doorCenter, floorY + DOOR_H / 2, wallCoord, DOOR_W, DOOR_H, WALL_T, doorMat, false);
+    const half = new THREE.Vector3(
+      (axis === 'z' ? WALL_T : DOOR_W) / 2,
+      DOOR_H / 2,
+      (axis === 'z' ? DOOR_W : WALL_T) / 2,
+    );
+    const doorBox = new THREE.Box3(
+      doorMesh.position.clone().sub(half),
+      doorMesh.position.clone().add(half),
+    );
+    ctx.collision.addFrameBox(doorBox);
     const interactable: Interactable = { object: doorMesh, prompt: STR.locked };
     ctx.interaction.add(interactable);
+    ctx.doors.set(def.id, { mesh: doorMesh, box: doorBox, entry: interactable });
   }
 
   // Namensschild über der Tür (außen).

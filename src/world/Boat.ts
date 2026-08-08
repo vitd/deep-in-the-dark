@@ -6,7 +6,7 @@ import { Inventory } from '../systems/Inventory';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { BOAT_LAYOUT, DECK_Y, ROOF_Y } from './boatLayout';
-import { addBox, buildRoom, RoomBuildContext } from './Room';
+import { addBox, buildRoom, DoorRef, RoomBuildContext } from './Room';
 import { buildLadderMesh, LadderDef } from './Ladder';
 import { loadModel } from '../rendering/Models';
 import { texturedMat } from '../rendering/Textures';
@@ -36,9 +36,16 @@ const phoneMat = new THREE.MeshLambertMaterial({ color: 0x3a4a40 });
 const woodMat = texturedMat('plank.png', 1, 1);
 
 export interface BoatResult {
+  // Dreh-/Fahr-Pivot (Weltposition = Bootszentrum). Wird vom
+  // BoatController bewegt; `group` hängt darunter und enthält alle
+  // Boot-Teile in Originalkoordinaten.
+  pivot: THREE.Group;
   group: THREE.Group;
   ladders: LadderDef[];
   motor: MotorRef;
+  helm: HelmRef;
+  // Entfernt die Tür eines versperrten Raums (Mesh, Kollision, Prompt).
+  unlock: (roomId: string) => boolean;
 }
 
 export interface BoatHooks {
@@ -47,6 +54,18 @@ export interface BoatHooks {
   // Motor: dynamischer Prompt + Interaktion (Material anwenden)
   motorPrompt: () => string;
   onMotorInteract: () => void;
+  // Steuerstand auf der Brücke
+  helmPrompt: () => string;
+  onHelmInteract: () => void;
+}
+
+export interface HelmRef {
+  group: THREE.Group;
+  // dreht sich mit dem Rad-Einschlag / kippt mit dem Fahrhebel
+  wheelSpin: THREE.Object3D;
+  leverArm: THREE.Object3D;
+  // Standpunkt des Steuermanns (Originalkoordinaten, Fußhöhe)
+  stand: THREE.Vector3;
 }
 
 export interface MotorRef {
@@ -64,7 +83,8 @@ export function buildBoat(
 ): BoatResult {
   const origin = new THREE.Vector3(CONFIG.world.boatPos.x, CONFIG.world.boatPos.y, CONFIG.world.boatPos.z);
   const group = new THREE.Group();
-  const ctx: RoomBuildContext = { origin, group, collision, interaction };
+  const doors = new Map<string, DoorRef>();
+  const ctx: RoomBuildContext = { origin, group, collision, interaction, doors };
 
   // ---- Rumpf, Deck und Schanzkleid ----
   // Geformter Rumpf aus Spanten (siehe Hull.ts) statt eines Quaders.
@@ -96,7 +116,7 @@ export function buildBoat(
 
   // Kollision folgt der Rumpfform (unsichtbare Quader)
   for (const b of hullCollisionBoxes(gaps)) {
-    collision.addBox(
+    collision.addFrameBox(
       new THREE.Box3(
         new THREE.Vector3(
           origin.x + b.cx - b.sx / 2,
@@ -156,14 +176,16 @@ export function buildBoat(
   const mastBase = deckHeight(mastZ);
   cyl(0.07, 0.13, 7.4, 0, mastBase + 3.7, mastZ, woodMat);
   addBox(ctx, 0, mastBase + 5.9, mastZ, 3.2, 0.09, 0.09, woodMat, false);
+  // Der Baum hängt hoch genug, um über das Steuerhausdach zu schwenken –
+  // er darf nicht durch die Frontscheibe in die Brücke ragen.
   const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 6.5, 8), woodMat);
-  boom.position.set(origin.x, origin.y + mastBase + 3.3, origin.z + mastZ + 3.0);
-  boom.rotation.x = Math.PI / 2 - 0.35; // schräg nach oben-achtern
+  boom.position.set(origin.x, origin.y + mastBase + 5.1, origin.z + mastZ + 3.0);
+  boom.rotation.x = Math.PI / 2 - 0.5; // schräg nach oben-achtern
   group.add(boom);
-  // Taue vom Masttop zum Baumende
-  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 3.1, 6), glassMat);
-  rope.position.set(origin.x, origin.y + mastBase + 5.5, origin.z + mastZ + 4.4);
-  rope.rotation.x = -0.55;
+  // Tau vom Masttop zum Baumende (fast waagerecht)
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 5.9, 6), glassMat);
+  rope.position.set(origin.x, origin.y + mastBase + 6.75, origin.z + mastZ + 2.9);
+  rope.rotation.x = Math.PI / 2 - 0.02;
   group.add(rope);
 
   // Heckgalgen (A-Rahmen) über dem Arbeitsdeck
@@ -207,8 +229,16 @@ export function buildBoat(
   }
 
   // ---- Steuerhaus-Look für die Brücke: Fensterband + Dachüberstand ----
-  // Fensterband vorn (über die ganze Front) und an den Seiten
-  addBox(ctx, 0, 5.55, -9.92, 4.8, 0.75, 0.08, glassMat, false);
+  // Frontscheibe: durchsichtig, denn der Steuermann schaut hier hinaus
+  // (die Brücken-Frontwand hat dahinter einen offenen Fensterschlitz)
+  const windshieldMat = new THREE.MeshLambertMaterial({
+    color: 0xbfe0ec,
+    transparent: true,
+    opacity: 0.25,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  addBox(ctx, 0, 5.55, -9.92, 4.8, 0.75, 0.08, windshieldMat, false);
   addBox(ctx, -2.62, 5.55, -8.0, 0.08, 0.75, 3.2, glassMat, false);
   addBox(ctx, 2.62, 5.55, -8.0, 0.08, 0.75, 3.2, glassMat, false);
   // weiße Fensterrahmen-Bänder darüber/darunter
@@ -325,7 +355,7 @@ export function buildBoat(
     engineGroup.attach(block);
   });
   // Kollision: grober Block an der Motorposition
-  collision.addBox(
+  collision.addFrameBox(
     new THREE.Box3(
       new THREE.Vector3(origin.x - 0.9, origin.y + DECK_Y, origin.z + MOTOR_Z - 1.2),
       new THREE.Vector3(origin.x + 0.9, origin.y + DECK_Y + 1.4, origin.z + MOTOR_Z + 1.2),
@@ -399,6 +429,101 @@ export function buildBoat(
   // Werkbank im Motorraum
   addBox(ctx, -2.05, DECK_Y + 0.45, 7.7, 0.9, 0.9, 2.0, woodMat);
 
-  scene.add(group);
-  return { group, ladders, motor };
+  // ---- Steuerstand auf der Brücke (Pult, Steuerrad, Fahrhebel) ----
+  // Direkt vor der Frontscheibe: Wer davor steht und nach vorn schaut,
+  // hat Rad und Hebel im Blick und kann das Steuer übernehmen (Taste E).
+  const helmGroup = new THREE.Group();
+  group.add(helmGroup);
+
+  // Pult: Sockel (kollidiert) + schräg gestellte Deckplatte
+  const pedestal = addBox(ctx, 0, ROOF_Y + 0.45, -9.3, 2.0, 0.9, 0.5, metalMat);
+  helmGroup.add(pedestal);
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.14, 0.62), woodMat);
+  panel.position.set(origin.x, origin.y + ROOF_Y + 0.97, origin.z - 9.22);
+  panel.rotation.x = 0.3;
+  helmGroup.add(panel);
+
+  // Steuerrad: Kranz + Speichen + Nabe, leicht zum Steuermann geneigt.
+  // `wheelSpin` dreht sich mit dem Einschlag (A/D).
+  const wheelTilt = new THREE.Group();
+  wheelTilt.position.set(origin.x - 0.5, origin.y + ROOF_Y + 1.45, origin.z - 9.1);
+  wheelTilt.rotation.x = -0.35;
+  helmGroup.add(wheelTilt);
+  const wheelSpin = new THREE.Group();
+  wheelTilt.add(wheelSpin);
+  wheelSpin.add(new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.035, 8, 18), railMat));
+  for (let k = 0; k < 4; k++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.62, 6), railMat);
+    spoke.rotation.z = (k * Math.PI) / 4;
+    wheelSpin.add(spoke);
+    // Griffe außen am Kranz (typisches Ruderrad)
+    for (const dir of [1, -1]) {
+      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.12, 6), woodMat);
+      grip.position.set(Math.sin((k * Math.PI) / 4) * -0.36 * dir, Math.cos((k * Math.PI) / 4) * 0.36 * dir, 0);
+      grip.rotation.z = (k * Math.PI) / 4;
+      wheelSpin.add(grip);
+    }
+  }
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.09, 8), metalMat);
+  hub.rotation.x = Math.PI / 2;
+  wheelSpin.add(hub);
+
+  // Fahrhebel (vorwärts/rückwärts): Arm kippt mit der Hebelstellung (W/S)
+  const leverBase = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.4), metalMat);
+  leverBase.position.set(origin.x + 0.6, origin.y + ROOF_Y + 0.96, origin.z - 9.2);
+  helmGroup.add(leverBase);
+  const leverArm = new THREE.Group();
+  leverArm.position.set(origin.x + 0.6, origin.y + ROOF_Y + 1.0, origin.z - 9.2);
+  helmGroup.add(leverArm);
+  const leverStick = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.4, 8), metalMat);
+  leverStick.position.y = 0.2;
+  leverArm.add(leverStick);
+  const leverKnob = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), engineMat);
+  leverKnob.position.y = 0.42;
+  leverArm.add(leverKnob);
+
+  // Unsichtbare Interaktionszone über dem Pult: So greift "E" auch,
+  // wenn der Blick geradeaus aus dem Fenster geht (der Ray würde sonst
+  // knapp über Rad und Pult hinweggehen).
+  const useZone = new THREE.Mesh(
+    new THREE.BoxGeometry(2.2, 1.5, 0.15),
+    new THREE.MeshBasicMaterial({ visible: false }),
+  );
+  useZone.position.set(origin.x, origin.y + ROOF_Y + 1.5, origin.z - 9.4);
+  helmGroup.add(useZone);
+
+  const helm: HelmRef = {
+    group: helmGroup,
+    wheelSpin,
+    leverArm,
+    stand: new THREE.Vector3(origin.x, origin.y + ROOF_Y, origin.z - 8.35),
+  };
+  interaction.add({
+    object: helmGroup,
+    prompt: hooks.helmPrompt,
+    interact: hooks.onHelmInteract,
+  });
+
+  // ---- Freischalten versperrter Räume (z. B. Brücke bei Motorstart) ----
+  const unlock = (roomId: string): boolean => {
+    const d = doors.get(roomId);
+    if (!d) return false;
+    doors.delete(roomId);
+    d.mesh.parent?.remove(d.mesh);
+    collision.removeFrameBox(d.box);
+    interaction.remove(d.entry);
+    return true;
+  };
+
+  // ---- Fahr-Pivot ----
+  // Alle Boot-Kinder sind in Originalkoordinaten (origin + lokal)
+  // positioniert. Der Pivot sitzt im Bootszentrum; `group` wird um
+  // -origin verschoben, sodass Drehungen des Pivots das Boot um sein
+  // Zentrum drehen – passend zum BoatFrame der Kollisionswelt.
+  const pivot = new THREE.Group();
+  pivot.position.copy(origin);
+  group.position.set(-origin.x, -origin.y, -origin.z);
+  pivot.add(group);
+  scene.add(pivot);
+  return { pivot, group, ladders, motor, helm, unlock };
 }

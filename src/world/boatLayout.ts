@@ -16,6 +16,9 @@ export interface RoomDef {
   min: [number, number, number];
   max: [number, number, number];
   door: { wall: WallSide; offset?: number };
+  // Offener Fensterschlitz in einer Wand (y0..y1 über die ganze Breite),
+  // z. B. die Frontscheibe der Brücke
+  window?: { wall: WallSide; y0: number; y1: number };
   props?: string[];
 }
 
@@ -77,10 +80,13 @@ export const BOAT_LAYOUT: RoomDef[] = [
   {
     id: 'bruecke',
     name: 'Brücke',
-    locked: true,
+    locked: true, // wird freigeschaltet, sobald der Motor läuft
     min: [-2.55, ROOF_Y, -9.8],
     max: [2.55, UPPER_CEIL_Y, -5.8],
     door: { wall: 'aft', offset: -1.5 },
+    // Frontscheibe: liegt hinter dem äußeren Fensterband des Steuerhauses
+    window: { wall: 'fore', y0: 5.15, y1: 5.95 },
+    props: ['helm'],
   },
   {
     id: 'kartenraum',

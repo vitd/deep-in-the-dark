@@ -65,6 +65,9 @@ export class Resources {
     private readonly interaction: InteractionSystem,
     private readonly inventory: Inventory,
     private readonly onFuelFound: (liter: number) => void,
+    // Boot-Gruppe (Originalkoordinaten): Deck-Fässer hängen hier,
+    // damit sie bei Bootsfahrten mitwandern
+    private readonly boatGroup: THREE.Group | null = null,
   ) {
     // Holzplanken (einfache Boxen mit Planken-Textur, treiben)
     for (const [i, spot] of PLANK_SPOTS.entries()) {
@@ -88,7 +91,7 @@ export class Resources {
 
     // Fässer: Deck, treibend, Meeresboden
     for (const [i, spot] of BARREL_DECK.entries()) {
-      this.spawnModelPickup('barrel.glb', 0.7, 'fass', spot.x, spot.y, spot.z, i * 0.8);
+      this.spawnModelPickup('barrel.glb', 0.7, 'fass', spot.x, spot.y, spot.z, i * 0.8, this.boatGroup);
     }
     for (const [i, spot] of BARREL_FLOAT.entries()) {
       const group = this.spawnModelPickup('barrel.glb', 0.7, 'fass', spot.x, 0, spot.z, i * 2.1);
@@ -139,7 +142,7 @@ export class Resources {
           UI.toast(STR.inventoryFull);
           return;
         }
-        this.scene.remove(group);
+        group.parent?.remove(group);
         this.interaction.remove(entry);
         const idx = this.floaters.findIndex((f) => f.obj === group);
         if (idx >= 0) this.floaters.splice(idx, 1);
@@ -161,11 +164,12 @@ export class Resources {
     y: number,
     z: number,
     yaw: number,
+    parent: THREE.Object3D | null = null,
   ): THREE.Group {
     const group = new THREE.Group();
     group.position.set(x, y, z);
     group.rotation.y = yaw;
-    this.scene.add(group);
+    (parent ?? this.scene).add(group);
     loadModel(file, size)
       .then(({ template }) => {
         if (group.parent) group.add(template.clone(true));
@@ -190,7 +194,7 @@ export class Resources {
           UI.toast(STR.inventoryFull);
           return;
         }
-        this.scene.remove(obj);
+        obj.parent?.remove(obj);
         this.interaction.remove(entry);
         const idx = this.floaters.findIndex((f) => f.obj === obj);
         if (idx >= 0) this.floaters.splice(idx, 1);

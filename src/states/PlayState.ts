@@ -46,11 +46,14 @@ export class PlayState implements GameState {
   private expectUnlock = false;
   private active = false;
   private disposed = false;
+  // true, solange der Spieler am Steuerstand das Boot fährt
+  private steering = false;
 
   // Cheat-Menü (Taste L) und Debug-Anzeigen – immer verfügbar
   private cheatsOpen = false;
   private debugVisible = false;
   private debugHelpers: THREE.Group | null = null;
+  private debugFrameHelpers: THREE.Group | null = null;
   private fpsTime = 0;
   private fpsFrames = 0;
   private fps = 0;
@@ -75,6 +78,8 @@ export class PlayState implements GameState {
       },
       () => (this.motorRepair.complete ? STR.motorRunning : STR.motorApply),
       () => this.applyToMotor(),
+      () => (this.motorRepair.complete ? STR.helmUse : STR.helmNoMotor),
+      () => this.toggleSteering(),
     );
 
     // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
@@ -94,7 +99,9 @@ export class PlayState implements GameState {
     if (this.isTouch) {
       this.touch = new TouchControls(this.keys, this.look, {
         onInteract: () => {
-          if (!this.inventoryOpen) this.interaction.interact();
+          if (this.inventoryOpen) return;
+          if (this.steering) this.toggleSteering();
+          else this.interaction.interact();
         },
         onToggleInventory: () => this.toggleInventory(),
         onPause: () => this.game.setState(new PauseState(this.game, this)),
@@ -154,19 +161,32 @@ export class PlayState implements GameState {
               this.debugHelpers.add(new THREE.Box3Helper(box, 0xffff00));
             }
             this.scene.add(this.debugHelpers);
+            // Boot-Boxen hängen an der Boot-Gruppe und fahren mit
+            this.debugFrameHelpers = new THREE.Group();
+            for (const box of this.world.collision.frameBoxes) {
+              this.debugFrameHelpers.add(new THREE.Box3Helper(box, 0xff8800));
+            }
+            this.world.boatGroup.add(this.debugFrameHelpers);
           } else {
             this.debugHelpers.visible = !this.debugHelpers.visible;
+            if (this.debugFrameHelpers) this.debugFrameHelpers.visible = this.debugHelpers.visible;
           }
         },
       },
       {
         label: 'Teleport: aufs Deck',
         action: () => {
-          this.player.position.set(
-            CONFIG.world.boatPos.x,
-            CONFIG.world.boatPos.y + 1.6,
-            CONFIG.world.boatPos.z + 11.2,
-          );
+          const b = CONFIG.world.boatPos;
+          this.player.position.set(b.x, b.y + 1.6, b.z + 11.2);
+          this.world.frame.toWorld(this.player.position);
+          this.player.state = PlayerState.Walk;
+        },
+      },
+      {
+        label: 'Teleport: ans Steuer (Brücke)',
+        action: () => {
+          this.world.helmStandWorld(this.player.position);
+          this.player.position.y += 0.05;
           this.player.state = PlayerState.Walk;
         },
       },
@@ -212,6 +232,19 @@ export class PlayState implements GameState {
         action: () => {
           this.stats.treibstoff += 100;
           UI.toast('Cheat: +100 L Treibstoff');
+        },
+      },
+      {
+        label: 'Motor sofort reparieren (Brücke frei)',
+        action: () => {
+          const m = this.motorRepair;
+          if (m.complete) return;
+          m.apply('eisen', m.remaining('eisen'));
+          m.apply('gold', m.remaining('gold'));
+          m.apply('nyzerin', m.remaining('nyzerin'));
+          m.apply('glyzerin', m.remaining('glyzerin'));
+          m.applyFuel(m.fuelRemaining);
+          this.finishMotor();
         },
       },
       {
@@ -290,7 +323,10 @@ export class PlayState implements GameState {
       return;
     }
     if (e.code === 'KeyE' && !this.inventoryOpen) {
-      if (this.interaction.current) {
+      if (this.steering) {
+        // am Steuer trifft der Raycast nichts Sinnvolles – E lässt los
+        this.toggleSteering();
+      } else if (this.interaction.current) {
         this.interaction.interact();
       } else {
         // nichts anvisiert: mit dem Hammer zuschlagen (auch für Touch)
@@ -351,6 +387,29 @@ export class PlayState implements GameState {
     }
   }
 
+  // E am Steuerstand: Steuer übernehmen bzw. wieder loslassen.
+  // Während des Steuerns ist der Spieler ans Pult gebunden; W/S bewegen
+  // den Fahrhebel, A/D das Steuerrad (siehe BoatController).
+  private toggleSteering(): void {
+    if (!this.steering) {
+      if (!this.motorRepair.complete) return; // Prompt erklärt es bereits
+      this.steering = true;
+      this.player.state = PlayerState.Walk;
+      this.player.velocity.set(0, 0, 0);
+    } else {
+      this.steering = false;
+      this.world.boat.stop();
+    }
+  }
+
+  // Motor fertig repariert: anwerfen, Brummen, Brücke aufschließen
+  private finishMotor(): void {
+    this.world.startMotor();
+    Audio.startHum();
+    this.world.unlockBruecke();
+    UI.toast(STR.motorComplete);
+  }
+
   // E am Motor: Treibstoff aus dem Vorrat + gewähltes Hotbar-Material anwenden
   private applyToMotor(): void {
     const m = this.motorRepair;
@@ -384,9 +443,7 @@ export class PlayState implements GameState {
     m.renderPanel();
 
     if (m.complete) {
-      this.world.startMotor();
-      Audio.startHum();
-      UI.toast(STR.motorComplete);
+      this.finishMotor();
     }
   }
 
@@ -398,6 +455,7 @@ export class PlayState implements GameState {
 
   // Hammerschlag: Hand-Animation + Abwehrversuch gegen den Hai
   private swingHammer(): void {
+    if (this.steering) return; // beide Hände am Steuer
     if (this.hotbar.selectedItem !== 'hammer' || this.heldItem.isSwinging) return;
     this.heldItem.swing();
     this.player.eye(this.eyeTmp);
@@ -541,7 +599,15 @@ export class PlayState implements GameState {
     // Spielwelt pausiert bei offenem Inventar oder offener Werkbank
     if (this.inventoryOpen || this.craftingOpen || this.cheatsOpen) return;
 
-    this.player.update(dt, this.keys);
+    if (this.steering) {
+      // Bootsfahrt: WASD steuert das Boot statt des Spielers. Die Kamera
+      // dreht mit der Gierbewegung mit, der Spieler bleibt am Pult.
+      const dYaw = this.world.boat.drive(dt, this.keys);
+      this.look.yaw += dYaw;
+      this.world.helmStandWorld(this.player.position);
+    } else {
+      this.player.update(dt, this.keys);
+    }
     this.player.eye(this.eyeTmp);
     this.look.applyTo(this.camera, this.eyeTmp);
 
@@ -554,11 +620,13 @@ export class PlayState implements GameState {
       this.player.state === PlayerState.Dive || this.eyeTmp.y < waveAtEye;
     this.world.setUnderwater(eyesUnderwater);
 
-    // Überlebenswerte: Nahrung (Anstrengung) und Luft (Tauchen)
+    // Überlebenswerte: Nahrung (Anstrengung) und Luft (Tauchen).
+    // Am Steuer strengt sich das Boot an, nicht der Spieler.
     const moving =
-      this.keys.has('KeyW') || this.keys.has('KeyA') ||
-      this.keys.has('KeyS') || this.keys.has('KeyD') ||
-      this.player.climbMoving; // Klettern läuft auch ohne Taste
+      !this.steering &&
+      (this.keys.has('KeyW') || this.keys.has('KeyA') ||
+        this.keys.has('KeyS') || this.keys.has('KeyD') ||
+        this.player.climbMoving); // Klettern läuft auch ohne Taste
     this.stats.update(dt, this.player.state, moving, eyesUnderwater);
     this.player.speedFactor = this.stats.exhausted ? CONFIG.stats.erschoepftTempo : 1;
     UI.setBar(UI.barNahrung, this.stats.nahrung);
@@ -587,16 +655,22 @@ export class PlayState implements GameState {
     this.world.update(dt, this.player.position, playerInWater);
     this.heldItem.update(dt);
 
-    this.interaction.update(this.camera);
-    // Wer auf der Leiter hängt, ohne zu klettern, bekommt die
-    // Blicksteuerung erklärt – sobald es losgeht, ist der Hinweis weg.
-    const hanging = this.player.state === PlayerState.Climb && !this.player.climbMoving;
-    UI.setPrompt(hanging ? STR.climbHint : this.interaction.promptText());
+    if (this.steering) {
+      // am Steuer: feste Bedien-Hinweise statt Raycast-Prompts
+      UI.setPrompt(STR.helmStop);
+      UI.setVisible(UI.motorPanel, false);
+    } else {
+      this.interaction.update(this.camera);
+      // Wer auf der Leiter hängt, ohne zu klettern, bekommt die
+      // Blicksteuerung erklärt – sobald es losgeht, ist der Hinweis weg.
+      const hanging = this.player.state === PlayerState.Climb && !this.player.climbMoving;
+      UI.setPrompt(hanging ? STR.climbHint : this.interaction.promptText());
 
-    // Reparatur-Panel zeigen, solange der Motor anvisiert ist
-    const lookingAtMotor = this.interaction.current?.object === this.world.motor.group;
-    UI.setVisible(UI.motorPanel, lookingAtMotor);
-    if (lookingAtMotor) this.motorRepair.renderPanel();
+      // Reparatur-Panel zeigen, solange der Motor anvisiert ist
+      const lookingAtMotor = this.interaction.current?.object === this.world.motor.group;
+      UI.setVisible(UI.motorPanel, lookingAtMotor);
+      if (lookingAtMotor) this.motorRepair.renderPanel();
+    }
 
     if (this.debugVisible) this.updateDebug(dt);
   }
