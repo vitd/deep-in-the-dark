@@ -48,6 +48,10 @@ export class PlayState implements GameState {
   private disposed = false;
   // true, solange der Spieler am Steuerstand das Boot fährt
   private steering = false;
+  // Rammstöße des Seemonsters gegen das Schiff
+  private monsterHits = 0;
+  // vom Seemonster erwischt: Todes-Screen nach dem Welt-Update
+  private pendingDeath: string | null = null;
 
   // Cheat-Menü (Taste L) und Debug-Anzeigen – immer verfügbar
   private cheatsOpen = false;
@@ -80,6 +84,12 @@ export class PlayState implements GameState {
       () => this.applyToMotor(),
       () => (this.motorRepair.complete ? STR.helmUse : STR.helmNoMotor),
       () => this.toggleSteering(),
+      () => this.onMonsterHitShip(),
+      () => {
+        // ohne Waffe oder Schutz ist ein Treffen im Wasser tödlich
+        // (eine passende Waffe kommt später über das Crafting)
+        this.pendingDeath = STR.monsterDeathTitle;
+      },
     );
 
     // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
@@ -264,6 +274,13 @@ export class PlayState implements GameState {
         action: () => {
           this.world.shark.teleportNear(this.player.position);
           UI.toast('Cheat: Hai ist unterwegs');
+        },
+      },
+      {
+        label: 'Seemonster herbeirufen (Vorsicht!)',
+        action: () => {
+          this.world.monster.teleportNear(this.player.position);
+          UI.toast('Cheat: Das Seemonster ist unterwegs');
         },
       },
     ];
@@ -451,6 +468,19 @@ export class PlayState implements GameState {
     this.stats.damage(CONFIG.shark.damage);
     UI.damageFlash();
     UI.toast(STR.sharkBite(CONFIG.shark.damage));
+  }
+
+  // Rammstoß des Seemonsters: nach dem dritten Treffer sinkt das Schiff
+  private onMonsterHitShip(): void {
+    this.monsterHits++;
+    UI.damageFlash();
+    if (this.monsterHits >= CONFIG.seaMonster.shipHits) {
+      if (this.steering) this.toggleSteering();
+      this.world.sinkShip();
+      UI.toast(STR.shipSinking);
+    } else {
+      UI.toast(STR.monsterHitShip(this.monsterHits, CONFIG.seaMonster.shipHits));
+    }
   }
 
   // Hammerschlag: Hand-Animation + Abwehrversuch gegen den Hai
@@ -653,6 +683,14 @@ export class PlayState implements GameState {
     const playerInWater =
       this.player.state === PlayerState.SwimSurface || this.player.state === PlayerState.Dive;
     this.world.update(dt, this.player.position, playerInWater);
+    if (this.pendingDeath) {
+      this.game.setState(new DeathState(this.game, this, this.pendingDeath));
+      return;
+    }
+    if (this.world.shipSunk) {
+      this.game.setState(new DeathState(this.game, this, STR.shipSunkTitle));
+      return;
+    }
     this.heldItem.update(dt);
 
     if (this.steering) {

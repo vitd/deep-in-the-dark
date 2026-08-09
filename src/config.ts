@@ -113,6 +113,30 @@ export const CONFIG = {
     spawn: { x: -46, y: -6, z: -22 },
   },
 
+  // Das Seemonster: haust weit draußen auf dem offenen Meer. Schwimmer
+  // ohne Waffe/Schutz tötet es sofort; das Schiff greift es an und
+  // versenkt es nach `shipHits` Treffern.
+  seaMonster: {
+    size: 12, // ca. halbe Rumpflänge (Rumpf ist 24 m lang)
+    patrolSpeed: 1.6,
+    attackSpeed: 8, // schneller als das Boot (boot.maxSpeed)
+    aggroRadius: 45,
+    killRange: 3.0, // Distanz, ab der ein Schwimmer erwischt ist
+    shipHitRange: 6.5, // Abstand Monsterzentrum zur Rumpf-Außenkante
+    shipHits: 3, // so viele Rammstöße versenken das Schiff
+    retreatSeconds: 6, // Pause nach einem Rammstoß
+    cruiseY: -6,
+    attackY: -2.5, // beim Angriff kommt es Richtung Oberfläche
+    minY: -9,
+    maxY: -1.5,
+    // Revier weit draußen (Boot startet bei x = -28, Klippen im Westen)
+    territory: { minX: 25, maxX: 118, minZ: -145, maxZ: 145 },
+    chaseMargin: 25, // so weit verfolgt es Ziele über das Revier hinaus
+    spawn: { x: 75, y: -6, z: 0 },
+    sinkSpeed: 1.4, // m/s, mit denen das getroffene Schiff absinkt
+    sunkDepth: -9, // ab dieser Absenkung gilt das Schiff als gesunken
+  },
+
   // Großer Fisch: seltener, tiefer, ergiebiger
   fishBig: {
     count: 3,

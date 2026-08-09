@@ -12,6 +12,7 @@ import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
 import { Ocean } from './Ocean';
 import { Resources } from './Resources';
+import { SeaMonster } from './SeaMonster';
 import { Shark } from './Shark';
 import { BOAT_LAYOUT } from './boatLayout';
 
@@ -25,6 +26,7 @@ export class World {
   private readonly resources: Resources;
   private readonly fish: FishManager;
   readonly shark: Shark;
+  readonly monster: SeaMonster;
   readonly motor: MotorRef;
   readonly helm: HelmRef;
   readonly frame: BoatFrame;
@@ -34,6 +36,10 @@ export class World {
   private readonly unlockRoom: (id: string) => boolean;
   private motorRunning = false;
   private motorBaseY = 0;
+  // Schiff sinkt (vom Seemonster versenkt)
+  private sinking = false;
+  private sunk = false;
+  private readonly boatCenter = new THREE.Vector3();
   // Lichter mit Basis-Intensität, damit Unterwasser einheitlich gedimmt wird
   private readonly lights: { light: THREE.Light; base: number }[] = [];
   private readonly fogColor = new THREE.Color(CONFIG.world.fogAbove.color);
@@ -51,6 +57,8 @@ export class World {
     onMotorInteract: () => void,
     helmPrompt: () => string,
     onHelmInteract: () => void,
+    onMonsterHitShip: () => void,
+    onMonsterCaughtPlayer: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -102,6 +110,7 @@ export class World {
     this.resources = new Resources(scene, this.ocean, interaction, inventory, onFuelFound, boat.group);
     this.fish = new FishManager(scene, interaction, inventory);
     this.shark = new Shark(scene, onSharkBite);
+    this.monster = new SeaMonster(scene, this.frame, onMonsterHitShip, onMonsterCaughtPlayer);
   }
 
   private addRoomLight(min: readonly number[], max: readonly number[]): void {
@@ -153,12 +162,31 @@ export class World {
     this.resources.update();
     this.fish.update(dt);
     this.shark.update(dt, playerPos, playerInWater);
+    this.boatCenter.copy(this.frame.center).add(this.frame.offset);
+    this.monster.update(dt, playerPos, playerInWater, this.boatCenter);
+    if (this.sinking && !this.sunk) {
+      this.frame.offset.y -= CONFIG.seaMonster.sinkSpeed * dt;
+      this.boat.syncPose();
+      if (this.frame.offset.y <= CONFIG.seaMonster.sunkDepth) this.sunk = true;
+    }
     if (this.motorRunning) {
       // leichtes Vibrieren + pulsierendes Glühen des laufenden Motors
       const t = performance.now() / 1000;
       this.motor.group.position.y = this.motorBaseY + Math.sin(t * 55) * 0.004;
       this.motor.light.intensity = 5.2 + Math.sin(t * 9) * 1.4;
     }
+  }
+
+  // Drittes Rammen des Seemonsters: das Schiff sinkt langsam weg;
+  // `shipSunk` meldet, wann es endgültig unten ist.
+  sinkShip(): void {
+    if (this.sinking) return;
+    this.sinking = true;
+    this.monster.setDormant();
+  }
+
+  get shipSunk(): boolean {
+    return this.sunk;
   }
 
   startMotor(): void {

@@ -68,6 +68,12 @@ export class BoatController {
     return dYaw;
   }
 
+  // Frame wurde von außen verändert (z. B. sinkendes Schiff):
+  // Bootsgeometrie auf die neue Pose bringen.
+  syncPose(): void {
+    this.apply();
+  }
+
   // Steuer losgelassen: Maschine auf Stopp, Boot hält sofort an
   // (so gibt es nie ein fahrendes Boot ohne Steuermann).
   stop(): void {
