@@ -238,12 +238,15 @@ export function buildBoat(
     side: THREE.DoubleSide,
     depthWrite: false,
   });
-  addBox(ctx, 0, 5.55, -9.92, 4.8, 0.75, 0.08, windshieldMat, false);
+  // Große Frontscheibe (freier Blick vom Steuerstand): reicht von der
+  // Brüstung hinter dem Pult bis fast unter die Decke – die Maße passen
+  // zum Fensterschlitz der Brücken-Frontwand (boatLayout: window).
+  addBox(ctx, 0, 5.53, -9.92, 5.0, 1.55, 0.08, windshieldMat, false);
   addBox(ctx, -2.62, 5.55, -8.0, 0.08, 0.75, 3.2, glassMat, false);
   addBox(ctx, 2.62, 5.55, -8.0, 0.08, 0.75, 3.2, glassMat, false);
   // weiße Fensterrahmen-Bänder darüber/darunter
-  addBox(ctx, 0, 6.05, -9.9, 5.0, 0.12, 0.1, whiteMat, false);
-  addBox(ctx, 0, 5.05, -9.9, 5.0, 0.12, 0.1, whiteMat, false);
+  addBox(ctx, 0, 6.38, -9.9, 5.2, 0.12, 0.1, whiteMat, false);
+  addBox(ctx, 0, 4.68, -9.9, 5.2, 0.12, 0.1, whiteMat, false);
   // Dachüberstand über der Brücke
   addBox(ctx, 0, 6.66, -7.8, 5.9, 0.1, 4.9, whiteMat, false);
   // Antennen auf dem Steuerhausdach

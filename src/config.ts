@@ -125,14 +125,17 @@ export const CONFIG = {
     shipHitRange: 6.5, // Abstand Monsterzentrum zur Rumpf-Außenkante
     shipHits: 3, // so viele Rammstöße versenken das Schiff
     retreatSeconds: 6, // Pause nach einem Rammstoß
-    cruiseY: -6,
-    attackY: -2.5, // beim Angriff kommt es Richtung Oberfläche
+    // Es schwimmt an der Oberfläche – Rücken und Kopf ragen aus dem
+    // Wasser, vom Steuerstand aus sichtbar. Nur zum Rammen bzw. bei der
+    // Jagd auf Taucher geht es unter Wasser (minY).
+    cruiseY: -0.5,
+    attackY: -2.5, // beim Rammstoß taucht es unter die Wasserlinie
     minY: -9,
-    maxY: -1.5,
+    maxY: -0.2,
     // Revier weit draußen (Boot startet bei x = -28, Klippen im Westen)
     territory: { minX: 25, maxX: 118, minZ: -145, maxZ: 145 },
     chaseMargin: 25, // so weit verfolgt es Ziele über das Revier hinaus
-    spawn: { x: 75, y: -6, z: 0 },
+    spawn: { x: 75, y: -0.5, z: 0 },
     sinkSpeed: 1.4, // m/s, mit denen das getroffene Schiff absinkt
     sunkDepth: -9, // ab dieser Absenkung gilt das Schiff als gesunken
   },

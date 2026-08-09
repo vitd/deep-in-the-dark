@@ -84,8 +84,9 @@ export const BOAT_LAYOUT: RoomDef[] = [
     min: [-2.55, ROOF_Y, -9.8],
     max: [2.55, UPPER_CEIL_Y, -5.8],
     door: { wall: 'aft', offset: -1.5 },
-    // Frontscheibe: liegt hinter dem äußeren Fensterband des Steuerhauses
-    window: { wall: 'fore', y0: 5.15, y1: 5.95 },
+    // Frontscheibe: großzügiger Ausschnitt für freie Sicht vom
+    // Steuerstand; liegt hinter der transparenten Außenscheibe
+    window: { wall: 'fore', y0: 4.75, y1: 6.3 },
     props: ['helm'],
   },
   {
