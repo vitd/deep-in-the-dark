@@ -307,7 +307,7 @@ export class PlayState implements GameState {
           // Boot knapp vor das Bossrevier setzen, Bug nach Osten
           const B = CONFIG.seaBoss;
           const f = this.world.frame;
-          f.offset.x = B.nest.x - 75 - f.center.x;
+          f.offset.x = B.nest.x - B.triggerRadius - 15 - f.center.x;
           f.offset.z = B.nest.z - f.center.z;
           f.yaw = -Math.PI / 2;
           this.world.boat.stop(); // wendet die neue Pose an

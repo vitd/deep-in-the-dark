@@ -1,15 +1,33 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { loadModel } from '../rendering/Models';
+import { BoatFrame } from './BoatFrame';
 
 // Der Boss: ein kolossales Maul-Monster (seamonster-boss.glb – ein
 // vorne offener, innen schwarzer Schlund), das sehr weit draußen auf
 // dem offenen Meer unter Wasser lauert. Kommt das Boot seinem Nest zu
 // nahe, taucht es auf und schiebt sein Maul über das Boot. Verschluckt
 // ist das Boot erst, wenn es die schwarze Schlundwand hinten im Maul
-// berührt – solange kann man noch hinausfahren.
+// berührt – solange kann man noch hinausfahren. Die Maulwände sind
+// undurchdringlich: seitlich hineinfahren geht nicht, das Boot wird
+// herausgedrückt (resolveBoatCollision).
 
 const B = CONFIG.seaBoss;
+
+// Maulgeometrie aus dem GLB (Modell 12 Einheiten lang, zentriert):
+// Öffnung bei -6, Schlundwand bei -1.48, Körperende bei +1.6, innere
+// Kanalbreite/-höhe 3.5, Außenkante 3.66. Nach der 180°-Drehung der
+// Vorlage zeigt die Öffnung in +Vorwärtsrichtung; alle Maße skalieren
+// mit size/12.
+const S = B.size / 12;
+const GEO = {
+  frontF: 6 * S, // Maulöffnung (vor dem Zentrum)
+  throatF: 1.48 * S, // schwarze Schlundwand
+  backF: -1.6 * S, // hinteres Körperende
+  halfWIn: 1.75 * S, // Kanal-Innenmaß (halbe Breite/Höhe)
+  wallMid: 1.79 * S, // Mitte der Wanddicke
+  halfWOut: 1.83 * S, // Außenkante
+};
 
 type BossState = 'lurk' | 'rise' | 'attack' | 'descend' | 'return';
 
@@ -22,7 +40,7 @@ export class BossMonster {
   private dormant = false;
   private warned = false;
   private readonly tmp = new THREE.Vector3();
-  private readonly throat = new THREE.Vector3();
+  private readonly tmp2 = new THREE.Vector3();
 
   constructor(
     scene: THREE.Scene,
@@ -57,15 +75,17 @@ export class BossMonster {
     if (this.state === 'attack') this.state = 'descend';
   }
 
-  // Weltposition der Schlundwand (hinten im Maul, in Maulrichtung vorn)
-  private throatPoint(out: THREE.Vector3): THREE.Vector3 {
-    return out
-      .copy(this.group.position)
-      .add(this.forward(this.tmp).multiplyScalar(B.throatOffset));
-  }
-
   private forward(out: THREE.Vector3): THREE.Vector3 {
     return out.set(Math.sin(this.heading), 0, Math.cos(this.heading));
+  }
+
+  // Punkt in Boss-Koordinaten: f = Anteil in Maulrichtung, l = seitlich
+  private toFrame(p: THREE.Vector3): { f: number; l: number } {
+    const dx = p.x - this.group.position.x;
+    const dz = p.z - this.group.position.z;
+    const sin = Math.sin(this.heading);
+    const cos = Math.cos(this.heading);
+    return { f: dx * sin + dz * cos, l: dx * cos - dz * sin };
   }
 
   // Träge Drehung zum Ziel-Heading
@@ -108,26 +128,22 @@ export class BossMonster {
           this.state = 'descend';
           break;
         }
-        // So steuern, dass die Schlundwand aufs Bootszentrum zuwandert –
-        // das Maul schiebt sich dabei über das Boot.
-        const throat = this.throatPoint(this.throat);
-        this.turnTowards(
-          Math.atan2(boatCenter.x - pos.x, boatCenter.z - pos.z),
-          dt,
-        );
-        const dir = this.tmp.copy(boatCenter).sub(throat).setY(0);
-        const dist = dir.length();
-        if (dist > 0.01) {
-          dir.normalize();
-          // nur die Anteile in Blickrichtung fahren – der Koloss kann
-          // nicht seitwärts gleiten
-          const fwd = this.forward(new THREE.Vector3());
-          const along = fwd.dot(dir);
-          pos.addScaledVector(fwd, Math.max(0, along) * B.chaseSpeed * dt);
+        this.turnTowards(Math.atan2(boatCenter.x - pos.x, boatCenter.z - pos.z), dt);
+        // So fahren, dass die Schlundwand aufs Bootszentrum zuwandert –
+        // das Maul schiebt sich dabei über das Boot. Der Koloss kann
+        // nicht seitwärts gleiten, nur vorwärts.
+        const { f } = this.toFrame(boatCenter);
+        if (f > GEO.throatF) {
+          pos.addScaledVector(this.forward(this.tmp), B.chaseSpeed * dt);
         }
 
-        // Verschluckt: Bootszentrum berührt die schwarze Schlundwand
-        if (this.throatPoint(this.throat).distanceTo(this.tmp.copy(boatCenter).setY(this.throat.y)) < B.swallowRadius) {
+        // Verschluckt: Bootszentrum im Kanal und an der Schlundwand
+        const rel = this.toFrame(boatCenter);
+        if (
+          Math.abs(rel.l) < GEO.halfWIn &&
+          rel.f > GEO.backF &&
+          rel.f < GEO.throatF + B.schlundMarge
+        ) {
           this.onBoatSwallowed();
           this.setDormant();
         }
@@ -151,8 +167,7 @@ export class BossMonster {
           break;
         }
         this.turnTowards(Math.atan2(B.nest.x - pos.x, B.nest.z - pos.z), dt);
-        const fwd = this.forward(this.tmp);
-        pos.addScaledVector(fwd, B.patrolSpeed * dt);
+        pos.addScaledVector(this.forward(this.tmp), B.patrolSpeed * dt);
         // taucht ein Boot wieder auf, greift es erneut an
         if (!this.dormant && distBoatNest < B.triggerRadius) this.state = 'rise';
         break;
@@ -160,5 +175,74 @@ export class BossMonster {
     }
 
     this.group.rotation.y = this.heading;
+  }
+
+  // ---- Undurchdringliche Maulwände ----
+  // Das Boot wird als drei Kreise entlang seiner Längsachse geprüft
+  // (Bug, Mitte, Heck). Punkte, die in den Boss-Körper eindringen,
+  // werden über die kürzeste erlaubte Richtung herausgedrückt: aus der
+  // Wandaußenseite nach außen, aus der Wandinnenseite zurück in den
+  // Maulkanal – niemals quer durch eine Wand hindurch. Gibt true
+  // zurück, wenn das Boot verschoben wurde.
+  resolveBoatCollision(frame: BoatFrame): boolean {
+    // vertikal überhaupt auf Boots-Höhe? (Wasserlinie ~0)
+    if (this.group.position.y + GEO.halfWIn < -2 || this.group.position.y - GEO.halfWIn > 4) {
+      return false;
+    }
+
+    const R = 5; // Prüfkreis-Radius (halbe Bootsbreite + Marge)
+    const boatFwdX = -Math.sin(frame.yaw);
+    const boatFwdZ = -Math.cos(frame.yaw);
+    let moved = false;
+
+    // zwei Iterationen, damit sich die drei Punkte nicht gegenseitig
+    // wieder in die Wand schieben
+    for (let iter = 0; iter < 2; iter++) {
+      for (const along of [-8, 0, 8]) {
+        const p = this.tmp2.set(
+          frame.center.x + frame.offset.x + boatFwdX * along,
+          0,
+          frame.center.z + frame.offset.z + boatFwdZ * along,
+        );
+        const { f, l } = this.toFrame(p);
+        const absL = Math.abs(l);
+
+        // außerhalb des Körpers?
+        if (f < GEO.backF - R || f > GEO.frontF + R || absL > GEO.halfWOut + R) continue;
+        // frei im Maulkanal?
+        if (f > GEO.throatF && absL < GEO.halfWIn - R) continue;
+
+        // Push-Kandidaten (Betrag, df, dl) – kleinsten anwenden
+        const cands: { d: number; df: number; dl: number }[] = [];
+        if (absL >= GEO.wallMid) {
+          // in der Außenhälfte einer Seitenwand: seitlich nach außen
+          const d = GEO.halfWOut + R - absL;
+          cands.push({ d, df: 0, dl: Math.sign(l) * d });
+        } else if (f > GEO.throatF) {
+          // in der Innenhälfte einer Kanalwand: zurück zur Kanalmitte
+          const d = absL - (GEO.halfWIn - R);
+          cands.push({ d, df: 0, dl: -Math.sign(l) * d });
+        } else {
+          // im massiven Körper hinter der Schlundwand: nach vorn in den
+          // Kanal (dort übernimmt der Verschluck-Trigger)
+          cands.push({ d: GEO.throatF + R - f, df: GEO.throatF + R - f, dl: 0 });
+        }
+        // immer erlaubt: nach hinten oder vorn ganz hinaus
+        cands.push({ d: f - (GEO.backF - R), df: GEO.backF - R - f, dl: 0 });
+        cands.push({ d: GEO.frontF + R - f, df: GEO.frontF + R - f, dl: 0 });
+
+        cands.sort((a, b) => a.d - b.d);
+        const best = cands[0];
+        if (best.d <= 0) continue;
+
+        // (df, dl) aus dem Boss-Rahmen zurück in Weltrichtungen
+        const sin = Math.sin(this.heading);
+        const cos = Math.cos(this.heading);
+        frame.offset.x += best.df * sin + best.dl * cos;
+        frame.offset.z += best.df * cos - best.dl * sin;
+        moved = true;
+      }
+    }
+    return moved;
   }
 }

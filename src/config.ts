@@ -145,23 +145,26 @@ export const CONFIG = {
   // versucht, das Boot zu verschlucken. Verschluckt ist das Boot erst,
   // wenn es die schwarze Schlundwand hinten im Maul berührt.
   seaBoss: {
-    // Skalierung: Maulöffnung ~27 m im Quadrat – das Boot (24 m) passt
-    // der Länge nach quer hinein; Maultiefe ~34 m
-    size: 90,
-    // Nest sehr weit von der Küste entfernt (Klippen bei x = -55)
-    nest: { x: 100, z: 0 },
-    lurkY: -38, // Lauertiefe (dort gibt es keinen Meeresboden mehr)
-    surfaceY: 2, // aufgetaucht: Maul ragt ~16 m aus dem Wasser
-    riseSpeed: 7, // m/s beim Auf-/Abtauchen
+    // Skalierung: Maulöffnung ~52 m im Quadrat, Maultiefe ~68 m – das
+    // Boot (24 m) verschwindet komplett darin. Die Maulwände sind
+    // undurchdringlich (siehe BossMonster.resolveBoatCollision).
+    size: 180,
+    // Nest sehr weit von der Küste entfernt (Klippen bei x = -55);
+    // weiter draußen als der Fahrbereich, damit die Trigger-Zone erst
+    // auf dem offenen Meer beginnt
+    nest: { x: 140, z: 0 },
+    lurkY: -60, // Lauertiefe (dort gibt es keinen Meeresboden mehr)
+    surfaceY: 2, // aufgetaucht: Maul ragt weit aus dem Wasser
+    riseSpeed: 9, // m/s beim Auf-/Abtauchen
     chaseSpeed: 7.5, // schneller als das Boot (boot.maxSpeed)
     patrolSpeed: 2, // Rückkehr zum Nest
     turnRate: 0.35, // rad/s – träge, quer abdrehen kann retten
-    triggerRadius: 65, // Bootsabstand zum Nest, ab dem es auftaucht
-    giveUpRadius: 140, // Bootsabstand zum Boss, ab dem es aufgibt
-    // Schlundwand: 1.48 Modell-Einheiten vor dem Zentrum (Modell 12 lang)
-    // -> bei size 90: 1.48 * 90/12 = 11.1 m in Maulrichtung
-    throatOffset: 11.1,
-    swallowRadius: 10, // Bootszentrum so nah an der Schlundwand = verschluckt
+    // Der Körper ist 180 m lang (Maul 90 m vor dem Zentrum): der Trigger
+    // muss größer sein als die halbe Körperlänge, damit es nicht direkt
+    // unter dem Boot auftaucht
+    triggerRadius: 115,
+    giveUpRadius: 230, // Bootsabstand zum Boss-Zentrum, ab dem es aufgibt
+    schlundMarge: 6, // Restabstand Bootszentrum zur Schlundwand = Berührung
   },
 
   // Großer Fisch: seltener, tiefer, ergiebiger

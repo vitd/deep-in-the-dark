@@ -170,6 +170,9 @@ export class World {
     this.boatCenter.copy(this.frame.center).add(this.frame.offset);
     this.monster.update(dt, playerPos, playerInWater, this.boatCenter);
     this.boss.update(dt, this.boatCenter);
+    // Die Maulwände des Bosses sind undurchdringlich: notfalls wird das
+    // Boot herausgedrückt und seine Pose neu angewendet
+    if (this.boss.resolveBoatCollision(this.frame)) this.boat.syncPose();
     if (this.sinking && !this.sunk) {
       this.frame.offset.y -= CONFIG.seaMonster.sinkSpeed * dt;
       this.boat.syncPose();
