@@ -37,8 +37,16 @@ export class BoatController {
   drive(dt: number, keys: Set<string>): number {
     if (keys.has('KeyW')) this.throttle = Math.min(1, this.throttle + B.leverRate * dt);
     if (keys.has('KeyS')) this.throttle = Math.max(-1, this.throttle - B.leverRate * dt);
-    if (keys.has('KeyA')) this.wheel = Math.min(1, this.wheel + B.wheelRate * dt);
-    if (keys.has('KeyD')) this.wheel = Math.max(-1, this.wheel - B.wheelRate * dt);
+    if (keys.has('KeyA')) {
+      this.wheel = Math.min(1, this.wheel + B.wheelRate * dt);
+    } else if (keys.has('KeyD')) {
+      this.wheel = Math.max(-1, this.wheel - B.wheelRate * dt);
+    } else if (this.wheel !== 0) {
+      // ohne A/D dreht das Rad von selbst in die Mittelstellung zurück –
+      // das Schiff fährt dann wieder geradeaus
+      const back = B.wheelReturnRate * dt;
+      this.wheel = Math.abs(this.wheel) <= back ? 0 : this.wheel - Math.sign(this.wheel) * back;
+    }
 
     const target = this.throttle * (this.throttle >= 0 ? B.maxSpeed : B.rueckSpeed);
     this.speed += (target - this.speed) * Math.min(1, dt * B.accel);

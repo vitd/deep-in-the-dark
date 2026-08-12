@@ -128,21 +128,30 @@ export class BossMonster {
           this.state = 'descend';
           break;
         }
-        this.turnTowards(Math.atan2(boatCenter.x - pos.x, boatCenter.z - pos.z), dt);
+        // Ist das Boot bereits im Maul, setzt der Boss zum Zubeißen an:
+        // Er dreht nicht mehr (sonst schwenkten die Wände dem fliehenden
+        // Boot ewig hinterher) und wird langsamer – die faire Chance,
+        // im Kanal zu wenden und durch die Öffnung zu entkommen.
+        const rel = this.toFrame(boatCenter);
+        const inMouth =
+          rel.f > GEO.backF && rel.f < GEO.frontF && Math.abs(rel.l) < GEO.halfWIn;
+        if (!inMouth) {
+          this.turnTowards(Math.atan2(boatCenter.x - pos.x, boatCenter.z - pos.z), dt);
+        }
         // So fahren, dass die Schlundwand aufs Bootszentrum zuwandert –
         // das Maul schiebt sich dabei über das Boot. Der Koloss kann
         // nicht seitwärts gleiten, nur vorwärts.
-        const { f } = this.toFrame(boatCenter);
-        if (f > GEO.throatF) {
-          pos.addScaledVector(this.forward(this.tmp), B.chaseSpeed * dt);
+        if (rel.f > GEO.throatF) {
+          const speed = B.chaseSpeed * (inMouth ? B.maulTempoFaktor : 1);
+          pos.addScaledVector(this.forward(this.tmp), speed * dt);
         }
 
         // Verschluckt: Bootszentrum im Kanal und an der Schlundwand
-        const rel = this.toFrame(boatCenter);
+        const hit = this.toFrame(boatCenter);
         if (
-          Math.abs(rel.l) < GEO.halfWIn &&
-          rel.f > GEO.backF &&
-          rel.f < GEO.throatF + B.schlundMarge
+          Math.abs(hit.l) < GEO.halfWIn &&
+          hit.f > GEO.backF &&
+          hit.f < GEO.throatF + B.schlundMarge
         ) {
           this.onBoatSwallowed();
           this.setDormant();

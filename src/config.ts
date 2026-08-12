@@ -165,6 +165,10 @@ export const CONFIG = {
     triggerRadius: 115,
     giveUpRadius: 230, // Bootsabstand zum Boss-Zentrum, ab dem es aufgibt
     schlundMarge: 6, // Restabstand Bootszentrum zur Schlundwand = Berührung
+    // Ist das Boot im Maul, setzt der Boss zum Zubeißen an: er dreht
+    // nicht mehr und wird langsamer – wer sofort wendet und Vollgas
+    // gibt, kann durch die Öffnung entkommen
+    maulTempoFaktor: 0.45,
   },
 
   // Großer Fisch: seltener, tiefer, ergiebiger
@@ -200,6 +204,8 @@ export const CONFIG = {
     turnRate: 0.55, // rad/s bei vollem Einschlag und voller Fahrt
     leverRate: 1.2, // Hebelweg pro Sekunde (W/S)
     wheelRate: 1.5, // Steuerrad-Einschlag pro Sekunde (A/D)
+    // ohne A/D dreht das Rad von selbst zurück – das Schiff fährt geradeaus
+    wheelReturnRate: 2.2,
     // Fahrbereich des Bootszentrums (Klippen im Westen, Kartenrand sonst)
     bounds: { minX: -36, maxX: 120, minZ: -150, maxZ: 150 },
     // Third-Person-Kamera am Steuer: kreist um den Steuerstand
