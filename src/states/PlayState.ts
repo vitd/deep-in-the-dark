@@ -90,6 +90,11 @@ export class PlayState implements GameState {
         // (eine passende Waffe kommt später über das Crafting)
         this.pendingDeath = STR.monsterDeathTitle;
       },
+      () => UI.toast(STR.bossSurfaced),
+      () => {
+        // vom Boss verschluckt: das Boot ist weg, das Spiel verloren
+        this.pendingDeath = STR.bossSwallowedTitle;
+      },
     );
 
     // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
@@ -281,6 +286,32 @@ export class PlayState implements GameState {
         action: () => {
           this.world.monster.teleportNear(this.player.position);
           UI.toast('Cheat: Das Seemonster ist unterwegs');
+        },
+      },
+      {
+        label: 'Teleport: Boot ins Bossrevier (Vorsicht!)',
+        action: () => {
+          // Motor fertigstellen, damit sich das Boot steuern lässt
+          const m = this.motorRepair;
+          if (!m.complete) {
+            m.apply('eisen', m.remaining('eisen'));
+            m.apply('gold', m.remaining('gold'));
+            m.apply('nyzerin', m.remaining('nyzerin'));
+            m.apply('glyzerin', m.remaining('glyzerin'));
+            m.applyFuel(m.fuelRemaining);
+            this.finishMotor();
+          }
+          // Boot knapp vor das Bossrevier setzen, Bug nach Osten
+          const B = CONFIG.seaBoss;
+          const f = this.world.frame;
+          f.offset.x = B.nest.x - 75 - f.center.x;
+          f.offset.z = B.nest.z - f.center.z;
+          f.yaw = -Math.PI / 2;
+          this.world.boat.stop(); // wendet die neue Pose an
+          this.world.helmStandWorld(this.player.position);
+          this.player.state = PlayerState.Walk;
+          this.look.yaw = f.yaw;
+          UI.toast('Cheat: Bossrevier voraus – E am Steuer, W für volle Fahrt');
         },
       },
     ];

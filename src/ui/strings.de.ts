@@ -21,6 +21,8 @@ export const STR = {
   diedTitle: 'DU BIST GESTORBEN',
   monsterDeathTitle: 'DAS SEEMONSTER HAT DICH ERWISCHT',
   shipSunkTitle: 'DAS SCHIFF IST GESUNKEN',
+  bossSurfaced: 'Das Wasser bebt – etwas Kolossales taucht auf!',
+  bossSwallowedTitle: 'DAS BOOT WURDE VERSCHLUCKT',
   leben: 'Leben',
   nahrung: 'Nahrung',
   luft: 'Luft',

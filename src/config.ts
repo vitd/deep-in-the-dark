@@ -140,6 +140,30 @@ export const CONFIG = {
     sunkDepth: -9, // ab dieser Absenkung gilt das Schiff als gesunken
   },
 
+  // Der Boss: ein kolossales Maul-Monster, das sehr weit draußen unter
+  // Wasser lauert. Kommt das Boot in die Nähe, taucht es auf und
+  // versucht, das Boot zu verschlucken. Verschluckt ist das Boot erst,
+  // wenn es die schwarze Schlundwand hinten im Maul berührt.
+  seaBoss: {
+    // Skalierung: Maulöffnung ~27 m im Quadrat – das Boot (24 m) passt
+    // der Länge nach quer hinein; Maultiefe ~34 m
+    size: 90,
+    // Nest sehr weit von der Küste entfernt (Klippen bei x = -55)
+    nest: { x: 100, z: 0 },
+    lurkY: -38, // Lauertiefe (dort gibt es keinen Meeresboden mehr)
+    surfaceY: 2, // aufgetaucht: Maul ragt ~16 m aus dem Wasser
+    riseSpeed: 7, // m/s beim Auf-/Abtauchen
+    chaseSpeed: 7.5, // schneller als das Boot (boot.maxSpeed)
+    patrolSpeed: 2, // Rückkehr zum Nest
+    turnRate: 0.35, // rad/s – träge, quer abdrehen kann retten
+    triggerRadius: 65, // Bootsabstand zum Nest, ab dem es auftaucht
+    giveUpRadius: 140, // Bootsabstand zum Boss, ab dem es aufgibt
+    // Schlundwand: 1.48 Modell-Einheiten vor dem Zentrum (Modell 12 lang)
+    // -> bei size 90: 1.48 * 90/12 = 11.1 m in Maulrichtung
+    throatOffset: 11.1,
+    swallowRadius: 10, // Bootszentrum so nah an der Schlundwand = verschluckt
+  },
+
   // Großer Fisch: seltener, tiefer, ergiebiger
   fishBig: {
     count: 3,

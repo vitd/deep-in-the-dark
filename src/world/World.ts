@@ -7,6 +7,7 @@ import { UI } from '../ui/UIManager';
 import { buildBoat, HelmRef, MotorRef } from './Boat';
 import { BoatController } from './BoatController';
 import { BoatFrame } from './BoatFrame';
+import { BossMonster } from './BossMonster';
 import { buildCliffs } from './Cliffs';
 import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
@@ -27,6 +28,7 @@ export class World {
   private readonly fish: FishManager;
   readonly shark: Shark;
   readonly monster: SeaMonster;
+  readonly boss: BossMonster;
   readonly motor: MotorRef;
   readonly helm: HelmRef;
   readonly frame: BoatFrame;
@@ -59,6 +61,8 @@ export class World {
     onHelmInteract: () => void,
     onMonsterHitShip: () => void,
     onMonsterCaughtPlayer: () => void,
+    onBossSurfaced: () => void,
+    onBoatSwallowed: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -111,6 +115,7 @@ export class World {
     this.fish = new FishManager(scene, interaction, inventory);
     this.shark = new Shark(scene, onSharkBite);
     this.monster = new SeaMonster(scene, this.frame, onMonsterHitShip, onMonsterCaughtPlayer);
+    this.boss = new BossMonster(scene, onBossSurfaced, onBoatSwallowed);
   }
 
   private addRoomLight(min: readonly number[], max: readonly number[]): void {
@@ -164,6 +169,7 @@ export class World {
     this.shark.update(dt, playerPos, playerInWater);
     this.boatCenter.copy(this.frame.center).add(this.frame.offset);
     this.monster.update(dt, playerPos, playerInWater, this.boatCenter);
+    this.boss.update(dt, this.boatCenter);
     if (this.sinking && !this.sunk) {
       this.frame.offset.y -= CONFIG.seaMonster.sinkSpeed * dt;
       this.boat.syncPose();
@@ -183,6 +189,7 @@ export class World {
     if (this.sinking) return;
     this.sinking = true;
     this.monster.setDormant();
+    this.boss.setDormant();
   }
 
   get shipSunk(): boolean {
