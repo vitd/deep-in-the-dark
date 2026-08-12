@@ -33,6 +33,9 @@ export class PlayState implements GameState {
   private readonly stats = new Stats();
   private readonly keys = new Set<string>();
   private readonly eyeTmp = new THREE.Vector3();
+  // Third-Person-Kamera am Steuer (Orbit um den Steuerstand)
+  private readonly camPivot = new THREE.Vector3();
+  private readonly camDir = new THREE.Vector3();
   private exhaustedToastTimer = 0;
   private readonly isTouch = isTouchDevice();
   private readonly touch: TouchControls | null = null;
@@ -444,9 +447,17 @@ export class PlayState implements GameState {
       this.steering = true;
       this.player.state = PlayerState.Walk;
       this.player.velocity.set(0, 0, 0);
+      // Third-Person: Kamera startet schräg von oben in Fahrtrichtung
+      // und kreist per Maus um den Steuerstand
+      this.look.yaw = this.world.frame.yaw;
+      this.look.pitch = CONFIG.boot.kameraStartPitch;
+      this.heldItem.setVisible(false);
     } else {
       this.steering = false;
       this.world.boat.stop();
+      // zurück in die Egoperspektive am Pult
+      this.look.pitch = 0;
+      this.heldItem.setVisible(true);
     }
   }
 
@@ -666,11 +677,23 @@ export class PlayState implements GameState {
       const dYaw = this.world.boat.drive(dt, this.keys);
       this.look.yaw += dYaw;
       this.world.helmStandWorld(this.player.position);
+      this.player.eye(this.eyeTmp);
+      // Third-Person-Orbit: Die Maus bestimmt die Blickrichtung, die
+      // Kamera hängt entgegen dieser Richtung hinter dem Steuerstand –
+      // sie kreist also um das Pult. Pitch bleibt "von oben", damit die
+      // Kamera nie unter die Wasserlinie gerät.
+      const B = CONFIG.boot;
+      this.look.pitch = Math.max(B.kameraPitchMin, Math.min(B.kameraPitchMax, this.look.pitch));
+      this.camPivot.copy(this.player.position);
+      this.camPivot.y += B.kameraPivotHoehe;
+      this.look.applyTo(this.camera, this.camPivot);
+      this.look.forward(this.camDir);
+      this.camera.position.addScaledVector(this.camDir, -B.kameraDistanz);
     } else {
       this.player.update(dt, this.keys);
+      this.player.eye(this.eyeTmp);
+      this.look.applyTo(this.camera, this.eyeTmp);
     }
-    this.player.eye(this.eyeTmp);
-    this.look.applyTo(this.camera, this.eyeTmp);
 
     // Über-/Unterwasser: im Tauchzustand gilt der Kopf immer als unter
     // Wasser (dieser Zustand endet erst, wenn er wirklich auftaucht) –

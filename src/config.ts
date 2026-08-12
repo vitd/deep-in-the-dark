@@ -199,6 +199,12 @@ export const CONFIG = {
     wheelRate: 1.5, // Steuerrad-Einschlag pro Sekunde (A/D)
     // Fahrbereich des Bootszentrums (Klippen im Westen, Kartenrand sonst)
     bounds: { minX: -36, maxX: 120, minZ: -150, maxZ: 150 },
+    // Third-Person-Kamera am Steuer: kreist um den Steuerstand
+    kameraDistanz: 20,
+    kameraPivotHoehe: 2.5, // Orbit-Mittelpunkt über dem Steuerstand-Boden
+    kameraStartPitch: -0.45, // Einstieg: schräg von oben in Fahrtrichtung
+    kameraPitchMin: -1.35, // fast senkrecht von oben
+    kameraPitchMax: -0.08, // nie unter die Wasserlinie
   },
 
   // Materialbedarf der Motor-Reparatur (Mechanik folgt)

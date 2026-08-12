@@ -30,6 +30,11 @@ export class HeldItem {
       .catch(() => {});
   }
 
+  // Bei Third-Person-Ansichten (z. B. am Steuer) wird die Hand versteckt
+  setVisible(visible: boolean): void {
+    this.anchor.visible = visible;
+  }
+
   swing(): void {
     this.swingT = 0.32;
   }
