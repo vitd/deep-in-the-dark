@@ -177,11 +177,13 @@ export const CONFIG = {
     // (90 m vor der Mitte) ragt dann 60 m aus dem Wasser
     breachY: -30,
     rollSpeed: 0.6, // rad/s beim Kippen aus der Senkrechten in die Bauchlage
-    chaseSpeed: 7.5, // schneller als das Boot (boot.maxSpeed)
+    // nur knapp schneller als das Boot (boot.maxSpeed 6): er bleibt
+    // bedrohlich, aber mit Vorsprung oder Querabdrehen entkommt man
+    chaseSpeed: 6.5,
     patrolSpeed: 2, // Rückkehr zum Nest
     turnRate: 0.35, // rad/s – träge, quer abdrehen kann retten
     triggerRadius: 115,
-    giveUpRadius: 230, // Bootsabstand zum Boss-Zentrum, ab dem es aufgibt
+    giveUpRadius: 180, // Bootsabstand zum Boss-Zentrum, ab dem es aufgibt
     schlundMarge: 6, // Restabstand Bootszentrum zur Schlundwand = Berührung
     // Ist das Boot im Maul, setzt der Boss zum Zubeißen an: er dreht
     // nicht mehr und wird langsamer – wer sofort wendet und Vollgas

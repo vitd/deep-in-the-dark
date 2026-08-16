@@ -294,9 +294,11 @@ export class BossMonster {
           const d = absL - (GEO.halfWIn - R);
           cands.push({ d, df: 0, dl: -Math.sign(l) * d });
         } else {
-          // im massiven Körper hinter der Schlundwand: nach vorn in den
-          // Kanal (dort übernimmt der Verschluck-Trigger)
-          cands.push({ d: GEO.throatF + R - f, df: GEO.throatF + R - f, dl: 0 });
+          // an bzw. hinter der Schlundwand: NICHT blocken – sonst hält
+          // die Kollision das Bootszentrum dauerhaft außerhalb der
+          // Verschluck-Zone und niemand wird je verschluckt. Die
+          // Schlundwand ist der Trigger, keine Mauer.
+          continue;
         }
         // immer erlaubt: nach hinten oder vorn ganz hinaus
         cands.push({ d: f - (GEO.backF - R), df: GEO.backF - R - f, dl: 0 });
