@@ -102,3 +102,46 @@ export function insideLake(x: number, z: number, margin: number): boolean {
   const max = L.radius - margin;
   return dx * dx + dz * dz <= max * max;
 }
+
+// ---- Streifgebiete der Wassertiere ----
+// Fische und Haie werden in einem Ring um den Spieler eingesetzt und
+// recycelt, sobald sie zu weit zurückfallen (siehe Fish.ts/Shark.ts).
+
+// Sucht einen Punkt im See in einem Ring um `center`. Liegt der Ring
+// teilweise hinter der Steilküste, wird der Punkt hineingeklemmt.
+// `avoid` (z. B. das Boot) wird nach Möglichkeit gemieden.
+export function roamPoint(
+  center: { x: number; z: number },
+  minR: number,
+  maxR: number,
+  out: { x: number; z: number },
+  avoid?: { x: number; z: number; r: number },
+): void {
+  for (let i = 0; i < 8; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = minR + Math.random() * (maxR - minR);
+    out.x = center.x + Math.sin(a) * r;
+    out.z = center.z + Math.cos(a) * r;
+    clampToLake(out, CONFIG.revier.uferAbstand);
+    if (!avoid) return;
+    const dx = out.x - avoid.x;
+    const dz = out.z - avoid.z;
+    if (dx * dx + dz * dz > avoid.r * avoid.r) return;
+  }
+}
+
+// Schwimmtiefe zwischen `minY` und `maxY`, aber immer mit Abstand über
+// dem Seeboden: In Ufernähe und über Felsrücken steigt der Grund bis
+// dicht unter die Oberfläche, dort schwimmen die Tiere entsprechend höher.
+export function clampSwimY(x: number, z: number, y: number, minY: number, maxY: number): number {
+  const lo = Math.max(minY, lakeFloorY(x, z) + CONFIG.revier.bodenAbstand);
+  const hi = Math.max(lo, maxY);
+  return Math.max(lo, Math.min(hi, y));
+}
+
+// Zufällige Starttiefe im erlaubten Band
+export function randomSwimY(x: number, z: number, minY: number, maxY: number): number {
+  const lo = Math.max(minY, lakeFloorY(x, z) + CONFIG.revier.bodenAbstand);
+  const hi = Math.max(lo, maxY);
+  return lo + Math.random() * (hi - lo);
+}

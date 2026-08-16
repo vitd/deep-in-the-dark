@@ -5,14 +5,21 @@ import { Interactable, InteractionSystem } from '../systems/Interaction';
 import { Inventory, ItemId } from '../systems/Inventory';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
+import { clampSwimY, insideLake, randomSwimY, roamPoint } from './lake';
 
 // Fische mit einfacher Wander-KI: schwimmen unter Wasser umher, ändern
-// gelegentlich die Richtung, meiden das Bootsinnere. Fangen mit E;
-// gefangene Fische zappeln (die-Animation) und respawnen später.
+// gelegentlich die Richtung, meiden das Boot. Fangen mit E; gefangene
+// Fische zappeln (die-Animation) und respawnen später.
 // Zwei Arten: der kleine Fisch (häufig) und der große Fisch (selten,
 // tiefer unterwegs, gibt beim Essen mehr Nahrung).
+//
+// Der See ist 2 km groß – statt ihn mit Tausenden festen Fischen zu
+// füllen, lebt immer nur eine Schar rund um den Spieler: Wer zu weit
+// zurückfällt, wird vor ihm neu eingesetzt (siehe recycle). Dadurch
+// findet man überall im See Fang.
 
 const F = CONFIG.fish;
+const R = CONFIG.revier;
 
 interface SpeciesDef {
   file: string;
@@ -95,6 +102,11 @@ export class FishManager {
   private readonly fishes: FishEntity[] = [];
   private readonly speciesStates: SpeciesState[];
   private spawnedTotal = 0;
+  // Die erste Schar entsteht erst beim ersten Update – dann steht fest,
+  // wo der Spieler wirklich ist.
+  private populated = false;
+  private readonly tmpPoint = { x: 0, z: 0 };
+  private readonly boatAvoid = { x: 0, z: 0, r: R.bootAbstand };
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -109,9 +121,6 @@ export class FishManager {
     }));
 
     for (const state of this.speciesStates) {
-      for (let i = 0; i < state.def.count; i++) {
-        this.spawn(state, i / state.def.count);
-      }
       loadModel(state.def.file, state.def.size)
         .then(({ template, clips }) => {
           // Die Fisch-Modelle schauen nach -z, unsere Bewegung nimmt +z
@@ -149,28 +158,36 @@ export class FishManager {
     }
   }
 
-  // t (0..1) verteilt die Startpositionen deterministisch im Gebiet.
-  private spawn(state: SpeciesState, t: number): void {
-    const idx = this.spawnedTotal++;
-    // einfache deterministische Pseudozufallswerte aus dem Index
-    const r1 = ((idx * 73) % 97) / 97;
-    const r2 = ((idx * 131) % 89) / 89;
-    const r3 = ((idx * 37) % 71) / 71;
+  // Setzt eine Position im Streifgebiet um `center` (den Spieler).
+  // `minR` erlaubt es, die erste Schar näher heranzulassen als später
+  // nachrückende Fische.
+  private placeNear(
+    group: THREE.Group,
+    center: THREE.Vector3,
+    def: SpeciesDef,
+    minR: number,
+  ): void {
+    roamPoint(center, minR, R.spawnMax, this.tmpPoint, this.boatAvoid);
+    group.position.set(
+      this.tmpPoint.x,
+      randomSwimY(this.tmpPoint.x, this.tmpPoint.z, def.minY, def.maxY),
+      this.tmpPoint.z,
+    );
+  }
 
+  private spawn(state: SpeciesState, center: THREE.Vector3, minR: number = R.spawnMin): void {
+    const idx = this.spawnedTotal++;
     const d = state.def;
     const group = new THREE.Group();
-    const x = F.area.minX + (F.area.maxX - F.area.minX) * ((t + r1) % 1);
-    const z = F.area.minZ + (F.area.maxZ - F.area.minZ) * r2;
-    const y = d.minY + (d.maxY - d.minY) * r3;
-    group.position.set(x, y, z);
+    this.placeNear(group, center, d, minR);
 
     const fish: FishEntity = {
       species: state,
       group,
-      heading: r1 * Math.PI * 2,
-      speed: d.speedMin + (d.speedMax - d.speedMin) * r2,
-      turnTimer: 2 + r3 * 4,
-      vertPhase: r1 * 10,
+      heading: Math.random() * Math.PI * 2,
+      speed: d.speedMin + (d.speedMax - d.speedMin) * Math.random(),
+      turnTimer: 2 + Math.random() * 4,
+      vertPhase: Math.random() * 10,
       entry: {
         object: group,
         prompt: STR.catchFish,
@@ -227,14 +244,26 @@ export class FishManager {
     return best;
   }
 
-  update(dt: number): void {
+  update(dt: number, playerPos: THREE.Vector3, boatCenter: THREE.Vector3): void {
+    this.boatAvoid.x = boatCenter.x;
+    this.boatAvoid.z = boatCenter.z;
+
+    // Erste Schar rund um den Startpunkt des Spielers – ein Teil davon
+    // gleich in Sichtweite, damit man nicht erst suchen muss
+    if (!this.populated) {
+      this.populated = true;
+      for (const state of this.speciesStates) {
+        for (let i = 0; i < state.def.count; i++) this.spawn(state, playerPos, 12);
+      }
+    }
+
     // Respawns pro Art
     for (const state of this.speciesStates) {
       for (let i = state.respawnTimers.length - 1; i >= 0; i--) {
         state.respawnTimers[i] -= dt;
         if (state.respawnTimers[i] <= 0) {
           state.respawnTimers.splice(i, 1);
-          this.spawn(state, (this.spawnedTotal % 7) / 7);
+          this.spawn(state, playerPos);
         }
       }
     }
@@ -254,24 +283,29 @@ export class FishManager {
         continue;
       }
 
+      // Weit hinter dem Spieler zurückgeblieben? Dann vor ihm wieder
+      // einsetzen – so ist im ganzen See überall Fang zu finden.
+      const p = f.group.position;
+      if (p.distanceToSquared(playerPos) > R.despawnRadius * R.despawnRadius) {
+        this.placeNear(f.group, playerPos, f.species.def, R.spawnMin);
+        f.heading = Math.random() * Math.PI * 2;
+        continue;
+      }
+
       f.turnTimer -= dt;
       if (f.turnTimer <= 0) {
-        f.heading += Math.sin(f.vertPhase + f.group.position.x) * 1.4;
+        f.heading += Math.sin(f.vertPhase + p.x) * 1.4;
         f.turnTimer = 2 + ((f.vertPhase * 13) % 5);
       }
 
-      const dx = Math.sin(f.heading) * f.speed * dt;
-      const dz = Math.cos(f.heading) * f.speed * dt;
-      const p = f.group.position;
-      const nx = p.x + dx;
-      const nz = p.z + dz;
+      const nx = p.x + Math.sin(f.heading) * f.speed * dt;
+      const nz = p.z + Math.cos(f.heading) * f.speed * dt;
 
-      // Gebietsgrenzen und Bootsinneres: umdrehen statt eindringen
-      const outside =
-        nx < F.area.minX || nx > F.area.maxX || nz < F.area.minZ || nz > F.area.maxZ;
-      const inBoat =
-        nx > F.avoid.minX && nx < F.avoid.maxX && nz > F.avoid.minZ && nz < F.avoid.maxZ;
-      if (outside || inBoat) {
+      // Steilküste und Boot: umdrehen statt eindringen
+      const bdx = nx - boatCenter.x;
+      const bdz = nz - boatCenter.z;
+      const inBoat = bdx * bdx + bdz * bdz < R.bootAbstand * R.bootAbstand;
+      if (inBoat || !insideLake(nx, nz, R.uferAbstand)) {
         f.heading += Math.PI * 0.9;
         continue;
       }
@@ -280,7 +314,8 @@ export class FishManager {
       p.z = nz;
       f.vertPhase += dt;
       p.y += Math.sin(f.vertPhase * 0.8) * 0.15 * dt;
-      p.y = Math.max(f.species.def.minY, Math.min(f.species.def.maxY, p.y));
+      // über dem Seeboden bleiben (Felsrücken reichen weit herauf)
+      p.y = clampSwimY(p.x, p.z, p.y, f.species.def.minY, f.species.def.maxY);
 
       f.group.rotation.y = f.heading;
       if (f.mixer) {

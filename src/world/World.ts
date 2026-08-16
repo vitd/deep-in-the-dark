@@ -16,7 +16,7 @@ import { Ocean } from './Ocean';
 import { Resources } from './Resources';
 import { Seabed } from './Seabed';
 import { SeaMonster } from './SeaMonster';
-import { Shark } from './Shark';
+import { SharkManager } from './Shark';
 import { BOAT_LAYOUT } from './boatLayout';
 
 // Setzt die komplette Spielwelt zusammen und verwaltet den
@@ -29,7 +29,7 @@ export class World {
   private readonly seabed: Seabed;
   private readonly resources: Resources;
   private readonly fish: FishManager;
-  readonly shark: Shark;
+  readonly shark: SharkManager;
   readonly monster: SeaMonster;
   readonly boss: BossMonster;
   readonly motor: MotorRef;
@@ -125,7 +125,7 @@ export class World {
 
     this.resources = new Resources(scene, this.ocean, interaction, inventory, onFuelFound, boat.group);
     this.fish = new FishManager(scene, interaction, inventory);
-    this.shark = new Shark(scene, onSharkBite);
+    this.shark = new SharkManager(scene, onSharkBite);
     this.monster = new SeaMonster(scene, this.frame, onMonsterHitShip, onMonsterCaughtPlayer);
     this.boss = new BossMonster(scene, onBossSurfaced, onBoatSwallowed);
   }
@@ -178,9 +178,10 @@ export class World {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.seabed.update(playerPos);
     this.resources.update();
-    this.fish.update(dt);
-    this.shark.update(dt, playerPos, playerInWater);
     this.boatCenter.copy(this.frame.center).add(this.frame.offset);
+    // Fische und Haie streifen um den Spieler und meiden das Boot
+    this.fish.update(dt, playerPos, this.boatCenter);
+    this.shark.update(dt, playerPos, playerInWater, this.boatCenter);
     this.monster.update(dt, playerPos, playerInWater, this.boatCenter);
     this.boss.update(dt, this.boatCenter);
     // Die Maulwände des Bosses sind undurchdringlich: notfalls wird das
@@ -191,7 +192,7 @@ export class World {
       this.boat.syncPose();
       if (this.frame.offset.y <= CONFIG.seaMonster.sunkDepth) this.sunk = true;
     }
-    this.updateMinimapMarks();
+    this.updateMinimapMarks(playerPos);
     if (this.motorRunning) {
       // leichtes Vibrieren + pulsierendes Glühen des laufenden Motors
       const t = performance.now() / 1000;
@@ -204,13 +205,14 @@ export class World {
   // die Gier-Konvention von Spieler und Boot (vorwärts = -sin/-cos);
   // die Kreaturen laufen mit +sin/+cos, ihre Marke wird deshalb um 180°
   // gedreht.
-  private updateMinimapMarks(): void {
+  private updateMinimapMarks(playerPos: THREE.Vector3): void {
     const [ship, shark, monster, boss] = this.minimapMarks;
     ship.x = this.boatCenter.x;
     ship.z = this.boatCenter.z;
     ship.yaw = this.frame.yaw;
     for (const [mark, obj] of [
-      [shark, this.shark.group],
+      // von mehreren Haien zeigt die Karte den nächstgelegenen
+      [shark, this.shark.nearestGroup(playerPos)],
       [monster, this.monster.group],
       [boss, this.boss.group],
     ] as const) {

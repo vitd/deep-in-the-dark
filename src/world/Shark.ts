@@ -1,13 +1,19 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { loadModel } from '../rendering/Models';
+import { clampSwimY, insideLake, randomSwimY, roamPoint } from './lake';
 
-// Der Hai: Es gibt genau einen. Er patrouilliert unter Wasser; kommt der
-// Spieler (im Wasser) in seine Nähe, greift er an. Ein Biss verletzt.
-// Mit dem Hammer in der Hand lässt sich der Angriff abwehren – der Hai
-// flieht dann und lässt für längere Zeit von einem ab.
+// Haie: Sie patrouillieren im ganzen See unter Wasser; kommt der Spieler
+// (im Wasser) einem zu nah, greift er an. Ein Biss verletzt. Mit dem
+// Hammer in der Hand lässt sich der Angriff abwehren – der Hai flieht
+// dann und lässt für längere Zeit von einem ab.
+//
+// Wie bei den Fischen lebt immer nur eine Handvoll rund um den Spieler:
+// Wer zu weit zurückfällt, wird andernorts wieder eingesetzt. So ist
+// nirgends im See sicheres Wasser.
 
 const S = CONFIG.shark;
+const R = CONFIG.revier;
 
 type SharkState = 'patrol' | 'approach' | 'retreat';
 
@@ -22,9 +28,9 @@ export class Shark {
   private turnTimer = 0;
   private retreatDir = new THREE.Vector3();
   private readonly tmp = new THREE.Vector3();
+  private readonly tmpPoint = { x: 0, z: 0 };
 
   constructor(scene: THREE.Scene, private readonly onBite: () => void) {
-    this.group.position.set(S.spawn.x, S.spawn.y, S.spawn.z);
     scene.add(this.group);
     loadModel('shark.glb', S.size)
       .then(({ template, clips }) => {
@@ -49,6 +55,23 @@ export class Shark {
         fin.position.set(0, 0.7, 0.2);
         this.group.add(body, fin);
       });
+  }
+
+  // Setzt den Hai neu ins Wasser: im Ring um `center`, mit Abstand zum
+  // Boot. Wird beim Erstbesetzen und beim Recyceln benutzt.
+  placeNear(center: THREE.Vector3, boatCenter: THREE.Vector3, minR: number = S.spawnMin): void {
+    roamPoint(center, minR, S.spawnMax, this.tmpPoint, {
+      x: boatCenter.x,
+      z: boatCenter.z,
+      r: R.bootAbstand,
+    });
+    this.group.position.set(
+      this.tmpPoint.x,
+      randomSwimY(this.tmpPoint.x, this.tmpPoint.z, S.minY, S.maxY),
+      this.tmpPoint.z,
+    );
+    this.heading = Math.random() * Math.PI * 2;
+    this.state = 'patrol';
   }
 
   private play(name: string): void {
@@ -80,22 +103,34 @@ export class Shark {
     if (this.retreatDir.lengthSq() < 0.01) this.retreatDir.set(1, 0, 0);
   }
 
-  update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean): void {
+  update(
+    dt: number,
+    playerPos: THREE.Vector3,
+    playerInWater: boolean,
+    boatCenter: THREE.Vector3,
+  ): void {
     this.mixer?.update(dt);
     this.cooldown = Math.max(0, this.cooldown - dt);
     const pos = this.group.position;
     const distToPlayer = pos.distanceTo(playerPos);
+
+    // Weit abgeschlagen? Dann taucht er andernorts wieder auf. Nie
+    // während eines Angriffs – sonst verschwände er vor der Nase.
+    if (this.state !== 'approach' && distToPlayer > S.despawnRadius) {
+      this.placeNear(playerPos, boatCenter);
+      return;
+    }
 
     switch (this.state) {
       case 'patrol': {
         this.play('idle');
         this.turnTimer -= dt;
         if (this.turnTimer <= 0) {
-          this.heading += (Math.sin(pos.x * 0.7 + pos.z * 1.3) * 1.2);
+          this.heading += Math.sin(pos.x * 0.7 + pos.z * 1.3) * 1.2;
           this.turnTimer = 3 + ((Math.abs(pos.x * 13) % 40) / 10);
         }
-        this.moveHorizontal(this.heading, S.patrolSpeed, dt);
-        this.approachDepth(S.spawn.y, dt);
+        this.moveHorizontal(this.heading, S.patrolSpeed, dt, boatCenter);
+        this.approachDepth(S.cruiseY, dt);
         if (playerInWater && this.cooldown <= 0 && distToPlayer < S.aggroRadius) {
           this.state = 'approach';
         }
@@ -129,8 +164,8 @@ export class Shark {
       case 'retreat': {
         this.play('run');
         this.heading = Math.atan2(this.retreatDir.x, this.retreatDir.z);
-        this.moveHorizontal(this.heading, S.speed * 0.8, dt);
-        this.approachDepth(S.spawn.y, dt);
+        this.moveHorizontal(this.heading, S.speed * 0.8, dt, boatCenter);
+        this.approachDepth(S.cruiseY, dt);
         if (this.cooldown <= 0) this.state = 'patrol';
         break;
       }
@@ -139,15 +174,19 @@ export class Shark {
     this.group.rotation.y = this.heading;
   }
 
-  private moveHorizontal(heading: number, speed: number, dt: number): void {
+  private moveHorizontal(
+    heading: number,
+    speed: number,
+    dt: number,
+    boatCenter: THREE.Vector3,
+  ): void {
     const pos = this.group.position;
     const nx = pos.x + Math.sin(heading) * speed * dt;
     const nz = pos.z + Math.cos(heading) * speed * dt;
-    const a = CONFIG.fish.area;
-    const b = CONFIG.fish.avoid;
-    const outside = nx < a.minX || nx > a.maxX || nz < a.minZ || nz > a.maxZ;
-    const inBoat = nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ;
-    if (outside || inBoat) {
+    const bdx = nx - boatCenter.x;
+    const bdz = nz - boatCenter.z;
+    const inBoat = bdx * bdx + bdz * bdz < R.bootAbstand * R.bootAbstand;
+    if (inBoat || !insideLake(nx, nz, R.uferAbstand)) {
       this.heading += Math.PI * 0.85;
       return;
     }
@@ -163,7 +202,7 @@ export class Shark {
 
   private clampToWater(): void {
     const pos = this.group.position;
-    pos.y = Math.max(S.minY, Math.min(S.maxY, pos.y));
+    pos.y = clampSwimY(pos.x, pos.z, pos.y, S.minY, S.maxY);
   }
 
   // Debug: Hai in die Nähe holen
@@ -171,5 +210,65 @@ export class Shark {
     this.group.position.set(playerPos.x + 8, Math.min(S.maxY, playerPos.y - 2), playerPos.z);
     this.state = 'patrol';
     this.cooldown = 0;
+  }
+}
+
+// Verwaltet die Haie rund um den Spieler. Nach außen verhält sich der
+// Schwarm wie der frühere Einzelhai (trySwing/teleportNear).
+export class SharkManager {
+  private readonly sharks: Shark[] = [];
+  private populated = false;
+
+  constructor(scene: THREE.Scene, onBite: () => void) {
+    for (let i = 0; i < S.count; i++) this.sharks.push(new Shark(scene, onBite));
+  }
+
+  update(
+    dt: number,
+    playerPos: THREE.Vector3,
+    playerInWater: boolean,
+    boatCenter: THREE.Vector3,
+  ): void {
+    if (!this.populated) {
+      this.populated = true;
+      for (const s of this.sharks) s.placeNear(playerPos, boatCenter);
+    }
+    for (const s of this.sharks) s.update(dt, playerPos, playerInWater, boatCenter);
+  }
+
+  // Hammerschlag: trifft den ersten Hai in Reichweite
+  trySwing(playerEye: THREE.Vector3, lookDir: THREE.Vector3): boolean {
+    for (const s of this.sharks) {
+      if (s.trySwing(playerEye, lookDir)) return true;
+    }
+    return false;
+  }
+
+  // Debug: den entferntesten Hai heranholen (die nahen bleiben, wo sie sind)
+  teleportNear(playerPos: THREE.Vector3): void {
+    let far: Shark | null = null;
+    let farDist = -1;
+    for (const s of this.sharks) {
+      const d = s.group.position.distanceToSquared(playerPos);
+      if (d > farDist) {
+        farDist = d;
+        far = s;
+      }
+    }
+    far?.teleportNear(playerPos);
+  }
+
+  // Für die Minimap: der Hai, der dem Spieler am nächsten ist
+  nearestGroup(from: THREE.Vector3): THREE.Object3D {
+    let best = this.sharks[0].group;
+    let bestDist = Infinity;
+    for (const s of this.sharks) {
+      const d = s.group.position.distanceToSquared(from);
+      if (d < bestDist) {
+        bestDist = d;
+        best = s.group;
+      }
+    }
+    return best;
   }
 }

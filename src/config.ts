@@ -107,22 +107,32 @@ export const CONFIG = {
     ertrinkenSekunden: 10, // Countdown bei Luft 0
   },
 
+  // Fische und Haie bevölkern den ganzen See (2 km Durchmesser). Statt
+  // Tausender fester Tiere lebt immer nur eine Schar in der Umgebung des
+  // Spielers: Wer weit genug zurückfällt, wird vor dem Spieler neu
+  // eingesetzt. Dadurch findet man überall Fang, ohne die Bildrate zu
+  // ruinieren. Werte in `revier` gelten für beide Arten.
+  revier: {
+    spawnMin: 22, // Abstand zum Spieler beim Einsetzen (Fische)
+    spawnMax: 70,
+    despawnRadius: 120, // weiter entfernt: woanders neu einsetzen
+    uferAbstand: 15, // Mindestabstand zur Steilküste
+    bodenAbstand: 2.0, // Mindestabstand über dem Seeboden
+    bootAbstand: 12, // Umkreis um das Boot, den Tiere meiden
+  },
+
   fish: {
-    count: 12,
-    respawnSeconds: 60,
+    count: 14, // gleichzeitig in der Umgebung des Spielers
+    respawnSeconds: 25,
     minY: -10.5,
     maxY: -1.6,
     speedMin: 0.7,
     speedMax: 1.5,
-    // bewusst kompakt: der Bereich zwischen Klippen und Boot, wo der
-    // Spieler unterwegs ist – so begegnet man den Fischen wirklich
-    area: { minX: -52, maxX: -10, minZ: -35, maxZ: 35 },
-    // Fische meiden das Bootsinnere
-    avoid: { minX: -33.5, maxX: -22.5, minZ: -16, maxZ: 13 },
   },
 
-  // Der Hai: einer, aggressiv, nur im Wasser gefährlich
+  // Haie: mehrere, über den ganzen See verteilt, nur im Wasser gefährlich
   shark: {
+    count: 3, // gleichzeitig in der Umgebung des Spielers
     size: 3.2,
     speed: 3.4, // Angriffs-Tempo
     patrolSpeed: 1.1,
@@ -134,7 +144,12 @@ export const CONFIG = {
     repelSeconds: 18, // Pause nach Hammer-Abwehr
     minY: -10,
     maxY: -1.0,
-    spawn: { x: -46, y: -6, z: -22 },
+    cruiseY: -6, // bevorzugte Patrouillentiefe
+    // Haie tauchen weiter entfernt auf als Fische – sie sollen nicht
+    // direkt neben dem Spieler erscheinen
+    spawnMin: 55,
+    spawnMax: 130,
+    despawnRadius: 220,
   },
 
   // Das Seemonster: haust weit draußen auf dem offenen Meer. Schwimmer
