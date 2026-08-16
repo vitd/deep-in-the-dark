@@ -58,6 +58,15 @@ export const CONFIG = {
     },
     fogAbove: { color: 0x9fb8c8, density: 0.011 },
     fogBelow: { color: 0x0b3644, density: 0.075 },
+    // Durchsicht durch die Wasseroberfläche von oben (Schwimmer an der
+    // Oberfläche, Deck des Schiffs). Der Grund darf nur im flachen
+    // Küstenwasser durchscheinen – draußen über der Tiefe wäre ein
+    // sichtbarer Seeboden weder plausibel noch atmosphärisch gewollt.
+    waterClarity: {
+      max: 0.35, // Durchsicht direkt am Ufer (Wassertiefe 0)
+      murk: 0.09, // Trübung je Meter Wassersäule (Beer-Lambert)
+      opaqueDepth: 30, // ab dieser Tiefe ist die Oberfläche völlig dicht
+    },
     skyAbove: 0x9fb8c8,
     skyBelow: 0x0b3644,
   },

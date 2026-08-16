@@ -23,6 +23,27 @@ float waveHeight(vec2 p, float t) {
 }`;
 }
 
+// Wassertiefe unter einem Punkt der Oberfläche, als GLSL aus den
+// Seemaßen erzeugt. Gespiegelt wird nur das Basisprofil aus lake.ts
+// (ebener Küstenschelf, zur Mitte parabelförmig auf centerDepth) – das
+// Bodenrelief bleibt außen vor: für die Trübung zählt die Wassersäule
+// im Großen, und der Shader bleibt frei von Noise.
+function depthGLSL(): string {
+  const L = CONFIG.world.lake;
+  const coastY = CONFIG.world.seabedY;
+  return `
+float waterDepth(vec2 p) {
+  float r = length(p - vec2(${L.center.x.toFixed(2)}, ${L.center.z.toFixed(2)}));
+  float bowlR = ${(L.radius - L.shelfWidth).toFixed(2)};
+  float base = ${coastY.toFixed(2)};
+  if (r < bowlR) {
+    float t = r / bowlR;
+    base += ${(-L.centerDepth - coastY).toFixed(2)} * (1.0 - t * t);
+  }
+  return max(0.0, ${CONFIG.world.seaLevel.toFixed(2)} - base);
+}`;
+}
+
 const WATER_VERT = /* glsl */ `
 uniform float uTime;
 varying vec3 vWorldPos;
@@ -45,7 +66,12 @@ uniform vec3 uFogColor;
 uniform float uFogDensity;
 uniform sampler2D uWaterTex;
 uniform float uTime;
+uniform float uClarityMax;
+uniform float uMurk;
+uniform float uOpaqueDepth;
 varying vec3 vWorldPos;
+
+__DEPTH__
 
 void main() {
   vec3 n = normalize(cross(dFdx(vWorldPos), dFdy(vWorldPos)));
@@ -76,7 +102,23 @@ void main() {
   float fog = 1.0 - exp(-uFogDensity * uFogDensity * dist * dist);
   color = mix(color, uFogColor, clamp(fog, 0.0, 1.0));
 
-  gl_FragColor = vec4(color, 0.92);
+  // Deckkraft von oben: der Seeboden soll nur im flachen Küstenwasser
+  // durchscheinen. Beer-Lambert über die Wassersäule unter dem
+  // Blickpunkt – flach einfallende Blicke laufen entsprechend länger
+  // durchs Wasser und trüben schneller ein. Ab uOpaqueDepth wird die
+  // Oberfläche exakt dicht, damit über der Tiefe garantiert nichts mehr
+  // durchkommt. Von unten (Taucher) bleibt sie glasig wie bisher, dort
+  // begrenzt ohnehin der Unterwassernebel die Sicht.
+  float alpha = 0.92;
+  if (gl_FrontFacing) {
+    float depth = waterDepth(vWorldPos.xz);
+    float path = depth / max(0.25, abs(viewDir.y));
+    float clarity = uClarityMax * exp(-uMurk * path);
+    clarity *= 1.0 - smoothstep(uOpaqueDepth * 0.5, uOpaqueDepth, depth);
+    alpha = 1.0 - clarity;
+  }
+
+  gl_FragColor = vec4(color, alpha);
 }
 `;
 
@@ -97,7 +139,7 @@ export class Ocean {
 
     this.material = new THREE.ShaderMaterial({
       vertexShader: WATER_VERT.replace('__WAVES__', waveGLSL()),
-      fragmentShader: WATER_FRAG,
+      fragmentShader: WATER_FRAG.replace('__DEPTH__', depthGLSL()),
       uniforms: {
         uTime: { value: 0 },
         uSunDir: { value: new THREE.Vector3(0.4, 1.0, 0.6).normalize() },
@@ -106,6 +148,9 @@ export class Ocean {
         uFogColor: { value: new THREE.Color(CONFIG.world.fogAbove.color) },
         uFogDensity: { value: CONFIG.world.fogAbove.density },
         uWaterTex: { value: pixelTexture('water.png') },
+        uClarityMax: { value: CONFIG.world.waterClarity.max },
+        uMurk: { value: CONFIG.world.waterClarity.murk },
+        uOpaqueDepth: { value: CONFIG.world.waterClarity.opaqueDepth },
       },
       side: THREE.DoubleSide,
       transparent: true,
