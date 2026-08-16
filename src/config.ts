@@ -198,7 +198,10 @@ export const CONFIG = {
     // wenn man sich verfährt
     chaseSpeed: 4.875,
     patrolSpeed: 2, // Rückkehr zum Nest
-    turnRate: 0.35, // rad/s – träge, quer abdrehen kann retten
+    // Wendigkeit: sehr träge, nicht einmal ein Drittel der Bootsdrehrate
+    // (boot.turnRate 0.55). Für 90° braucht der Koloss rund 10 s – in
+    // der Zeit ist ein quer abdrehendes Boot längst aus der Maulachse
+    turnRate: 0.15,
     triggerRadius: 115,
     giveUpRadius: 180, // Bootsabstand zum Boss-Zentrum, ab dem es aufgibt
     schlundMarge: 6, // Restabstand Bootszentrum zur Schlundwand = Berührung
