@@ -192,9 +192,11 @@ export const CONFIG = {
     // (90 m vor der Mitte) ragt dann 60 m aus dem Wasser
     breachY: -30,
     rollSpeed: 0.6, // rad/s beim Kippen aus der Senkrechten in die Bauchlage
-    // nur knapp schneller als das Boot (boot.maxSpeed 6): er bleibt
-    // bedrohlich, aber mit Vorsprung oder Querabdrehen entkommt man
-    chaseSpeed: 6.5,
+    // Tempo an der Oberfläche (Bauchlage, Jagd auf das Boot): 25 %
+    // langsamer als früher (6.5) – damit bleibt er unter der Bootsfahrt
+    // (boot.maxSpeed 6), gefährlich wird er nur bei kurzem Abstand oder
+    // wenn man sich verfährt
+    chaseSpeed: 4.875,
     patrolSpeed: 2, // Rückkehr zum Nest
     turnRate: 0.35, // rad/s – träge, quer abdrehen kann retten
     triggerRadius: 115,
