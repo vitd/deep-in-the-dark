@@ -86,7 +86,13 @@ export class Ocean {
   private time = 0;
 
   constructor() {
-    const geo = new THREE.PlaneGeometry(420, 420, 110, 110);
+    // Deckt den ganzen See (2 km Durchmesser) ab und läuft ringsum ein
+    // Stück in die Steilküste hinein. Die Vertex-Dichte ist gröber als
+    // früher – die feinste Welle löst sie nicht mehr auf, was hinter
+    // Nebel und Far-Plane aber nicht auffällt.
+    const L = CONFIG.world.lake;
+    const size = L.radius * 2 + 100;
+    const geo = new THREE.PlaneGeometry(size, size, 300, 300);
     geo.rotateX(-Math.PI / 2);
 
     this.material = new THREE.ShaderMaterial({
@@ -106,7 +112,7 @@ export class Ocean {
     });
 
     this.mesh = new THREE.Mesh(geo, this.material);
-    this.mesh.position.set(-15, CONFIG.world.seaLevel, 0);
+    this.mesh.position.set(L.center.x, CONFIG.world.seaLevel, L.center.z);
     this.mesh.frustumCulled = false;
   }
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { BoatFrame } from './BoatFrame';
+import { clampToLake } from './lake';
 
 // Fahrlogik des Boots. Gefahren wird nur, solange der Spieler am
 // Steuerstand steht (siehe PlayState): W/S bewegen den Fahrhebel
@@ -21,6 +22,7 @@ export class BoatController {
   throttle = 0;
   wheel = 0;
   speed = 0;
+  private readonly clampP = { x: 0, z: 0 };
 
   constructor(
     readonly frame: BoatFrame,
@@ -61,14 +63,12 @@ export class BoatController {
     f.offset.x += -Math.sin(f.yaw) * this.speed * dt;
     f.offset.z += -Math.cos(f.yaw) * this.speed * dt;
 
-    // Fahrbereich begrenzen (Klippen im Westen, Kartenrand sonst)
-    const cx = f.center.x + f.offset.x;
-    const cz = f.center.z + f.offset.z;
-    const clampedX = Math.max(B.bounds.minX, Math.min(B.bounds.maxX, cx));
-    const clampedZ = Math.max(B.bounds.minZ, Math.min(B.bounds.maxZ, cz));
-    if (clampedX !== cx || clampedZ !== cz) {
-      f.offset.x = clampedX - f.center.x;
-      f.offset.z = clampedZ - f.center.z;
+    // Fahrbereich begrenzen: der See ist rundum von Steilküste umgeben
+    this.clampP.x = f.center.x + f.offset.x;
+    this.clampP.z = f.center.z + f.offset.z;
+    if (clampToLake(this.clampP, B.shoreMargin)) {
+      f.offset.x = this.clampP.x - f.center.x;
+      f.offset.z = this.clampP.z - f.center.z;
       this.speed = 0;
     }
 

@@ -41,12 +41,21 @@ export const CONFIG = {
 
   world: {
     seaLevel: 0,
-    seabedY: -12,
-    cliffX: -55, // Klippenwand entlang dieser x-Ebene
+    seabedY: -12, // Bodentiefe an der Küste (Küstenschelf)
     boatPos: { x: -28, y: 0, z: 0 },
     spawn: { x: -38, z: 6 }, // Spieler startet schwimmend nahe der Klippen
-    // weit genug für Bootsfahrten aufs offene Meer (siehe boot.bounds)
-    bounds: { minX: -54.2, maxX: 130, minZ: -160, maxZ: 160, minY: -11.4 },
+    // Die Spielwelt ist ein kreisrunder See mit Steilküste ringsum.
+    // Der Kreis verläuft durch die alte Westküsten-Linie (x = -55 bei
+    // z = 0): center.x = -55 + radius. Tiefenprofil: die äußeren
+    // `shelfWidth` Meter sind eben so tief wie `seabedY`, zur Seemitte
+    // fällt der Boden parabelförmig auf `centerDepth` ab
+    // (siehe world/lake.ts).
+    lake: {
+      center: { x: 945, z: 0 },
+      radius: 1000, // 2 km Durchmesser
+      centerDepth: 100,
+      shelfWidth: 150,
+    },
     fogAbove: { color: 0x9fb8c8, density: 0.011 },
     fogBelow: { color: 0x0b3644, density: 0.075 },
     skyAbove: 0x9fb8c8,
@@ -132,36 +141,45 @@ export const CONFIG = {
     attackY: -2.5, // beim Rammstoß taucht es unter die Wasserlinie
     minY: -9,
     maxY: -0.2,
-    // Revier weit draußen (Boot startet bei x = -28, Klippen im Westen)
-    territory: { minX: 25, maxX: 118, minZ: -145, maxZ: 145 },
-    chaseMargin: 25, // so weit verfolgt es Ziele über das Revier hinaus
-    spawn: { x: 75, y: -0.5, z: 0 },
+    // Revier weit draußen: ein Gürtel quer über den Weg von der
+    // Westküste (Boot startet bei x = -28) zum Boss-Nest (x = 700)
+    territory: { minX: 250, maxX: 480, minZ: -350, maxZ: 350 },
+    chaseMargin: 40, // so weit verfolgt es Ziele über das Revier hinaus
+    spawn: { x: 350, y: -0.5, z: 0 },
     sinkSpeed: 1.4, // m/s, mit denen das getroffene Schiff absinkt
     sunkDepth: -9, // ab dieser Absenkung gilt das Schiff als gesunken
   },
 
   // Der Boss: ein kolossales Maul-Monster, das sehr weit draußen unter
-  // Wasser lauert. Kommt das Boot in die Nähe, taucht es auf und
-  // versucht, das Boot zu verschlucken. Verschluckt ist das Boot erst,
+  // Wasser lauert. Kommt das Boot in die Nähe, eilt es in der Tiefe zu
+  // einem Punkt neben dem Schiff, durchbricht dort senkrecht (Maul nach
+  // oben) die Oberfläche, rollt auf den Bauch – und nimmt erst dann Kurs
+  // aufs Boot, um es zu verschlucken. Verschluckt ist das Boot erst,
   // wenn es die schwarze Schlundwand hinten im Maul berührt.
   seaBoss: {
     // Skalierung: Maulöffnung ~52 m im Quadrat, Maultiefe ~68 m – das
     // Boot (24 m) verschwindet komplett darin. Die Maulwände sind
     // undurchdringlich (siehe BossMonster.resolveBoatCollision).
     size: 180,
-    // Nest sehr weit von der Küste entfernt (Klippen bei x = -55);
-    // weiter draußen als der Fahrbereich, damit die Trigger-Zone erst
-    // auf dem offenen Meer beginnt
-    nest: { x: 140, z: 0 },
-    lurkY: -60, // Lauertiefe (dort gibt es keinen Meeresboden mehr)
-    surfaceY: 2, // aufgetaucht: Maul ragt weit aus dem Wasser
-    riseSpeed: 9, // m/s beim Auf-/Abtauchen
+    // Nest sehr weit von der Küste entfernt, im tiefen Teil des Sees
+    // (Seemitte bei x = 945, dort ~100 m Tiefe)
+    nest: { x: 700, z: 0 },
+    lurkY: -80, // Lauertiefe (der Boden liegt dort bei ca. -90 m)
+    surfaceY: 2, // in Bauchlage: Maul ragt weit aus dem Wasser
+    riseSpeed: 9, // m/s beim senkrechten Auf-/Abtauchen
+    approachSpeed: 14, // Anlauf in der Tiefe zum Auftauchpunkt
+    // Auftauchpunkt: Abstand vom Bootszentrum. Muss größer sein als die
+    // halbe Körperlänge (90 m) plus Boot, damit das Maul beim Abrollen
+    // auf den Bauch VOR dem Boot ins Wasser klatscht – es taucht also
+    // garantiert neben dem Schiff auf, nie darunter
+    emergeDistance: 130,
+    // Körpermitte am Scheitel des senkrechten Durchbruchs: das Maul
+    // (90 m vor der Mitte) ragt dann 60 m aus dem Wasser
+    breachY: -30,
+    rollSpeed: 0.6, // rad/s beim Kippen aus der Senkrechten in die Bauchlage
     chaseSpeed: 7.5, // schneller als das Boot (boot.maxSpeed)
     patrolSpeed: 2, // Rückkehr zum Nest
     turnRate: 0.35, // rad/s – träge, quer abdrehen kann retten
-    // Der Körper ist 180 m lang (Maul 90 m vor dem Zentrum): der Trigger
-    // muss größer sein als die halbe Körperlänge, damit es nicht direkt
-    // unter dem Boot auftaucht
     triggerRadius: 115,
     giveUpRadius: 230, // Bootsabstand zum Boss-Zentrum, ab dem es aufgibt
     schlundMarge: 6, // Restabstand Bootszentrum zur Schlundwand = Berührung
@@ -206,8 +224,9 @@ export const CONFIG = {
     wheelRate: 1.5, // Steuerrad-Einschlag pro Sekunde (A/D)
     // ohne A/D dreht das Rad von selbst zurück – das Schiff fährt geradeaus
     wheelReturnRate: 2.2,
-    // Fahrbereich des Bootszentrums (Klippen im Westen, Kartenrand sonst)
-    bounds: { minX: -36, maxX: 120, minZ: -150, maxZ: 150 },
+    // Mindestabstand des Bootszentrums zur Steilküste (halbe Rumpflänge
+    // plus Marge; geklemmt wird kreisförmig, siehe world/lake.ts)
+    shoreMargin: 20,
     // Third-Person-Kamera am Steuer: kreist um den Steuerstand
     kameraDistanz: 20,
     kameraPivotHoehe: 2.5, // Orbit-Mittelpunkt über dem Steuerstand-Boden

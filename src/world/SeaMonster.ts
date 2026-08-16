@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { loadModel } from '../rendering/Models';
 import { BoatFrame } from './BoatFrame';
+import { clampToLake } from './lake';
 
 // Das Seemonster: Es gibt genau eines, und es haust weit draußen auf dem
 // offenen Meer in seinem Revier. Schwimmer ohne Waffe oder Schutz tötet
@@ -195,9 +196,9 @@ export class SeaMonster {
 
   private moveForward(speed: number, dt: number): void {
     const pos = this.group.position;
-    const b = CONFIG.world.bounds;
-    pos.x = Math.max(b.minX + 2, Math.min(b.maxX - 2, pos.x + Math.sin(this.heading) * speed * dt));
-    pos.z = Math.max(b.minZ + 2, Math.min(b.maxZ - 2, pos.z + Math.cos(this.heading) * speed * dt));
+    pos.x += Math.sin(this.heading) * speed * dt;
+    pos.z += Math.cos(this.heading) * speed * dt;
+    clampToLake(pos, 2);
   }
 
   private approachDepth(targetY: number, dt: number): void {

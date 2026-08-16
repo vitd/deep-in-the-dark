@@ -4,11 +4,14 @@ import { loadModel } from '../rendering/Models';
 import { BoatFrame } from './BoatFrame';
 
 // Der Boss: ein kolossales Maul-Monster (seamonster-boss.glb – ein
-// vorne offener, innen schwarzer Schlund), das sehr weit draußen auf
-// dem offenen Meer unter Wasser lauert. Kommt das Boot seinem Nest zu
-// nahe, taucht es auf und schiebt sein Maul über das Boot. Verschluckt
-// ist das Boot erst, wenn es die schwarze Schlundwand hinten im Maul
-// berührt – solange kann man noch hinausfahren. Die Maulwände sind
+// vorne offener, innen schwarzer Schlund), das sehr weit draußen im
+// tiefen Teil des Sees unter Wasser lauert. Kommt das Boot seinem Nest
+// zu nahe, eilt es in der Tiefe zu einem Punkt NEBEN dem Schiff
+// (emergeDistance), durchbricht dort senkrecht – Maul nach oben – die
+// Oberfläche, kippt nach vorn auf den Bauch und nimmt erst dann Kurs
+// aufs Boot, um sein Maul darüberzuschieben. Verschluckt ist das Boot
+// erst, wenn es die schwarze Schlundwand hinten im Maul berührt –
+// solange kann man noch hinausfahren. Die Maulwände sind
 // undurchdringlich: seitlich hineinfahren geht nicht, das Boot wird
 // herausgedrückt (resolveBoatCollision).
 
@@ -29,13 +32,16 @@ const GEO = {
   halfWOut: 1.83 * S, // Außenkante
 };
 
-type BossState = 'lurk' | 'rise' | 'attack' | 'descend' | 'return';
+type BossState = 'lurk' | 'approach' | 'rise' | 'roll' | 'attack' | 'descend' | 'return';
 
 export class BossMonster {
   readonly group = new THREE.Group();
   private mixer: THREE.AnimationMixer | null = null;
   private state: BossState = 'lurk';
   private heading = 0;
+  // Körperneigung: 0 = Bauchlage (waagrecht), -PI/2 = senkrecht mit
+  // dem Maul nach oben (Auftauch-Durchbruch)
+  private pitch = 0;
   // Schiff gesunken/verschluckt: nichts mehr zu jagen
   private dormant = false;
   private warned = false;
@@ -48,6 +54,8 @@ export class BossMonster {
     private readonly onBoatSwallowed: () => void,
   ) {
     this.group.position.set(B.nest.x, B.lurkY, B.nest.z);
+    // erst Gieren (heading), dann Nicken (pitch) im gegierten Rahmen
+    this.group.rotation.order = 'YXZ';
     scene.add(this.group);
     loadModel('seamonster-boss.glb', B.size)
       .then(({ template, clips }) => {
@@ -72,7 +80,9 @@ export class BossMonster {
 
   setDormant(): void {
     this.dormant = true;
-    if (this.state === 'attack') this.state = 'descend';
+    if (this.state === 'approach' || this.state === 'rise' || this.state === 'roll' || this.state === 'attack') {
+      this.state = 'descend';
+    }
   }
 
   private forward(out: THREE.Vector3): THREE.Vector3 {
@@ -105,21 +115,65 @@ export class BossMonster {
 
     switch (this.state) {
       case 'lurk': {
-        if (!this.dormant && distBoatNest < B.triggerRadius) {
-          this.state = 'rise';
-          if (!this.warned) {
-            this.warned = true;
-            this.onSurfaced();
+        if (!this.dormant && distBoatNest < B.triggerRadius) this.state = 'approach';
+        break;
+      }
+
+      case 'approach': {
+        // In der Tiefe (unsichtbar) zum Auftauchpunkt NEBEN dem Schiff
+        // eilen – auf der Seite, von der der Boss kommt. Dabei stellt
+        // er sich schon senkrecht, Maul nach oben; der Bauch zeigt zum
+        // Boot, damit das spätere Abrollen dorthin kippt.
+        this.heading = Math.atan2(boatCenter.x - pos.x, boatCenter.z - pos.z);
+        this.pitch = Math.max(-Math.PI / 2, this.pitch - B.rollSpeed * 3 * dt);
+        const dx = pos.x - boatCenter.x;
+        const dz = pos.z - boatCenter.z;
+        const d = Math.hypot(dx, dz);
+        // Boss (fast) direkt unterm Boot: feste Ausweichrichtung
+        const ex = boatCenter.x + (d > 1 ? dx / d : 1) * B.emergeDistance;
+        const ez = boatCenter.z + (d > 1 ? dz / d : 0) * B.emergeDistance;
+        const mx = ex - pos.x;
+        const mz = ez - pos.z;
+        const md = Math.hypot(mx, mz);
+        const step = B.approachSpeed * dt;
+        if (md > step) {
+          pos.x += (mx / md) * step;
+          pos.z += (mz / md) * step;
+        } else {
+          pos.x = ex;
+          pos.z = ez;
+          if (this.pitch <= -Math.PI / 2 + 1e-3) {
+            this.state = 'rise';
+            if (!this.warned) {
+              this.warned = true;
+              this.onSurfaced();
+            }
           }
         }
         break;
       }
 
       case 'rise': {
-        // aufs Boot ausrichten, während es aufsteigt
+        // senkrechter Durchbruch neben dem Schiff: das Maul schießt aus
+        // dem Wasser, bis die Körpermitte den Scheitel erreicht
         this.turnTowards(Math.atan2(boatCenter.x - pos.x, boatCenter.z - pos.z), dt);
-        pos.y = Math.min(B.surfaceY, pos.y + B.riseSpeed * dt);
-        if (pos.y >= B.surfaceY) this.state = 'attack';
+        pos.y = Math.min(B.breachY, pos.y + B.riseSpeed * dt);
+        if (pos.y >= B.breachY) this.state = 'roll';
+        break;
+      }
+
+      case 'roll': {
+        // aus der Senkrechten nach vorn auf den Bauch kippen; die
+        // Körpermitte sinkt dabei auf die Angriffs-Wasserlinie. Das Maul
+        // klatscht dank emergeDistance VOR dem Boot ins Wasser.
+        this.turnTowards(Math.atan2(boatCenter.x - pos.x, boatCenter.z - pos.z), dt);
+        this.pitch = Math.min(0, this.pitch + B.rollSpeed * dt);
+        const t = 1 + this.pitch / (Math.PI / 2); // 0 senkrecht .. 1 Bauchlage
+        pos.y = B.breachY + (B.surfaceY - B.breachY) * t;
+        if (this.pitch >= 0) {
+          pos.y = B.surfaceY;
+          this.state = 'attack'; // erst jetzt nimmt er Kurs aufs Schiff
+        }
         break;
       }
 
@@ -160,8 +214,11 @@ export class BossMonster {
       }
 
       case 'descend': {
+        // dabei zurück in die Bauchlage (falls mitten im Auftauchen
+        // abgebrochen wurde, z. B. weil das Schiff gesunken ist)
+        this.pitch = Math.min(0, this.pitch + B.rollSpeed * 2 * dt);
         pos.y = Math.max(B.lurkY, pos.y - B.riseSpeed * dt);
-        if (pos.y <= B.lurkY) {
+        if (pos.y <= B.lurkY && this.pitch >= 0) {
           this.state = this.dormant ? 'lurk' : 'return';
           this.warned = false;
         }
@@ -178,12 +235,13 @@ export class BossMonster {
         this.turnTowards(Math.atan2(B.nest.x - pos.x, B.nest.z - pos.z), dt);
         pos.addScaledVector(this.forward(this.tmp), B.patrolSpeed * dt);
         // taucht ein Boot wieder auf, greift es erneut an
-        if (!this.dormant && distBoatNest < B.triggerRadius) this.state = 'rise';
+        if (!this.dormant && distBoatNest < B.triggerRadius) this.state = 'approach';
         break;
       }
     }
 
     this.group.rotation.y = this.heading;
+    this.group.rotation.x = this.pitch;
   }
 
   // ---- Undurchdringliche Maulwände ----
@@ -194,6 +252,10 @@ export class BossMonster {
   // Maulkanal – niemals quer durch eine Wand hindurch. Gibt true
   // zurück, wenn das Boot verschoben wurde.
   resolveBoatCollision(frame: BoatFrame): boolean {
+    // Während des senkrechten Auftauchens/Abrollens gilt die waagrechte
+    // Maulgeometrie nicht – das Monster ist dann ohnehin mindestens
+    // emergeDistance - frontF vom Boot entfernt
+    if (this.pitch < -0.001) return false;
     // vertikal überhaupt auf Boots-Höhe? (Wasserlinie ~0)
     if (this.group.position.y + GEO.halfWIn < -2 || this.group.position.y - GEO.halfWIn > 4) {
       return false;

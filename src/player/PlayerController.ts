@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import { CollisionWorld } from '../systems/Collision';
 import { LadderDef } from '../world/Ladder';
 import { Ocean } from '../world/Ocean';
+import { clampToLake, lakeFloorY } from '../world/lake';
 import { MouseLook } from './MouseLook';
 
 // Kinematischer First-Person-Controller mit vier Zuständen:
@@ -304,9 +305,11 @@ export class PlayerController {
   }
 
   private clampToBounds(): void {
-    const b = CONFIG.world.bounds;
-    this.position.x = Math.max(b.minX, Math.min(b.maxX, this.position.x));
-    this.position.z = Math.max(b.minZ, Math.min(b.maxZ, this.position.z));
-    this.position.y = Math.max(b.minY, this.position.y);
+    // im See bleiben (Steilküste ringsum) und knapp über dem Boden –
+    // der ist am Küstenschelf so tief wie früher, zur Seemitte hin
+    // deutlich tiefer (siehe world/lake.ts)
+    clampToLake(this.position, 1);
+    const floor = lakeFloorY(this.position.x, this.position.z) + 0.6;
+    this.position.y = Math.max(floor, this.position.y);
   }
 }

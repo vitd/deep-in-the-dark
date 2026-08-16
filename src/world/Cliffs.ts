@@ -2,24 +2,37 @@ import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { CollisionWorld } from '../systems/Collision';
 import { texturedMat } from '../rendering/Textures';
+import { lakeFloorY } from './lake';
 
-// "Unendlich hohe" Klippenwand entlang einer Weltseite. Die Oberkante
-// verschwindet im Nebel/hinter der Far-Plane und wirkt dadurch endlos.
+// Kreisrunde Steilküste um den ganzen See plus Seeboden-Schüssel.
+// Die Oberkante der Klippen verschwindet im Nebel/hinter der Far-Plane
+// und wirkt dadurch endlos. Die Begrenzung übernimmt das kreisförmige
+// Clamping (clampToLake) in PlayerController/BoatController – die
+// Ringwand selbst braucht deshalb keine Kollisionsboxen (gedrehte
+// Segmente ließen sich mit der AABB-Kollisionswelt ohnehin nicht
+// sauber abbilden).
 
 export function buildCliffs(scene: THREE.Scene, collision: CollisionWorld): void {
-  const mat = texturedMat('stone.png', 40, 24);
+  const L = CONFIG.world.lake;
   const matDark = texturedMat('stone.png', 2, 2, 0xb0b0b8);
 
-  const x = CONFIG.world.cliffX;
-  const height = 220;
-  const bottom = CONFIG.world.seabedY - 4;
+  // Steilküste: Zylinderring, von innen gesehen. Kacheldichte wie die
+  // alte Wand (~10 m pro Kachel): Umfang ~6283 m, Höhe ~330 m.
+  const top = 220;
+  const bottom = -L.centerDepth - 10;
+  const wallMat = texturedMat('stone.png', 630, 33);
+  wallMat.side = THREE.BackSide;
+  const ring = new THREE.Mesh(
+    new THREE.CylinderGeometry(L.radius, L.radius, top - bottom, 96, 1, true),
+    wallMat,
+  );
+  ring.position.set(L.center.x, (top + bottom) / 2, L.center.z);
+  scene.add(ring);
 
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(8, height - bottom, 400), mat);
-  wall.position.set(x - 4, bottom + (height - bottom) / 2, 0);
-  scene.add(wall);
-  collision.addBox(new THREE.Box3().setFromObject(wall));
+  // x-Position der Westküsten-Wand auf Höhe z (Kreisbogen)
+  const faceX = (z: number): number => L.center.x - Math.sqrt(L.radius * L.radius - z * z);
 
-  // Vorspringende Felsblöcke für etwas Struktur
+  // Vorspringende Felsblöcke nahe dem Spawn für etwas Struktur
   const rng = [
     { y: -6, z: -30, s: 5 }, { y: 2, z: 10, s: 6 }, { y: 14, z: -12, s: 7 },
     { y: -9, z: 40, s: 4 }, { y: 30, z: 22, s: 8 }, { y: 8, z: -55, s: 6 },
@@ -27,19 +40,34 @@ export function buildCliffs(scene: THREE.Scene, collision: CollisionWorld): void
   ];
   for (const r of rng) {
     const rock = new THREE.Mesh(new THREE.BoxGeometry(r.s, r.s, r.s), matDark);
-    rock.position.set(x + r.s * 0.25 - 1.5, r.y, r.z);
+    rock.position.set(faceX(r.z) + r.s * 0.25 - 1.5, r.y, r.z);
     scene.add(rock);
     collision.addBox(new THREE.Box3().setFromObject(rock));
   }
 
-  // Meeresboden
-  const seabed = new THREE.Mesh(
-    new THREE.BoxGeometry(120, 0.4, 260),
+  // Seeboden: ebener Küstenschelf, zur Mitte hin auf centerDepth
+  // abfallend (Profil siehe lake.ts). Außerhalb des Sees läuft die
+  // Fläche hinter der Ringwand einfach weiter – unsichtbar.
+  const floorGeo = new THREE.PlaneGeometry(L.radius * 2 + 40, L.radius * 2 + 40, 96, 96);
+  floorGeo.rotateX(-Math.PI / 2);
+  const vp = floorGeo.attributes.position;
+  for (let i = 0; i < vp.count; i++) {
+    vp.setY(i, lakeFloorY(vp.getX(i) + L.center.x, vp.getZ(i) + L.center.z));
+  }
+  floorGeo.computeVertexNormals();
+  const floor = new THREE.Mesh(
+    floorGeo,
     new THREE.MeshLambertMaterial({ color: 0x8a7a5a }),
   );
-  seabed.position.set(-10, CONFIG.world.seabedY - 0.2, 0);
-  scene.add(seabed);
-  collision.addBox(new THREE.Box3().setFromObject(seabed));
+  floor.position.set(L.center.x, 0, L.center.z);
+  scene.add(floor);
+
+  // Begehbare Kollisionsplatte für den Schelf vor der Westküste (dort
+  // spielt sich Tauchen/Sammeln ab; deckt den alten Spielbereich ab)
+  collision.addBox(new THREE.Box3(
+    new THREE.Vector3(-70, CONFIG.world.seabedY - 0.4, -130),
+    new THREE.Vector3(50, CONFIG.world.seabedY, 130),
+  ));
 
   // verstreute Felsen am Boden
   const rocks = [
