@@ -12,6 +12,7 @@ import { Hotbar, HOTBAR_SLOTS } from '../systems/Hotbar';
 import { MotorMaterial, MotorRepair } from '../systems/MotorRepair';
 import { Stats } from '../systems/Stats';
 import { isTouchDevice, TouchControls } from '../systems/TouchControls';
+import { Minimap } from '../ui/Minimap';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { World } from '../world/World';
@@ -29,6 +30,7 @@ export class PlayState implements GameState {
   private readonly look = new MouseLook();
   private readonly player: PlayerController;
   private readonly interaction = new InteractionSystem();
+  private readonly minimap = new Minimap(UI.minimap);
   private readonly inventory = new Inventory();
   private readonly stats = new Stats();
   private readonly keys = new Set<string>();
@@ -746,6 +748,16 @@ export class PlayState implements GameState {
       return;
     }
     this.heldItem.update(dt);
+
+    // Minimap: Spieler in der Mitte, seine Blickrichtung oben. Am Steuer
+    // ist die Spielerposition der Steuerstand, die Karte dreht also mit
+    // dem Schiff mit.
+    this.minimap.render(
+      this.player.position.x,
+      this.player.position.z,
+      this.look.yaw,
+      this.world.minimapMarks,
+    );
 
     if (this.steering) {
       // am Steuer: feste Bedien-Hinweise statt Raycast-Prompts

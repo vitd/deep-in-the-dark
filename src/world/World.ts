@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import { CollisionWorld } from '../systems/Collision';
 import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
+import { MinimapMark } from '../ui/Minimap';
 import { UI } from '../ui/UIManager';
 import { buildBoat, HelmRef, MotorRef } from './Boat';
 import { BoatController } from './BoatController';
@@ -43,7 +44,15 @@ export class World {
   // Schiff sinkt (vom Seemonster versenkt)
   private sinking = false;
   private sunk = false;
-  private readonly boatCenter = new THREE.Vector3();
+  readonly boatCenter = new THREE.Vector3();
+  // Marken für die Minimap; die Objekte werden wiederverwendet und in
+  // update() nur neu befüllt (Reihenfolge = Zeichenreihenfolge).
+  readonly minimapMarks: MinimapMark[] = [
+    { kind: 'ship', x: 0, z: 0, yaw: 0 },
+    { kind: 'shark', x: 0, z: 0, yaw: 0 },
+    { kind: 'monster', x: 0, z: 0, yaw: 0 },
+    { kind: 'boss', x: 0, z: 0, yaw: 0 },
+  ];
   // Lichter mit Basis-Intensität, damit Unterwasser einheitlich gedimmt wird
   private readonly lights: { light: THREE.Light; base: number }[] = [];
   private readonly fogColor = new THREE.Color(CONFIG.world.fogAbove.color);
@@ -182,11 +191,32 @@ export class World {
       this.boat.syncPose();
       if (this.frame.offset.y <= CONFIG.seaMonster.sunkDepth) this.sunk = true;
     }
+    this.updateMinimapMarks();
     if (this.motorRunning) {
       // leichtes Vibrieren + pulsierendes Glühen des laufenden Motors
       const t = performance.now() / 1000;
       this.motor.group.position.y = this.motorBaseY + Math.sin(t * 55) * 0.004;
       this.motor.light.intensity = 5.2 + Math.sin(t * 9) * 1.4;
+    }
+  }
+
+  // Minimap-Marken auf den aktuellen Stand bringen. Die Karte erwartet
+  // die Gier-Konvention von Spieler und Boot (vorwärts = -sin/-cos);
+  // die Kreaturen laufen mit +sin/+cos, ihre Marke wird deshalb um 180°
+  // gedreht.
+  private updateMinimapMarks(): void {
+    const [ship, shark, monster, boss] = this.minimapMarks;
+    ship.x = this.boatCenter.x;
+    ship.z = this.boatCenter.z;
+    ship.yaw = this.frame.yaw;
+    for (const [mark, obj] of [
+      [shark, this.shark.group],
+      [monster, this.monster.group],
+      [boss, this.boss.group],
+    ] as const) {
+      mark.x = obj.position.x;
+      mark.z = obj.position.z;
+      mark.yaw = obj.rotation.y + Math.PI;
     }
   }
 

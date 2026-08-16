@@ -518,6 +518,28 @@ body.touch-mode #stats {
   color: #6a8a90;
 }
 
+/* ------- Minimap ------- */
+#minimap {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  border: 3px solid #2b5a66;
+  background: rgba(5, 15, 20, 0.75);
+  box-shadow: 3px 3px 0 #051418, inset 0 0 0 2px rgba(5, 20, 24, 0.6);
+  /* interne Auflösung ist klein – nearest-neighbor hält den Pixel-Look */
+  image-rendering: pixelated;
+}
+
+/* Auf Touch-Geräten sitzen oben rechts die Pause-/Inventar-Knöpfe */
+body.touch-mode #minimap {
+  top: 76px;
+  width: 132px;
+  height: 132px;
+}
+
 /* ------- Motor-Reparatur-Panel ------- */
 #motor-panel {
   position: absolute;

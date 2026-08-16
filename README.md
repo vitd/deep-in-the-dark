@@ -56,6 +56,25 @@ steigt man automatisch aus, zwischendurch löst die Leertaste.
   wird der Blick dunkel und die Nahrung schwindet schnell.
 - Beide Werte werden im HUD links unten angezeigt.
 
+## Minimap
+
+Rechts oben liegt eine kreisrunde Minimap mit **100 m Radius**. Der
+Spieler steckt immer in ihrer Mitte, seine **Blickrichtung zeigt immer
+nach oben** – die Karte dreht sich also mit. Am Steuer heißt das: die
+Karte dreht mit dem Schiff.
+
+- **Meeresboden:** Die Farbe zeigt die Wassertiefe (heller Schelf bis
+  tiefschwarzblaue Seemitte), Schattierung und Tiefenlinien alle 10 m
+  zeigen Rücken, Kuppen und Hänge. Braun ist die Steilküste.
+- **Schiff:** weiße Rumpfform, maßstäblich und in Fahrtrichtung. Ist es
+  weiter als 100 m weg, bleibt es als kleiner Punkt am Kartenrand
+  sichtbar – so findet man zurück.
+- **Kreaturen:** Pfeilspitzen in Fahrtrichtung – orange der Hai, rot das
+  Seemonster, groß und hellrot der Boss.
+- Der helle Bogen am Kartenrand markiert **Norden**.
+
+Stellschrauben (Radius, Auflösung): `CONFIG.minimap` in `src/config.ts`.
+
 ## Crafting
 
 In der Kajüte steht ein Tisch — die **Werkbank** (E: Benutzen). Sie

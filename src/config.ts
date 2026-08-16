@@ -73,6 +73,12 @@ export const CONFIG = {
     maxDistance: 3.2,
   },
 
+  // Minimap oben rechts (src/ui/Minimap.ts)
+  minimap: {
+    radius: 100, // abgedeckter Radius in Metern
+    pixel: 120, // interne Auflösung; wird per CSS pixelig hochskaliert
+  },
+
   stats: {
     // Nahrungsverbrauch pro Sekunde: nur in Bewegung, 1 Punkt / 10 s
     nahrungDrain: { idle: 0, walk: 0.1, swim: 0.1, dive: 0.1, climb: 0.1 },
