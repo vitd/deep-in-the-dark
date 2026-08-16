@@ -48,16 +48,20 @@ export function buildCliffs(scene: THREE.Scene, collision: CollisionWorld): void
   // Seeboden: ebener Küstenschelf, zur Mitte hin auf centerDepth
   // abfallend (Profil siehe lake.ts). Außerhalb des Sees läuft die
   // Fläche hinter der Ringwand einfach weiter – unsichtbar.
-  const floorGeo = new THREE.PlaneGeometry(L.radius * 2 + 40, L.radius * 2 + 40, 96, 96);
+  const floorSize = L.radius * 2 + 40;
+  const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize, 96, 96);
   floorGeo.rotateX(-Math.PI / 2);
   const vp = floorGeo.attributes.position;
   for (let i = 0; i < vp.count; i++) {
     vp.setY(i, lakeFloorY(vp.getX(i) + L.center.x, vp.getZ(i) + L.center.z));
   }
   floorGeo.computeVertexNormals();
+  // Sandkachel alle 4 m – bei der Sichtweite unter Wasser (Nebel, ~25 m)
+  // bleibt das Muster erkennbar, ohne zu einem Brei zu verlaufen.
+  const sandRepeat = floorSize / 4;
   const floor = new THREE.Mesh(
     floorGeo,
-    new THREE.MeshLambertMaterial({ color: 0x8a7a5a }),
+    texturedMat('sand.png', sandRepeat, sandRepeat),
   );
   floor.position.set(L.center.x, 0, L.center.z);
   scene.add(floor);
