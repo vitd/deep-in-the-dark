@@ -13,6 +13,7 @@ import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
 import { Ocean } from './Ocean';
 import { Resources } from './Resources';
+import { Seabed } from './Seabed';
 import { SeaMonster } from './SeaMonster';
 import { Shark } from './Shark';
 import { BOAT_LAYOUT } from './boatLayout';
@@ -24,6 +25,7 @@ export class World {
   readonly ocean: Ocean;
   readonly collision = new CollisionWorld();
   readonly ladders: LadderDef[];
+  private readonly seabed: Seabed;
   private readonly resources: Resources;
   private readonly fish: FishManager;
   readonly shark: Shark;
@@ -83,6 +85,7 @@ export class World {
     scene.add(this.ocean.mesh);
 
     buildCliffs(scene, this.collision);
+    this.seabed = new Seabed(scene, this.collision);
 
     const boat = buildBoat(scene, this.collision, interaction, inventory, {
       onCraftingTable,
@@ -164,6 +167,7 @@ export class World {
 
   update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean): void {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
+    this.seabed.update(playerPos);
     this.resources.update();
     this.fish.update(dt);
     this.shark.update(dt, playerPos, playerInWater);

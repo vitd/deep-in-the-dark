@@ -6,6 +6,7 @@ import { InteractionSystem, Interactable } from '../systems/Interaction';
 import { Inventory, ItemId } from '../systems/Inventory';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
+import { lakeFloorY } from './lake';
 import { Ocean } from './Ocean';
 
 // Aufsammelbare Ressourcen (Taste E):
@@ -51,6 +52,13 @@ const FUEL_BARREL_FLOAT = [
   { x: -44, z: -30 },
 ];
 
+// Alle Fundstellen am Grund. Der Seeboden-Bewuchs (world/Seabed.ts)
+// hält diese Stellen von Geröll frei, damit nichts unter Steinen
+// verschwindet.
+export const SEABED_ITEM_SPOTS: readonly { x: number; z: number }[] = [
+  ...IRON_SPOTS, ...GOLD_SPOTS, ...BARREL_SEABED, ...FUEL_BARREL_SEABED,
+];
+
 interface FloatingItem {
   obj: THREE.Object3D;
   phase: number;
@@ -81,12 +89,12 @@ export class Resources {
 
     // Eisen am Meeresboden (GLB-Modell, Fallback: dunkle Box)
     for (const [i, spot] of IRON_SPOTS.entries()) {
-      this.spawnModelPickup('iron.glb', 0.5, 'eisen', spot.x, CONFIG.world.seabedY + 0.25, spot.z, i * 0.7);
+      this.spawnModelPickup('iron.glb', 0.5, 'eisen', spot.x, lakeFloorY(spot.x, spot.z) + 0.25, spot.z, i * 0.7);
     }
 
     // Gold am Meeresboden – seltener, nahe der Klippen
     for (const [i, spot] of GOLD_SPOTS.entries()) {
-      this.spawnModelPickup('gold.glb', 0.45, 'gold', spot.x, CONFIG.world.seabedY + 0.22, spot.z, i * 1.1);
+      this.spawnModelPickup('gold.glb', 0.45, 'gold', spot.x, lakeFloorY(spot.x, spot.z) + 0.22, spot.z, i * 1.1);
     }
 
     // Fässer: Deck, treibend, Meeresboden
@@ -100,7 +108,7 @@ export class Resources {
     }
     for (const [i, spot] of BARREL_SEABED.entries()) {
       const group = this.spawnModelPickup(
-        'barrel.glb', 0.7, 'fass', spot.x, CONFIG.world.seabedY + 0.3, spot.z, i * 2.6,
+        'barrel.glb', 0.7, 'fass', spot.x, lakeFloorY(spot.x, spot.z) + 0.3, spot.z, i * 2.6,
       );
       group.rotation.x = i % 2 === 0 ? Math.PI / 2 - 0.2 : 0; // teils umgekippt
     }
@@ -109,7 +117,7 @@ export class Resources {
     // (0..max Liter) dem Vorrat gutgeschrieben, das leere Fass bleibt
     // als normales Fass-Item (zerlegbar an der Werkbank)
     for (const [i, spot] of FUEL_BARREL_SEABED.entries()) {
-      this.spawnFuelBarrel(spot.x, CONFIG.world.seabedY + 0.35, spot.z, i * 1.9);
+      this.spawnFuelBarrel(spot.x, lakeFloorY(spot.x, spot.z) + 0.35, spot.z, i * 1.9);
     }
     for (const [i, spot] of FUEL_BARREL_FLOAT.entries()) {
       const group = this.spawnFuelBarrel(spot.x, 0, spot.z, i * 0.7);
