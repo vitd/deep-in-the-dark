@@ -114,12 +114,51 @@ Eine Datei `public/assets/intro.mp4` wird beim Start abgespielt
 (überspringbar mit Esc/Leertaste/Klick). Fehlt sie, geht es direkt
 ins Hauptmenü.
 
+## Taucherhelm
+
+Der Taucherhelm legt sich als Bild (`public/assets/hud/helmet.png`) über
+die ganze Sicht: Man schaut durch die Fenster des Visiers, der Rand ist
+dicht. Am Steuer (Außenkamera) blendet er sich automatisch aus.
+
+Das **Rezept folgt noch** — bis dahin setzt man ihn über das Cheat-Menü
+auf (siehe unten). Voreinstellungen: `CONFIG.taucherhelm` in
+`src/config.ts`:
+
+| Wert | Bedeutung |
+|---|---|
+| `bild` | Pfad des Overlay-Bilds |
+| `modus` | `strecken` (aufs Bildschirmformat gezogen) oder `quadrat` (formtreu, oben/unten beschnitten) |
+| `skalierung` | 1 = füllt den Bildschirm genau aus |
+| `versatzX` / `versatzY` | Verschiebung in % der Bildschirmgröße |
+| `deckkraft` | 0–1 |
+| `pixelig` | Nearest-Neighbor-Skalierung (Pixel-Look) |
+| `randfarbe` | füllt den Bereich außerhalb des Bilds (bei Skalierung < 1) |
+
 ## Cheats / Debug
 
 Die Taste **L** öffnet jederzeit das Cheat-Menü: Debug-Anzeige
 (FPS/Position), Kollisionsboxen, Teleports, Werte auffüllen,
-Materialpakete, Motor-Schnellreparatur, Hai herbeirufen u. a. —
-kein URL-Parameter nötig.
+Materialpakete, Motor-Schnellreparatur, Hai herbeirufen, Taucherhelm
+aufsetzen u. a. — kein URL-Parameter nötig.
+
+**Taucherhelm justieren:** Der Cheat *„Taucherhelm justieren (Tastatur)
+an/aus“* setzt den Helm auf und blendet links eine Anzeige mit den
+aktuellen Werten ein. Justiert wird im laufenden Spiel:
+
+| Taste | Wirkung |
+|---|---|
+| Pfeiltasten | Versatz X/Y |
+| `+` / `-` | Skalierung |
+| `[` / `]` | Deckkraft |
+| M | Modus (strecken / quadrat) |
+| N | Pixelig an/aus |
+| H | Helm auf-/absetzen |
+| R | zurück auf die Werte aus `CONFIG` |
+| Shift | feine Schritte |
+
+Die Anzeige zeigt unten die eingestellten Werte in der Schreibweise von
+`CONFIG.taucherhelm` — passt die Justierung, wandern sie dort hinein.
+Bis dahin merkt sich der Browser sie (localStorage).
 
 ## Technik
 

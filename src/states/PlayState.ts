@@ -12,6 +12,7 @@ import { Hotbar, HOTBAR_SLOTS } from '../systems/Hotbar';
 import { MotorMaterial, MotorRepair } from '../systems/MotorRepair';
 import { Stats } from '../systems/Stats';
 import { isTouchDevice, TouchControls } from '../systems/TouchControls';
+import { HelmetOverlay } from '../ui/HelmetOverlay';
 import { Minimap } from '../ui/Minimap';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
@@ -31,6 +32,8 @@ export class PlayState implements GameState {
   private readonly player: PlayerController;
   private readonly interaction = new InteractionSystem();
   private readonly minimap = new Minimap(UI.minimap);
+  // Taucherhelm-Overlay: getragen wird er bisher nur per Cheat
+  private readonly helmet = new HelmetOverlay(UI.helmet, UI.helmetImg, UI.helmetTune);
   private readonly inventory = new Inventory();
   private readonly stats = new Stats();
   private readonly keys = new Set<string>();
@@ -294,6 +297,23 @@ export class PlayState implements GameState {
         },
       },
       {
+        label: 'Taucherhelm aufsetzen / absetzen',
+        action: () => {
+          this.helmet.setWorn(!this.helmet.isWorn);
+          UI.toast(this.helmet.isWorn ? STR.taucherhelmAuf : STR.taucherhelmAb);
+        },
+      },
+      {
+        label: 'Taucherhelm justieren (Tastatur) an/aus',
+        action: () => {
+          const on = !this.helmet.isTuning;
+          this.helmet.setTuning(on);
+          // zum Justieren muss der Helm natürlich aufsein
+          if (on && !this.helmet.isWorn) this.helmet.setWorn(true);
+          UI.toast(on ? STR.taucherhelmTuneAn : STR.taucherhelmTuneAus, on ? 6000 : 2200);
+        },
+      },
+      {
         label: 'Teleport: Boot ins Bossrevier (Vorsicht!)',
         action: () => {
           // Motor fertigstellen, damit sich das Boot steuern lässt
@@ -357,6 +377,16 @@ export class PlayState implements GameState {
     }
     if (e.code === 'KeyL' && !this.inventoryOpen && !this.craftingOpen) {
       this.toggleCheats();
+      return;
+    }
+    // Helm-Feinjustierung: schluckt ihre Tasten, solange sie läuft
+    if (
+      this.helmet.isTuning &&
+      !this.inventoryOpen &&
+      !this.craftingOpen &&
+      this.helmet.handleKey(e.code, e.shiftKey)
+    ) {
+      e.preventDefault();
       return;
     }
     if (this.craftingOpen) {
@@ -616,6 +646,9 @@ export class PlayState implements GameState {
       this.touch.attach();
     }
     if (this.debugVisible) UI.show(UI.debug);
+    // Helm und Justier-Anzeige überstehen die Pause
+    this.helmet.setWorn(this.helmet.isWorn);
+    this.helmet.setTuning(this.helmet.isTuning);
   }
 
   exit(): void {
@@ -642,6 +675,8 @@ export class PlayState implements GameState {
     if (this.cheatsOpen) { this.cheatsOpen = false; UI.hide(UI.cheats); }
     UI.hide(UI.hud);
     UI.hide(UI.debug);
+    UI.hide(UI.helmet);
+    UI.hide(UI.helmetTune);
     UI.setPrompt(null);
     UI.hide(UI.underwater);
     UI.hide(UI.warnTauchauf);
@@ -696,6 +731,10 @@ export class PlayState implements GameState {
       this.player.eye(this.eyeTmp);
       this.look.applyTo(this.camera, this.eyeTmp);
     }
+
+    // Am Steuer blickt die Kamera von außen aufs Schiff – dann hat ein
+    // Helmvisier vor der Linse nichts zu suchen
+    this.helmet.setSuppressed(this.steering);
 
     // Über-/Unterwasser: im Tauchzustand gilt der Kopf immer als unter
     // Wasser (dieser Zustand endet erst, wenn er wirklich auftaucht) –

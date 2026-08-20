@@ -272,6 +272,24 @@ export const CONFIG = {
     kameraPitchMax: -0.08, // nie unter die Wasserlinie
   },
 
+  // Taucherhelm: HUD-Bild, das sich über die ganze Sicht legt, sobald
+  // der Helm getragen wird. Das Rezept kommt später – bis dahin setzt
+  // ihn das Cheat-Menü (Taste L) auf und justiert ihn per Tastatur.
+  taucherhelm: {
+    bild: 'assets/hud/helmet.png',
+    // 'strecken': auf das Bildschirmformat gezogen (nichts wird
+    // beschnitten) · 'quadrat': formtreu, oben/unten beschnitten
+    modus: 'strecken',
+    skalierung: 1, // 1 = füllt den Bildschirm genau aus
+    versatzX: 0, // in % der Bildschirmbreite
+    versatzY: 0, // in % der Bildschirmhöhe
+    deckkraft: 1,
+    pixelig: true, // Nearest-Neighbor, passt zum Pixel-Look
+    // Füllfarbe außerhalb des Bildes (Messingrand des Helms), damit bei
+    // kleiner Skalierung kein Loch am Bildschirmrand entsteht
+    randfarbe: '#a76100',
+  },
+
   // Materialbedarf der Motor-Reparatur (Mechanik folgt)
   motorRepair: {
     eisen: 50,

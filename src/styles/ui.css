@@ -181,6 +181,45 @@ input[type='range'] {
   background: rgba(8, 46, 60, 0.35);
 }
 
+/* ------- Taucherhelm-Overlay ------- */
+/* #helmet spannt den Bildschirm auf, #helmet-img trägt das skalierte
+   Bild. Der riesige Schatten von #helmet-img füllt alles außerhalb des
+   Bildes mit der Helmfarbe (in JS gesetzt), damit der Rand dicht
+   bleibt. Größe, Versatz und Deckkraft kommen aus CONFIG.taucherhelm
+   bzw. der Feinjustierung (src/ui/HelmetOverlay.ts). */
+#helmet {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#helmet-img {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+
+#helmet-tune {
+  position: fixed;
+  left: 8px;
+  top: 100px;
+  z-index: 30;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #ffd08a;
+  text-shadow: 1px 1px 0 #000;
+  background: rgba(5, 15, 20, 0.7);
+  border: 1px solid #a76100;
+  padding: 6px 10px;
+  white-space: pre;
+  pointer-events: none;
+}
+
 /* ------- Touch-Steuerung ------- */
 #touch-ui {
   position: absolute;

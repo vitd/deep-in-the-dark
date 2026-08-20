@@ -35,6 +35,11 @@ export const STR = {
   motorApplied: (name: string, n: number) => `${n}x ${name} verbaut`,
   motorFuelApplied: (l: number) => `+${l} L Treibstoff eingefüllt`,
   motorComplete: 'Der Motor brummt! Die Brücke ist jetzt zugänglich.',
+  taucherhelmAuf: 'Taucherhelm aufgesetzt',
+  taucherhelmAb: 'Taucherhelm abgesetzt',
+  taucherhelmTuneAn:
+    'Helm-Justierung: Pfeile Versatz · +/- Größe · [ ] Deckkraft · M Modus · N Pixel · H auf/ab · R Reset',
+  taucherhelmTuneAus: 'Helm-Justierung aus',
   helmUse: 'E: Steuer übernehmen',
   helmStop: 'W/S: Fahrhebel · A/D: Steuerrad · E: Steuer loslassen',
   helmNoMotor: 'Steuerstand (der Motor läuft nicht)',

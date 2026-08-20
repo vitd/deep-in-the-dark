@@ -37,6 +37,9 @@ class UIManagerImpl {
   readonly invHotbarGrid = el('inv-hotbar-grid');
   readonly fuelLine = el('fuel-line');
   readonly motorPanel = el('motor-panel');
+  readonly helmet = el('helmet');
+  readonly helmetImg = el('helmet-img');
+  readonly helmetTune = el('helmet-tune');
   readonly cheats = el('cheats');
   readonly cheatList = el('cheat-list');
 
@@ -101,6 +104,8 @@ class UIManagerImpl {
       this.hide(e);
     }
     this.hide(this.underwater);
+    this.hide(this.helmet);
+    this.hide(this.helmetTune);
     this.setPrompt(null);
   }
 }
