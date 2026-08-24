@@ -45,7 +45,8 @@ steigt man automatisch aus, zwischendurch löst die Leertaste.
   benutzen den jeweiligen Slot. Das ausgewählte Item hält der Spieler
   sichtbar in der Hand.
 - **Leben (0–100):** Der Hai zieht pro Biss 30 Leben ab (roter
-  Verletzungs-Blitz). Bei 0 stirbst du.
+  Verletzungs-Blitz). Bei 0 stirbst du. Der Jumpscare des Stalkers
+  (siehe unten) lässt dir nur noch 10 Leben.
 - **Der Hai:** Es gibt genau einen. Er patrouilliert im Meer und greift
   an, sobald du ihm im Wasser zu nahe kommst. Mit dem **Hammer in der
   Hand** wehrst du ihn ab: Linksklick (bzw. E ohne Ziel) schlägt zu —
@@ -55,6 +56,31 @@ steigt man automatisch aus, zwischendurch löst die Leertaste.
   Oberfläche regeneriert die Luft in 8 Sekunden vollständig. Ohne Luft
   wird der Blick dunkel und die Nahrung schwindet schnell.
 - Beide Werte werden im HUD links unten angezeigt.
+
+## Der Stalker
+
+Eine hagere, überlebensgroße Gestalt, die einen nur ansieht – sie
+verfolgt niemanden, sie ist plötzlich da und gleich wieder weg. Es gibt
+genau einen; die meiste Zeit ist er gar nicht in der Welt. Er erscheint
+immer im Blickfeld, in einer von drei Varianten – je nachdem, wo man
+gerade steckt:
+
+- **An Deck:** Er steht irgendwo an Bord (Gang, Vor-/Achterdeck oder auf
+  der Dachplatte) und dreht sich zum Spieler. Wer sich ihm nähert, sieht
+  ihn kurz zwinkern – dann ist der Platz leer. Das Boot darf dabei
+  fahren, er steht fest an seinem Platz an Deck.
+- **Am Himmel:** Er hängt reglos in der Luft über dem Wasser, 16–38 m
+  hoch und 30–65 m entfernt. Er bewegt sich nicht von der Stelle, dreht
+  sich aber immer zum Spieler.
+- **Unter Wasser:** Er steht aufrecht im Wasser und wartet. Bleibt man
+  ihm **3 Sekunden** lang zu nah (6 m), springt er einen an: Bild
+  flackert, Kreischen – und danach bleiben nur noch **10 % Leben**.
+  Taucht man vorher auf oder hält Abstand, verschwindet er wieder.
+
+Zwischen zwei Auftritten vergehen 70–170 Sekunden. Alle Werte stehen in
+`CONFIG.stalker` (`src/config.ts`), die Auftritte selbst in
+`src/world/Stalker.ts`. Zum Ausprobieren gibt es im Cheat-Menü (Taste L)
+je einen Eintrag pro Variante.
 
 ## Minimap
 
@@ -138,7 +164,8 @@ auf (siehe unten). Voreinstellungen: `CONFIG.taucherhelm` in
 
 Die Taste **L** öffnet jederzeit das Cheat-Menü: Debug-Anzeige
 (FPS/Position), Kollisionsboxen, Teleports, Werte auffüllen,
-Materialpakete, Motor-Schnellreparatur, Hai herbeirufen, Taucherhelm
+Materialpakete, Motor-Schnellreparatur, Hai herbeirufen, Stalker
+erscheinen lassen (an Deck / am Himmel / unter Wasser), Taucherhelm
 aufsetzen u. a. — kein URL-Parameter nötig.
 
 **Taucherhelm justieren:** Der Cheat *„Taucherhelm justieren (Tastatur)

@@ -21,6 +21,10 @@ export const STR = {
   diedTitle: 'DU BIST GESTORBEN',
   monsterDeathTitle: 'DAS SEEMONSTER HAT DICH ERWISCHT',
   shipSunkTitle: 'DAS SCHIFF IST GESUNKEN',
+  stalkerJumpscare: (rest: number) =>
+    `Etwas hat dich angesprungen … nur noch ${rest} % Leben`,
+  stalkerCheatDa: 'Cheat: Der Stalker ist da …',
+  stalkerCheatKeinPlatz: 'Cheat: Hier findet er keinen Platz',
   bossSurfaced: 'Das Wasser bebt – etwas Kolossales taucht auf!',
   bossSwallowedTitle: 'DAS BOOT WURDE VERSCHLUCKT',
   leben: 'Leben',

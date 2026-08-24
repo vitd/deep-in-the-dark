@@ -24,6 +24,8 @@ class UIManagerImpl {
   readonly barLuft = el('bar-luft');
   readonly barLeben = el('bar-leben');
   readonly damageFlashEl = el('damage-flash');
+  readonly jumpscareEl = el('jumpscare');
+  readonly gameCanvas = el('game');
   readonly deathTitle = el('death-title');
   readonly lowair = el('lowair');
   readonly warnTauchauf = el('warn-tauchauf');
@@ -68,6 +70,19 @@ class UIManagerImpl {
     }, 220);
   }
 
+  private jumpscareTimer = 0;
+
+  // Jumpscare: Bild flackert, der Canvas wackelt – `ms` lang.
+  jumpscare(ms: number): void {
+    this.show(this.jumpscareEl);
+    this.gameCanvas.classList.add('shake');
+    window.clearTimeout(this.jumpscareTimer);
+    this.jumpscareTimer = window.setTimeout(() => {
+      this.hide(this.jumpscareEl);
+      this.gameCanvas.classList.remove('shake');
+    }, ms);
+  }
+
   setBar(bar: HTMLElement, value: number): void {
     bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
   }
@@ -104,6 +119,8 @@ class UIManagerImpl {
       this.hide(e);
     }
     this.hide(this.underwater);
+    this.hide(this.jumpscareEl);
+    this.gameCanvas.classList.remove('shake');
     this.hide(this.helmet);
     this.hide(this.helmetTune);
     this.setPrompt(null);

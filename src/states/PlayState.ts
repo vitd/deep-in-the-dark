@@ -16,6 +16,7 @@ import { HelmetOverlay } from '../ui/HelmetOverlay';
 import { Minimap } from '../ui/Minimap';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
+import { StalkerMode, StalkerView } from '../world/Stalker';
 import { World } from '../world/World';
 import { DeathState } from './DeathState';
 import { GameState } from './GameState';
@@ -38,6 +39,15 @@ export class PlayState implements GameState {
   private readonly stats = new Stats();
   private readonly keys = new Set<string>();
   private readonly eyeTmp = new THREE.Vector3();
+  // Blicklage des Spielers – der Stalker sucht sich damit seine
+  // Auftritte (nur im Blickfeld) und stellt sich beim Jumpscare vors
+  // Gesicht. Wird pro Bild neu befüllt, nie kopiert.
+  private readonly view: StalkerView = {
+    eye: new THREE.Vector3(),
+    dir: new THREE.Vector3(0, 0, -1),
+    inWater: false,
+    underwater: false,
+  };
   // Third-Person-Kamera am Steuer (Orbit um den Steuerstand)
   private readonly camPivot = new THREE.Vector3();
   private readonly camDir = new THREE.Vector3();
@@ -103,6 +113,7 @@ export class PlayState implements GameState {
         // vom Boss verschluckt: das Boot ist weg, das Spiel verloren
         this.pendingDeath = STR.bossSwallowedTitle;
       },
+      () => this.onStalkerJumpscare(),
     );
 
     // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
@@ -295,6 +306,18 @@ export class PlayState implements GameState {
           this.world.monster.teleportNear(this.player.position);
           UI.toast('Cheat: Das Seemonster ist unterwegs');
         },
+      },
+      {
+        label: 'Stalker: an Deck erscheinen',
+        action: () => this.spawnStalker('schiff'),
+      },
+      {
+        label: 'Stalker: am Himmel erscheinen',
+        action: () => this.spawnStalker('himmel'),
+      },
+      {
+        label: 'Stalker: unter Wasser erscheinen (Jumpscare!)',
+        action: () => this.spawnStalker('wasser'),
       },
       {
         label: 'Taucherhelm aufsetzen / absetzen',
@@ -544,6 +567,36 @@ export class PlayState implements GameState {
     UI.toast(STR.sharkBite(CONFIG.shark.damage));
   }
 
+  // Cheat: Auftritt sofort erzwingen. Dazu muss die Blicklage frisch
+  // sein – bei offenem Cheat-Menü läuft das Welt-Update nicht.
+  private spawnStalker(mode: StalkerMode): void {
+    this.player.eye(this.eyeTmp);
+    this.view.eye.copy(this.eyeTmp);
+    this.look.forward(this.view.dir);
+    this.view.inWater =
+      this.player.state === PlayerState.SwimSurface || this.player.state === PlayerState.Dive;
+    this.view.underwater =
+      this.player.state === PlayerState.Dive ||
+      this.eyeTmp.y < this.world.ocean.height(this.eyeTmp.x, this.eyeTmp.z);
+    const ok = this.world.stalker.erscheineJetzt(
+      mode,
+      this.view,
+      this.world.boatCenter,
+      this.world.frame,
+    );
+    UI.toast(ok ? STR.stalkerCheatDa : STR.stalkerCheatKeinPlatz);
+  }
+
+  // Der Stalker springt einen an: Schreck-Overlay, Kreischen – und was
+  // vom Leben übrig bleibt, sind 10 %.
+  private onStalkerJumpscare(): void {
+    this.stats.leben = Math.min(this.stats.leben, CONFIG.stalker.wasser.restLeben);
+    UI.jumpscare(CONFIG.stalker.wasser.jumpscareDauer * 1000);
+    UI.damageFlash();
+    Audio.screech();
+    UI.toast(STR.stalkerJumpscare(CONFIG.stalker.wasser.restLeben), 3200);
+  }
+
   // Rammstoß des Seemonsters: nach dem dritten Treffer sinkt das Schiff
   private onMonsterHitShip(): void {
     this.monsterHits++;
@@ -777,7 +830,11 @@ export class PlayState implements GameState {
     // Der Hai interessiert sich nur für Spieler im Wasser
     const playerInWater =
       this.player.state === PlayerState.SwimSurface || this.player.state === PlayerState.Dive;
-    this.world.update(dt, this.player.position, playerInWater);
+    this.view.eye.copy(this.eyeTmp);
+    this.look.forward(this.view.dir);
+    this.view.inWater = playerInWater;
+    this.view.underwater = eyesUnderwater;
+    this.world.update(dt, this.player.position, playerInWater, this.view);
     if (this.pendingDeath) {
       this.game.setState(new DeathState(this.game, this, this.pendingDeath));
       return;

@@ -17,6 +17,7 @@ import { Resources } from './Resources';
 import { Seabed } from './Seabed';
 import { SeaMonster } from './SeaMonster';
 import { SharkManager } from './Shark';
+import { Stalker, StalkerView } from './Stalker';
 import { BOAT_LAYOUT } from './boatLayout';
 
 // Setzt die komplette Spielwelt zusammen und verwaltet den
@@ -32,6 +33,7 @@ export class World {
   readonly shark: SharkManager;
   readonly monster: SeaMonster;
   readonly boss: BossMonster;
+  readonly stalker: Stalker;
   readonly motor: MotorRef;
   readonly helm: HelmRef;
   readonly frame: BoatFrame;
@@ -74,6 +76,7 @@ export class World {
     onMonsterCaughtPlayer: () => void,
     onBossSurfaced: () => void,
     onBoatSwallowed: () => void,
+    onStalkerJumpscare: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -128,6 +131,7 @@ export class World {
     this.shark = new SharkManager(scene, onSharkBite);
     this.monster = new SeaMonster(scene, this.frame, onMonsterHitShip, onMonsterCaughtPlayer);
     this.boss = new BossMonster(scene, onBossSurfaced, onBoatSwallowed);
+    this.stalker = new Stalker(scene, onStalkerJumpscare);
   }
 
   private addRoomLight(min: readonly number[], max: readonly number[]): void {
@@ -174,7 +178,7 @@ export class World {
     return this.fish.nearestFishPos(from);
   }
 
-  update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean): void {
+  update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean, view: StalkerView): void {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.seabed.update(playerPos);
     this.resources.update();
@@ -184,6 +188,9 @@ export class World {
     this.shark.update(dt, playerPos, playerInWater, this.boatCenter);
     this.monster.update(dt, playerPos, playerInWater, this.boatCenter);
     this.boss.update(dt, this.boatCenter);
+    // Der Stalker ist meistens gar nicht da – er sucht sich seine
+    // Auftritte selbst (an Deck, am Himmel, unter Wasser)
+    this.stalker.update(dt, view, this.boatCenter, this.frame);
     // Die Maulwände des Bosses sind undurchdringlich: notfalls wird das
     // Boot herausgedrückt und seine Pose neu angewendet
     if (this.boss.resolveBoatCollision(this.frame)) this.boat.syncPose();

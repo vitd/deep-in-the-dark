@@ -401,6 +401,49 @@ body.touch-mode #stats {
   transition: opacity 0.1s ease-in;
 }
 
+/* Jumpscare des Stalkers: Flackern über der Sicht + wackelndes Bild */
+#jumpscare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.22) 0%, rgba(90, 0, 0, 0.6) 60%, rgba(0, 0, 0, 0.9) 100%);
+  mix-blend-mode: hard-light;
+  animation: jumpscare-flicker 0.09s steps(2, end) infinite;
+}
+
+@keyframes jumpscare-flicker {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+
+/* Der Canvas selbst wackelt – leicht vergrößert, damit keine Ränder
+   sichtbar werden */
+#game.shake {
+  animation: canvas-shake 0.07s linear infinite;
+}
+
+@keyframes canvas-shake {
+  0% {
+    transform: translate(-6px, 4px) scale(1.04);
+  }
+  25% {
+    transform: translate(5px, -5px) scale(1.04);
+  }
+  50% {
+    transform: translate(-4px, -3px) scale(1.04);
+  }
+  75% {
+    transform: translate(6px, 3px) scale(1.04);
+  }
+  100% {
+    transform: translate(-5px, 5px) scale(1.04);
+  }
+}
+
 /* Vignette bei Luftnot: Hintergrund wird per JS enger gezogen */
 #lowair {
   position: absolute;

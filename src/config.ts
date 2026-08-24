@@ -226,6 +226,56 @@ export const CONFIG = {
     maulTempoFaktor: 0.45,
   },
 
+  // Der Stalker: eine hagere Gestalt, die man immer nur kurz zu sehen
+  // bekommt. Er jagt nicht – er steht da, sieht einen an und ist wieder
+  // weg. Drei Auftritte, je nachdem, wo der Spieler gerade steckt:
+  //   'schiff'  – an Deck; wer sich nähert, sieht ihn verschwinden
+  //   'himmel'  – reglos in der Luft, dreht sich immer zum Spieler
+  //   'wasser'  – unter Wasser; wer sich nähert, hat 3 Sekunden Zeit,
+  //               dann folgt der Jumpscare und es bleiben 10 % Leben
+  stalker: {
+    size: 2.4, // Körperhöhe in Metern – deutlich größer als der Spieler
+    ersteWartezeit: 90, // Ruhe nach dem Spielstart
+    pauseMin: 70, // Wartezeit zwischen zwei Auftritten
+    pauseMax: 170,
+    // Er erscheint nur im Blickfeld: dot(Blickrichtung, Richtung zu ihm)
+    sichtKegel: 0.4, // ~ 66° Öffnungswinkel
+    verschwindenDauer: 0.4, // Ausblenden in Sekunden
+    // Umkreis um das Boot, in dem der Auftritt an Deck möglich ist
+    bootNaehe: 26,
+    // Ab dieser Entfernung verliert er das Interesse und löst sich auf
+    maxAbstand: 90,
+
+    schiff: {
+      minAbstand: 7, // näher als das erscheint er nie
+      fluchtRadius: 5, // kommt der Spieler so nah, ist er weg
+      dauer: 40, // bleibt sonst so lange stehen
+    },
+
+    himmel: {
+      abstandMin: 30,
+      abstandMax: 65,
+      hoeheMin: 16,
+      hoeheMax: 38,
+      dauer: 22, // steht so lange still in der Luft
+      fluchtRadius: 14,
+    },
+
+    wasser: {
+      abstandMin: 9,
+      abstandMax: 17,
+      naeheRadius: 6, // ab hier läuft der Countdown
+      ausloeseSekunden: 3, // so lange, dann schlägt er zu
+      dauer: 30, // ohne Annäherung löst er sich wieder auf
+      restLeben: 10, // danach bleiben dem Spieler 10 % Leben
+      jumpscareDauer: 1.2, // so lange steht er im Bild
+      jumpscareAbstand: 1.2, // Abstand seines Gesichts zur Kamera
+      minY: -70, // Tiefenband, in dem er auftaucht
+      maxY: -3,
+      minSpielerTiefe: -2.5, // flacher taucht er gar nicht erst auf
+    },
+  },
+
   // Großer Fisch: seltener, tiefer, ergiebiger
   fishBig: {
     count: 3,
