@@ -316,7 +316,7 @@ export class PlayState implements GameState {
         action: () => this.spawnStalker('himmel'),
       },
       {
-        label: 'Stalker: unter Wasser erscheinen (Jumpscare!)',
+        label: 'Stalker: unter Wasser erscheinen (ansehen = Jumpscare!)',
         action: () => this.spawnStalker('wasser'),
       },
       {
@@ -587,14 +587,15 @@ export class PlayState implements GameState {
     UI.toast(ok ? STR.stalkerCheatDa : STR.stalkerCheatKeinPlatz);
   }
 
-  // Der Stalker springt einen an: Schreck-Overlay, Kreischen – und was
-  // vom Leben übrig bleibt, sind 10 %.
+  // Der Stalker springt einen an (zu lange direkt angesehen):
+  // Schreck-Overlay, Kreischen – und was vom Leben übrig bleibt, sind 10 %.
   private onStalkerJumpscare(): void {
-    this.stats.leben = Math.min(this.stats.leben, CONFIG.stalker.wasser.restLeben);
-    UI.jumpscare(CONFIG.stalker.wasser.jumpscareDauer * 1000);
+    const J = CONFIG.stalker.jumpscare;
+    this.stats.leben = Math.min(this.stats.leben, J.restLeben);
+    UI.jumpscare(J.dauer * 1000);
     UI.damageFlash();
     Audio.screech();
-    UI.toast(STR.stalkerJumpscare(CONFIG.stalker.wasser.restLeben), 3200);
+    UI.toast(STR.stalkerJumpscare(J.restLeben), 3200);
   }
 
   // Rammstoß des Seemonsters: nach dem dritten Treffer sinkt das Schiff

@@ -15,9 +15,14 @@ import { clampSwimY, insideLake } from './lake';
 //               verschwinden.
 //   'himmel'  – reglos in der Luft über dem Wasser. Er bewegt sich
 //               nicht von der Stelle, dreht sich aber immer zum Spieler.
-//   'wasser'  – unter Wasser. Bleibt der Spieler `ausloeseSekunden`
-//               lang in seiner Nähe, springt er ihn an (Jumpscare) –
-//               danach bleiben nur noch 10 % Leben.
+//   'wasser'  – unter Wasser, aufrecht im Freiwasser. Taucht der
+//               Spieler auf, ist er weg.
+//
+// Gefährlich wird er nur durch Hinsehen: Wer ihn `blick.sekunden` lang
+// ununterbrochen direkt ansieht (er steht im Fadenkreuz), wird
+// angesprungen – danach bleiben nur noch 10 % Leben. Der Countdown
+// gilt für alle drei Auftritte; wegsehen baut ihn wieder ab. Solange
+// man ihn ansieht, wartet er: seine Auftrittsdauer läuft dann nicht.
 //
 // Er erscheint grundsätzlich im Blickfeld: ein Stalker, den niemand
 // sieht, ist keiner.
@@ -60,8 +65,8 @@ const DECK_SPOTS: readonly (readonly [number, number, number])[] = [
 ];
 
 // Höhe des Kopfes über der Körpermitte, als Anteil der Körpergröße.
-// Nur für den Jumpscare: dort soll das Gesicht auf Augenhöhe sitzen,
-// nicht der Bauch.
+// Beim Jumpscare sitzt so das Gesicht auf Augenhöhe (nicht der Bauch),
+// und der Blick-Countdown misst gegen den Kopf, nicht gegen die Füße.
 const KOPF_ANTEIL = 0.4;
 
 export class Stalker {
@@ -74,7 +79,7 @@ export class Stalker {
   private phase: Phase = 'versteckt';
   private mode: StalkerMode = 'schiff';
   private timer: number = ST.ersteWartezeit; // Restdauer der laufenden Phase
-  private nahTimer = 0; // wie lange der Spieler schon zu nah ist
+  private blickTimer = 0; // wie lange der Spieler ihn schon ansieht
   private fade = 0; // 0 = unsichtbar, 1 = voll da
   // Standplatz an Deck in Boots-Originalkoordinaten: das Boot fährt,
   // der Stalker fährt mit
@@ -169,7 +174,7 @@ export class Stalker {
         this.setOpacity(this.fade);
         if (this.fade <= 0) {
           this.phase = 'versteckt';
-          this.nahTimer = 0;
+          this.blickTimer = 0;
           this.currentClip = '';
           this.mixer?.stopAllAction();
           this.timer = ST.pauseMin + Math.random() * (ST.pauseMax - ST.pauseMin);
@@ -185,7 +190,6 @@ export class Stalker {
       this.group.position.copy(frame.toWorld(this.tmp.copy(this.anker)));
     }
     this.faceTo(view.eye);
-    this.timer -= dt;
 
     const dist = this.group.position.distanceTo(view.eye);
     if (dist > ST.maxAbstand) {
@@ -199,16 +203,6 @@ export class Stalker {
         this.vanish();
         return;
       }
-      if (dist < ST.wasser.naeheRadius) {
-        this.nahTimer += dt;
-        if (this.nahTimer >= ST.wasser.ausloeseSekunden) {
-          this.startJumpscare(view);
-          return;
-        }
-      } else {
-        // Abstand halten lässt den Countdown wieder abklingen
-        this.nahTimer = Math.max(0, this.nahTimer - dt);
-      }
     } else {
       const flucht = this.mode === 'schiff' ? ST.schiff.fluchtRadius : ST.himmel.fluchtRadius;
       if (dist < flucht) {
@@ -219,7 +213,35 @@ export class Stalker {
       }
     }
 
+    // Der eigentliche Auslöser: ihn zu lange direkt ansehen
+    if (this.wirdAngesehen(view)) {
+      this.blickTimer += dt;
+      if (this.blickTimer >= ST.blick.sekunden) {
+        this.startJumpscare(view);
+        return;
+      }
+      return; // wer hinsieht, hält ihn: die Auftrittsdauer läuft nicht
+    }
+    this.blickTimer = Math.max(0, this.blickTimer - dt * ST.blick.abklingen);
+
+    this.timer -= dt;
     if (this.timer <= 0) this.vanish();
+  }
+
+  // Sieht der Spieler ihn direkt an? Maßstab ist seine scheinbare
+  // Breite: aus der Nähe genügt grobes Hinschauen, aus der Ferne muss
+  // er wirklich im Fadenkreuz stehen. Gemessen wird gegen den Kopf.
+  private wirdAngesehen(view: StalkerView): boolean {
+    const to = this.tmp.copy(this.group.position);
+    to.y += ST.size * KOPF_ANTEIL;
+    to.sub(view.eye);
+    const dist = to.length();
+    if (dist < 0.001) return true;
+    const cos = to.divideScalar(dist).dot(view.dir);
+    if (cos <= 0) return false; // steht hinter einem
+    const winkel = Math.acos(Math.min(1, cos));
+    const halbeBreite = Math.atan2(ST.size * 0.5, dist) + ST.blick.toleranz;
+    return winkel <= halbeBreite;
   }
 
   private faceTo(target: THREE.Vector3): void {
@@ -237,7 +259,7 @@ export class Stalker {
 
   private startJumpscare(view: StalkerView): void {
     this.phase = 'jumpscare';
-    this.timer = ST.wasser.jumpscareDauer;
+    this.timer = ST.jumpscare.dauer;
     this.fade = 1;
     this.setOpacity(1);
     this.play('jumpscare');
@@ -249,7 +271,7 @@ export class Stalker {
   private placeInFace(view: StalkerView): void {
     this.group.position
       .copy(view.eye)
-      .addScaledVector(view.dir, ST.wasser.jumpscareAbstand);
+      .addScaledVector(view.dir, ST.jumpscare.abstand);
     this.group.position.y = view.eye.y - ST.size * KOPF_ANTEIL;
     this.faceTo(view.eye);
   }
@@ -274,7 +296,7 @@ export class Stalker {
     if (!ok) return false;
     this.mode = mode;
     this.phase = 'da';
-    this.nahTimer = 0;
+    this.blickTimer = 0;
     this.fade = 1;
     this.setOpacity(1);
     this.timer =
@@ -343,11 +365,12 @@ export class Stalker {
   }
 
   // Unter Wasser, auf Augenhöhe des Tauchers – er soll im Bild stehen,
-  // nicht unter dem Bildrand. `force` (Cheat) setzt ihn gleich in
-  // Reichweite, der Countdown läuft dann sofort.
+  // nicht unter dem Bildrand.
   private spawnWasser(view: StalkerView, force: boolean): boolean {
     const W = ST.wasser;
-    if (force) this.streuPunkt(view, W.naeheRadius * 0.8, W.naeheRadius, true);
+    // Der Cheat setzt ihn dicht heran, damit man ihn sofort ins
+    // Fadenkreuz nehmen kann
+    if (force) this.streuPunkt(view, W.abstandMin * 0.6, W.abstandMin, true);
     else this.streuPunkt(view, W.abstandMin, W.abstandMax, true);
     if (!insideLake(this.tmp.x, this.tmp.z, 5)) return false;
     this.tmp.y = clampSwimY(this.tmp.x, this.tmp.z, this.tmp.y, W.minY, W.maxY);

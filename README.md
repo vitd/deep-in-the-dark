@@ -72,10 +72,19 @@ gerade steckt:
 - **Am Himmel:** Er hängt reglos in der Luft über dem Wasser, 16–38 m
   hoch und 30–65 m entfernt. Er bewegt sich nicht von der Stelle, dreht
   sich aber immer zum Spieler.
-- **Unter Wasser:** Er steht aufrecht im Wasser und wartet. Bleibt man
-  ihm **3 Sekunden** lang zu nah (6 m), springt er einen an: Bild
-  flackert, Kreischen – und danach bleiben nur noch **10 % Leben**.
-  Taucht man vorher auf oder hält Abstand, verschwindet er wieder.
+- **Unter Wasser:** Er steht aufrecht im Freiwasser und wartet. Taucht
+  man auf, verliert man ihn aus den Augen.
+
+**Nicht hinsehen:** Gefährlich wird er nur durch Blickkontakt. Wer ihn
+**5 Sekunden** lang ununterbrochen *direkt* ansieht – er steht im
+Fadenkreuz –, wird angesprungen: Bild flackert, Kreischen, und danach
+bleiben nur noch **10 % Leben**. Das gilt für alle drei Auftritte.
+Wegsehen baut den Countdown wieder ab (anderthalbfach so schnell, wie er
+steigt), ein kurzer Blick ist also harmlos. Was als „direkt ansehen“
+zählt, richtet sich nach seiner scheinbaren Größe: aus der Nähe genügt
+grobes Hinschauen, aus der Ferne muss man ihn genau anpeilen. Und
+solange man ihn ansieht, wartet er – seine Auftrittsdauer läuft dann
+nicht ab.
 
 Zwischen zwei Auftritten vergehen 70–170 Sekunden. Alle Werte stehen in
 `CONFIG.stalker` (`src/config.ts`), die Auftritte selbst in

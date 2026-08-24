@@ -246,6 +246,23 @@ export const CONFIG = {
     // Ab dieser Entfernung verliert er das Interesse und löst sich auf
     maxAbstand: 90,
 
+    // Wer ihn zu lange direkt ansieht, wird angesprungen – egal, in
+    // welcher Variante er gerade dasteht. „Direkt ansehen“ heißt: er
+    // steht im Fadenkreuz. Maßstab dafür ist seine scheinbare Breite,
+    // deshalb zählt aus der Ferne nur ein genauerer Blick.
+    blick: {
+      sekunden: 5, // so lange ansehen, dann springt er
+      toleranz: 0.06, // rad Zugabe auf seine scheinbare Breite (~3,5°)
+      abklingen: 1.5, // Wegsehen baut den Countdown so viel schneller ab
+    },
+
+    // Der Jumpscare selbst
+    jumpscare: {
+      dauer: 1.2, // so lange steht er im Bild
+      abstand: 1.2, // Abstand seines Gesichts zur Kamera
+      restLeben: 10, // danach bleiben dem Spieler 10 % Leben
+    },
+
     schiff: {
       minAbstand: 7, // näher als das erscheint er nie
       fluchtRadius: 5, // kommt der Spieler so nah, ist er weg
@@ -264,12 +281,7 @@ export const CONFIG = {
     wasser: {
       abstandMin: 9,
       abstandMax: 17,
-      naeheRadius: 6, // ab hier läuft der Countdown
-      ausloeseSekunden: 3, // so lange, dann schlägt er zu
-      dauer: 30, // ohne Annäherung löst er sich wieder auf
-      restLeben: 10, // danach bleiben dem Spieler 10 % Leben
-      jumpscareDauer: 1.2, // so lange steht er im Bild
-      jumpscareAbstand: 1.2, // Abstand seines Gesichts zur Kamera
+      dauer: 30, // ohne Blickkontakt löst er sich wieder auf
       minY: -70, // Tiefenband, in dem er auftaucht
       maxY: -3,
       minSpielerTiefe: -2.5, // flacher taucht er gar nicht erst auf
