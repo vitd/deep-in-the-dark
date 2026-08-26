@@ -18,6 +18,21 @@ export const CONFIG = {
     posterizeLevels: 22,
     dither: true,
     farPlane: 300,
+
+    // Atmosphärische Störung: ein Flimmern über dem ganzen Bild, wie
+    // bei einem gestörten Empfang. Die Stärke (0..1) kommt aus dem
+    // Spiel – bisher vom Blick-Countdown des Stalkers (siehe
+    // CONFIG.stalker.stoerung) – und skaliert alle Werte hier.
+    stoerung: {
+      versatz: 14, // max. seitlicher Zeilenversatz in Bildpunkten
+      bandhoehe: 4, // Höhe der versetzten Zeilenblöcke in Bildpunkten
+      farbversatz: 3, // max. RGB-Versatz in Bildpunkten
+      rauschen: 0.34, // max. Anteil Bildrauschen
+      flimmern: 0.3, // max. Helligkeitsschwankung
+      takt: 12, // Störbilder pro Sekunde (grob, passend zum Pixel-Look)
+      balkenTempo: 0.35, // Bildhöhen pro Sekunde, die der Störbalken wandert
+      balkenHoehe: 0.09, // Höhe des Störbalkens (Anteil des Bildes)
+    },
   },
 
   player: {
@@ -80,6 +95,14 @@ export const CONFIG = {
 
   interact: {
     maxDistance: 3.2,
+  },
+
+  audio: {
+    // Schrei beim Jumpscare des Stalkers. Liegt die Datei da, wird sie
+    // abgespielt; sonst synthetisiert das Spiel den Schrei selbst
+    // (siehe src/systems/AudioManager.ts).
+    schreiDatei: 'assets/sounds/scream.mp3',
+    schreiLautstaerke: 0.9, // Faktor auf die Master-Lautstärke
   },
 
   // Minimap oben rechts (src/ui/Minimap.ts)
@@ -254,6 +277,13 @@ export const CONFIG = {
       sekunden: 5, // so lange ansehen, dann springt er
       toleranz: 0.06, // rad Zugabe auf seine scheinbare Breite (~3,5°)
       abklingen: 1.5, // Wegsehen baut den Countdown so viel schneller ab
+    },
+
+    // Während der Countdown läuft, flimmert das Bild immer stärker
+    // (Werte des Effekts: CONFIG.render.stoerung)
+    stoerung: {
+      abBlick: 0.12, // erst ab diesem Anteil des Countdowns sichtbar
+      kurve: 2.2, // Exponent: die letzten Sekunden werden deutlich heftiger
     },
 
     // Der Jumpscare selbst

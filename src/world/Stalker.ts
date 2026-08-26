@@ -132,6 +132,15 @@ export class Stalker {
     return this.phase !== 'versteckt';
   }
 
+  // Fortschritt des Blick-Countdowns, 0..1. Damit legt PlayState die
+  // atmosphärische Störung übers Bild – je länger man hinsieht, desto
+  // stärker. Während des Jumpscares bleibt sie voll aufgedreht.
+  get blickAnteil(): number {
+    if (this.phase === 'jumpscare') return 1;
+    if (this.phase !== 'da') return 0;
+    return Math.min(1, this.blickTimer / ST.blick.sekunden);
+  }
+
   private setOpacity(o: number): void {
     for (const m of this.materials) m.opacity = o;
     this.group.visible = o > 0.01;

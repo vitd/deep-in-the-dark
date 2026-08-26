@@ -737,6 +737,7 @@ export class PlayState implements GameState {
     UI.hide(UI.drownTimer);
     UI.hide(UI.motorPanel);
     Audio.stopHum();
+    this.game.pixelRenderer.setStoerung(0);
     this.game.canvas.style.filter = '';
   }
 
@@ -873,7 +874,19 @@ export class PlayState implements GameState {
       if (lookingAtMotor) this.motorRepair.renderPanel();
     }
 
+    this.updateStoerung();
+
     if (this.debugVisible) this.updateDebug(dt);
+  }
+
+  // Atmosphärische Störung: Sie hängt am Blick-Countdown des Stalkers.
+  // Der erste Moment Blickkontakt bleibt sauber (`abBlick`), danach
+  // zieht die Kurve an – zum Schluss flimmert das ganze Bild.
+  private updateStoerung(): void {
+    const S = CONFIG.stalker.stoerung;
+    const anteil = this.world.stalker.blickAnteil;
+    const roh = Math.max(0, (anteil - S.abBlick) / (1 - S.abBlick));
+    this.game.pixelRenderer.setStoerung(Math.pow(roh, S.kurve));
   }
 
   // Sicht-Effekte bei Luftnot: Vignette < 25, Unschärfe < 10,

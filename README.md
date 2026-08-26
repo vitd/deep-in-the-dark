@@ -77,7 +77,7 @@ gerade steckt:
 
 **Nicht hinsehen:** Gefährlich wird er nur durch Blickkontakt. Wer ihn
 **5 Sekunden** lang ununterbrochen *direkt* ansieht – er steht im
-Fadenkreuz –, wird angesprungen: Bild flackert, Kreischen, und danach
+Fadenkreuz –, wird angesprungen: Bild flackert, ein Schrei, und danach
 bleiben nur noch **10 % Leben**. Das gilt für alle drei Auftritte.
 Wegsehen baut den Countdown wieder ab (anderthalbfach so schnell, wie er
 steigt), ein kurzer Blick ist also harmlos. Was als „direkt ansehen“
@@ -85,6 +85,23 @@ zählt, richtet sich nach seiner scheinbaren Größe: aus der Nähe genügt
 grobes Hinschauen, aus der Ferne muss man ihn genau anpeilen. Und
 solange man ihn ansieht, wartet er – seine Auftrittsdauer läuft dann
 nicht ab.
+
+**Die Störung als Warnung:** Sobald der Countdown läuft, legt sich eine
+atmosphärische Störung über das ganze Bild – versetzte Zeilenbänder, ein
+wandernder Störbalken, Farbversatz, Rauschen und Helligkeitsflimmern.
+Sie wächst mit dem Countdown: Der erste Moment Blickkontakt bleibt
+sauber, dann fängt es an zu grieseln, und in der letzten Sekunde reißt
+das Bild auseinander. Wer wegsieht, sieht die Störung wieder abklingen –
+sie ist also die Vorwarnung, nicht bloß Effekt. Der Effekt selbst sitzt
+im Upscale-Shader (`src/rendering/PixelRenderer.ts`), seine Stärken
+stehen in `CONFIG.render.stoerung`, die Kurve in
+`CONFIG.stalker.stoerung`.
+
+**Der Schrei:** Beim Jumpscare schreit es. Das Spiel synthetisiert den
+Schrei selbst (Formantfilter über vibrierenden Sägezähnen, siehe
+`src/systems/AudioManager.ts`) – es braucht also kein Asset. Liegt aber
+eine Datei unter `public/assets/sounds/scream.mp3`, wird sie stattdessen
+abgespielt; Pfad und Lautstärke stehen in `CONFIG.audio`.
 
 Zwischen zwei Auftritten vergehen 70–170 Sekunden. Alle Werte stehen in
 `CONFIG.stalker` (`src/config.ts`), die Auftritte selbst in
