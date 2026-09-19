@@ -26,6 +26,8 @@ export class PlayerController {
   grounded = false;
   // 1 = normal; < 1 bei Erschöpfung (siehe Stats)
   speedFactor = 1;
+  // Zusätzlicher Faktor nur fürs Tauchen (Cheat „3× schneller tauchen“)
+  diveBoost = 1;
   // true, solange auf der Leiter wirklich Höhe gewonnen/verloren wird
   // (zählt für den Nahrungsverbrauch als Bewegung)
   climbMoving = false;
@@ -130,7 +132,7 @@ export class PlayerController {
     // Wellen kommt (ohne Auftrieb gibt es keinen Gegendruck).
     if (keys.has('KeyC') || (fwd > 0 && this.look.pitch < -0.55)) {
       this.state = PlayerState.Dive;
-      this.velocity.set(move.x, -P.diveSpeed, move.z);
+      this.velocity.set(move.x, -P.diveSpeed * this.diveBoost, move.z);
       this.position.y -= 0.45;
       return;
     }
@@ -154,7 +156,9 @@ export class PlayerController {
     // Auftrieb gezielt tiefer kommt
     if (keys.has('Space')) desired.y += 1;
     if (sinking) desired.y -= 1;
-    if (desired.lengthSq() > 0) desired.normalize().multiplyScalar(P.diveSpeed * this.speedFactor);
+    if (desired.lengthSq() > 0) {
+      desired.normalize().multiplyScalar(P.diveSpeed * this.speedFactor * this.diveBoost);
+    }
 
     const blend = Math.min(1, dt * P.waterAccel);
     this.velocity.lerp(desired, blend);

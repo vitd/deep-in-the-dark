@@ -139,6 +139,10 @@ export class PlayState implements GameState {
         },
         onToggleInventory: () => this.toggleInventory(),
         onPause: () => this.game.setState(new PauseState(this.game, this)),
+        // Ersatz für die Taste L, die es auf dem Handy nicht gibt
+        onCheats: () => {
+          if (!this.inventoryOpen && !this.craftingOpen) this.toggleCheats();
+        },
       });
     }
 
@@ -232,6 +236,13 @@ export class PlayState implements GameState {
             this.player.position.set(p.x - 2, p.y - 1.2, p.z);
             this.player.state = PlayerState.Dive;
           }
+        },
+      },
+      {
+        label: `3× schneller tauchen ${this.player.diveBoost > 1 ? 'aus' : 'an'}`,
+        action: () => {
+          this.player.diveBoost = this.player.diveBoost > 1 ? 1 : 3;
+          UI.toast(this.player.diveBoost > 1 ? 'Cheat: Tauchtempo ×3' : 'Cheat: Tauchtempo normal');
         },
       },
       {

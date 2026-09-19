@@ -3,7 +3,8 @@ import { MouseLook } from '../player/MouseLook';
 // Mobile Steuerung im üblichen FPS-Layout:
 // - links: virtueller Joystick -> WASD
 // - rechts: Wisch-Fläche -> Blickrichtung (ersetzt die Maus)
-// - Buttons: E (Aktion), Springen/Auftauchen, Inventar, Pause
+// - Buttons: E (Aktion), Springen/Auftauchen, Inventar, Pause, Debug
+//   (das Cheat-Menü, am Rechner Taste L)
 //
 // Der Joystick schreibt direkt in das Tasten-Set des Spielzustands
 // (KeyW/KeyA/KeyS/KeyD, Space) – die Spielerlogik bleibt unverändert.
@@ -16,6 +17,7 @@ export interface TouchHooks {
   onInteract: () => void;
   onToggleInventory: () => void;
   onPause: () => void;
+  onCheats: () => void;
 }
 
 const JOY_RADIUS = 40; // maximale Knopf-Auslenkung in px
@@ -35,6 +37,7 @@ export class TouchControls {
   private readonly btnDive = el('btn-touch-dive');
   private readonly btnInv = el('btn-touch-inv');
   private readonly btnPause = el('btn-touch-pause');
+  private readonly btnCheats = el('btn-touch-cheats');
 
   private joyTouchId: number | null = null;
   private lookTouchId: number | null = null;
@@ -166,6 +169,11 @@ export class TouchControls {
     this.hooks.onPause();
   };
 
+  private readonly onCheats = (e: TouchEvent) => {
+    e.preventDefault();
+    this.hooks.onCheats();
+  };
+
   // ---- Lebenszyklus ----
 
   attach(): void {
@@ -187,6 +195,7 @@ export class TouchControls {
     this.btnDive.addEventListener('touchcancel', this.onDiveUp);
     this.btnInv.addEventListener('touchstart', this.onInv, { passive: false });
     this.btnPause.addEventListener('touchstart', this.onPause, { passive: false });
+    this.btnCheats.addEventListener('touchstart', this.onCheats, { passive: false });
   }
 
   detach(): void {
@@ -212,5 +221,6 @@ export class TouchControls {
     this.btnDive.removeEventListener('touchcancel', this.onDiveUp);
     this.btnInv.removeEventListener('touchstart', this.onInv);
     this.btnPause.removeEventListener('touchstart', this.onPause);
+    this.btnCheats.removeEventListener('touchstart', this.onCheats);
   }
 }

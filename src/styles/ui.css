@@ -312,13 +312,20 @@ input[type='range'] {
   font-size: 14px;
 }
 
+/* Die obere Knopfreihe beginnt links vom Vollbild-Schalter (#btn-fullscreen) */
 #btn-touch-pause {
-  right: 16px;
+  right: 84px;
   top: 16px;
 }
 
 #btn-touch-inv {
-  right: 84px;
+  right: 152px;
+  top: 16px;
+}
+
+/* Cheat-/Debug-Menü – am Rechner die Taste L */
+#btn-touch-cheats {
+  right: 220px;
   top: 16px;
 }
 
@@ -871,6 +878,30 @@ body.touch-mode #hotbar {
   border: 2px solid #2b5a66;
   padding: 8px 18px;
   pointer-events: none;
+}
+
+/* ------- Vollbild-Schalter (rechts oben, über allem) ------- */
+#btn-fullscreen {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 40;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  font-size: 24px;
+  letter-spacing: 0;
+  line-height: 1;
+  border-radius: 50%;
+  background: rgba(5, 15, 20, 0.5);
+  border: 3px solid rgba(77, 138, 150, 0.7);
+  box-shadow: none;
+  touch-action: manipulation;
+}
+
+#btn-fullscreen:active {
+  transform: none;
+  background: rgba(43, 90, 102, 0.7);
 }
 
 #debug {
