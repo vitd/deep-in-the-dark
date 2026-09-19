@@ -13,6 +13,7 @@ import { buildCliffs } from './Cliffs';
 import { FishManager } from './Fish';
 import { LadderDef } from './Ladder';
 import { Ocean } from './Ocean';
+import { buildPagodas } from './Pagodas';
 import { Resources } from './Resources';
 import { Seabed } from './Seabed';
 import { SeaMonster } from './SeaMonster';
@@ -98,6 +99,7 @@ export class World {
 
     buildCliffs(scene, this.collision);
     this.seabed = new Seabed(scene, this.collision);
+    buildPagodas(scene, this.collision);
 
     const boat = buildBoat(scene, this.collision, interaction, inventory, {
       onCraftingTable,

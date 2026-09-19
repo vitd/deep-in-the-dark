@@ -343,6 +343,16 @@ export const CONFIG = {
     fuelMaxLiter: 76,
   },
 
+  // Versunkene Pagoden am Seeboden (src/world/Pagodas.ts). Sie werden
+  // auf einem gestreuten Raster über den ganzen See verteilt; die
+  // Zahlen sind Zielwerte – wo Fundstellen, Ankerplatz oder zu wenig
+  // Wassertiefe im Weg sind, fällt eine Pagode aus.
+  pagoden: {
+    klein: 100, // 3×3 m, vier Säulen, ein Dach
+    gross: 50, // ~6,5×6,5 m, acht Säulen, zwei Dächer
+    uferAbstand: 60, // Mindestabstand zur Steilküste
+  },
+
   // Fahrverhalten des Boots (Steuerstand auf der Brücke)
   boot: {
     maxSpeed: 6, // Vorausfahrt in m/s bei vollem Hebel

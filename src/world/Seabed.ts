@@ -5,6 +5,7 @@ import { texturedMat } from '../rendering/Textures';
 import { CollisionWorld } from '../systems/Collision';
 import { SEABED_ITEM_SPOTS } from './Resources';
 import { insideLake, lakeFloorY, noise2, SEABED_MIN_DEPTH } from './lake';
+import { PAGODA_SPOTS } from './Pagodas';
 
 // Bewuchs des Seebodens: loses Geröll und aufragende Felsklippen.
 //
@@ -61,6 +62,9 @@ interface ClearZone {
 const KEEP_CLEAR: ClearZone[] = [
   // Fundstellen am Grund dürfen nicht unter Geröll verschwinden
   ...SEABED_ITEM_SPOTS.map((p) => ({ x: p.x, z: p.z, r: 1.3, minSize: 0 })),
+  // Versunkene Pagoden (Pagodas.ts): weder Geröll auf dem Sockel noch
+  // eine Klippe mitten durch die Säulenhalle
+  ...PAGODA_SPOTS.map((p) => ({ x: p.x, z: p.z, r: p.r, minSize: 0 })),
   { x: CONFIG.world.spawn.x, z: CONFIG.world.spawn.z, r: 4, minSize: 1.2 },
   { x: CONFIG.world.boatPos.x, z: CONFIG.world.boatPos.z, r: 11, minSize: 1.2 },
 ];
