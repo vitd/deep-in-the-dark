@@ -93,94 +93,243 @@ class AudioManagerImpl {
     src.start();
   }
 
-  // Synthetischer Schrei: ein rauer, vibrierender Sägezahn durch drei
-  // Formantfilter („aaah“), dazu Atemrauschen. Die Tonhöhe schnellt
-  // hoch, kippt in der Mitte kurz weg und sackt am Ende ab.
+  // Synthetischer Schrei. Ein einzelner Sägezahn mit Vibrato klingt nach
+  // Sirene – furchterregend wird es erst durch Schichten, die sich
+  // gegenseitig zerreißen:
+  //
+  // 1. Aufprall: Sub-Bass-Schlag und ein Rauschknall im ersten Zehntel,
+  //    damit der Körper erschrickt, bevor das Ohr die Stimme einordnet
+  // 2. Stimme: drei gegeneinander verstimmte Sägezähne. Die Tonhöhe
+  //    schießt hoch, bricht mehrfach (die Stimme „kippt“) und wird
+  //    zusätzlich von tiefpassgefiltertem Rauschen hin- und hergerissen –
+  //    eine glatte Stimme wirkt künstlich, eine zerrissene panisch.
+  //    Ein Knatter-LFO um 25–40 Hz zerhackt die Lautstärke (Kehlkopf-
+  //    Rasseln), die Formanten wandern vom offenen „a“ ins gepresste
+  //    Kreisch-„ä“, am Ende ein harter Verzerrer.
+  // 3. Kreischen: eine Oktave darüber, kommt verzögert dazu und zittert
+  // 4. Grollen: Subharmonische (halbe Tonhöhe) als Rechteck – das macht
+  //    den Schrei unmenschlich
+  // 5. Raum: Faltungshall aus abklingendem Rauschen und ein Kompressor,
+  //    der alles zusammenpresst und den Pegel hält
   private synthSchrei(): void {
     const ctx = this.ctx!;
     const t0 = ctx.currentTime;
-    const dauer = 1.3;
+    const dauer = 2.4;
     const laut = CONFIG.audio.schreiLautstaerke * settings.volume;
+    const sr = ctx.sampleRate;
 
+    // Ausgang: Kompressor -> Master; daneben der Hall
+    const master = ctx.createGain();
+    master.gain.value = laut;
+    const komp = ctx.createDynamicsCompressor();
+    komp.threshold.value = -18;
+    komp.knee.value = 12;
+    komp.ratio.value = 8;
+    komp.attack.value = 0.003;
+    komp.release.value = 0.15;
+    komp.connect(master).connect(ctx.destination);
+
+    const hall = ctx.createConvolver();
+    const hallLen = Math.floor(sr * 1.8);
+    const ir = ctx.createBuffer(2, hallLen, sr);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      for (let i = 0; i < hallLen; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.exp((-i / sr) * 3.5);
+      }
+    }
+    hall.buffer = ir;
+    const hallGain = ctx.createGain();
+    hallGain.gain.value = 0.55;
+    hall.connect(hallGain).connect(komp);
+
+    // Summenpunkt aller Schichten; Hüllkurve über den ganzen Schrei
     const summe = ctx.createGain();
     summe.gain.setValueAtTime(0.0001, t0);
-    summe.gain.exponentialRampToValueAtTime(0.55 * laut + 0.0001, t0 + 0.05);
-    summe.gain.setValueAtTime(0.55 * laut + 0.0001, t0 + dauer * 0.75);
+    summe.gain.exponentialRampToValueAtTime(1, t0 + 0.04);
+    summe.gain.setValueAtTime(1, t0 + dauer * 0.7);
     summe.gain.exponentialRampToValueAtTime(0.0001, t0 + dauer);
-    // Verzerrer für die Schärfe im Schrei
+    summe.connect(komp);
+    summe.connect(hall);
+
+    const rauschBuffer = (sekunden: number): AudioBuffer => {
+      const len = Math.floor(sr * sekunden);
+      const buf = ctx.createBuffer(1, len, sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      return buf;
+    };
+    const quellen: AudioScheduledSourceNode[] = [];
+
+    // ---- 1. Aufprall ----
+    const thud = ctx.createOscillator();
+    thud.type = 'sine';
+    thud.frequency.setValueAtTime(70, t0);
+    thud.frequency.exponentialRampToValueAtTime(28, t0 + 0.5);
+    const thudGain = ctx.createGain();
+    thudGain.gain.setValueAtTime(1.1, t0);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.65);
+    thud.connect(thudGain).connect(summe);
+    quellen.push(thud);
+
+    const knall = ctx.createBufferSource();
+    knall.buffer = rauschBuffer(0.3);
+    const knallFilter = ctx.createBiquadFilter();
+    knallFilter.type = 'highpass';
+    knallFilter.frequency.value = 1200;
+    const knallGain = ctx.createGain();
+    knallGain.gain.setValueAtTime(0.7, t0);
+    knallGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+    knall.connect(knallFilter).connect(knallGain).connect(summe);
+    quellen.push(knall);
+
+    // ---- 2. Stimme ----
+    // Verzerrer (hart) hinter den Formanten
     const shaper = ctx.createWaveShaper();
-    const kurve = new Float32Array(1024);
+    const kurve = new Float32Array(2048);
     for (let i = 0; i < kurve.length; i++) {
       const x = (i / (kurve.length - 1)) * 2 - 1;
-      kurve[i] = Math.tanh(x * 3.2);
+      kurve[i] = Math.tanh(x * 6);
     }
     shaper.curve = kurve;
-    shaper.connect(summe);
-    summe.connect(ctx.destination);
+    shaper.oversample = '2x';
+    const shaperGain = ctx.createGain();
+    shaperGain.gain.value = 0.6;
+    shaper.connect(shaperGain).connect(summe);
 
-    // Stimmbänder: zwei leicht verstimmte Sägezähne
+    // Kehlkopf-Rasseln: zerhackt die Stimme mit 25–40 Hz
     const stimme = ctx.createGain();
-    stimme.gain.value = 0.5;
-    const oszis: OscillatorNode[] = [];
-    for (const detune of [0, 11]) {
+    stimme.gain.value = 0.55;
+    const rassel = ctx.createOscillator();
+    rassel.type = 'square';
+    rassel.frequency.setValueAtTime(24, t0);
+    rassel.frequency.linearRampToValueAtTime(40, t0 + 1.2);
+    rassel.frequency.linearRampToValueAtTime(19, t0 + dauer);
+    const rasselTiefe = ctx.createGain();
+    rasselTiefe.gain.value = 0.4;
+    rassel.connect(rasselTiefe).connect(stimme.gain);
+    quellen.push(rassel);
+
+    // Tonhöhenverlauf: Aufschrei, zweimal kippen, am Ende absacken
+    const tonhoehe = (f: AudioParam, k: number) => {
+      f.setValueAtTime(170 * k, t0);
+      f.exponentialRampToValueAtTime(1050 * k, t0 + 0.12);
+      f.exponentialRampToValueAtTime(920 * k, t0 + 0.55);
+      f.exponentialRampToValueAtTime(1480 * k, t0 + 0.68); // kippt
+      f.exponentialRampToValueAtTime(1180 * k, t0 + 1.05);
+      f.exponentialRampToValueAtTime(1650 * k, t0 + 1.18); // kippt erneut
+      f.exponentialRampToValueAtTime(760 * k, t0 + 1.9);
+      f.exponentialRampToValueAtTime(210 * k, t0 + dauer);
+    };
+
+    // Zerrissene Tonhöhe: Rauschen als Frequenzmodulation, erst zaghaft,
+    // dann immer heftiger
+    const zitter = ctx.createBufferSource();
+    zitter.buffer = rauschBuffer(dauer);
+    const zitterFilter = ctx.createBiquadFilter();
+    zitterFilter.type = 'lowpass';
+    zitterFilter.frequency.value = 45;
+    const zitterTiefe = ctx.createGain();
+    zitterTiefe.gain.setValueAtTime(15, t0);
+    zitterTiefe.gain.linearRampToValueAtTime(140, t0 + 1.0);
+    zitterTiefe.gain.linearRampToValueAtTime(260, t0 + dauer);
+    zitter.connect(zitterFilter).connect(zitterTiefe);
+    quellen.push(zitter);
+
+    // Vibrato, das im Verlauf schneller und tiefer wird (Panik)
+    const vibrato = ctx.createOscillator();
+    vibrato.frequency.setValueAtTime(5.5, t0);
+    vibrato.frequency.linearRampToValueAtTime(9, t0 + dauer);
+    const vibratoTiefe = ctx.createGain();
+    vibratoTiefe.gain.setValueAtTime(20, t0);
+    vibratoTiefe.gain.linearRampToValueAtTime(70, t0 + dauer);
+    vibrato.connect(vibratoTiefe);
+    quellen.push(vibrato);
+
+    for (const detune of [0, 14, -9]) {
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
       osc.detune.value = detune;
-      const f = osc.frequency;
-      f.setValueAtTime(240, t0);
-      f.exponentialRampToValueAtTime(820, t0 + 0.08); // Aufschrei
-      f.exponentialRampToValueAtTime(690, t0 + 0.5);
-      f.exponentialRampToValueAtTime(960, t0 + 0.62); // die Stimme kippt
-      f.exponentialRampToValueAtTime(300, t0 + dauer);
+      tonhoehe(osc.frequency, 1);
+      zitterTiefe.connect(osc.frequency);
+      vibratoTiefe.connect(osc.frequency);
       osc.connect(stimme);
-      oszis.push(osc);
+      quellen.push(osc);
     }
 
-    // Vibrato – ohne das klingt es nach Sirene, nicht nach Stimme
-    const vibrato = ctx.createOscillator();
-    vibrato.frequency.value = 6.5;
-    const vibratoTiefe = ctx.createGain();
-    vibratoTiefe.gain.value = 38;
-    vibrato.connect(vibratoTiefe);
-    for (const osc of oszis) vibratoTiefe.connect(osc.frequency);
-
-    // Formanten eines offenen „a“
-    for (const [freq, q, pegel] of [
-      [780, 9, 1.0],
-      [1250, 10, 0.75],
-      [2900, 12, 0.5],
+    // Formanten: vom offenen „a“ ins gepresste, hohe Kreisch-„ä“
+    for (const [f1, f2, q, pegel] of [
+      [720, 1050, 8, 1.0],
+      [1150, 1750, 9, 0.85],
+      [2650, 3400, 11, 0.7],
     ]) {
       const bp = ctx.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.value = freq;
+      bp.frequency.setValueAtTime(f1, t0);
+      bp.frequency.exponentialRampToValueAtTime(f2, t0 + 0.7);
+      bp.frequency.exponentialRampToValueAtTime(f1, t0 + dauer);
       bp.Q.value = q;
       const g = ctx.createGain();
       g.gain.value = pegel;
       stimme.connect(bp).connect(g).connect(shaper);
     }
 
-    // Atem: gefiltertes Rauschen, das mit der Stimme abklingt
-    const len = Math.floor(ctx.sampleRate * dauer);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const daten = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) daten[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    const rauschen = ctx.createBufferSource();
-    rauschen.buffer = buf;
-    const rauschFilter = ctx.createBiquadFilter();
-    rauschFilter.type = 'bandpass';
-    rauschFilter.frequency.value = 3200;
-    rauschFilter.Q.value = 0.8;
-    const rauschGain = ctx.createGain();
-    rauschGain.gain.value = 0.18;
-    rauschen.connect(rauschFilter).connect(rauschGain).connect(summe);
+    // Heiserer Anteil: Rauschen, das der Stimme folgt
+    const atem = ctx.createBufferSource();
+    atem.buffer = rauschBuffer(dauer);
+    const atemFilter = ctx.createBiquadFilter();
+    atemFilter.type = 'bandpass';
+    atemFilter.frequency.setValueAtTime(2400, t0);
+    atemFilter.frequency.exponentialRampToValueAtTime(3600, t0 + 0.7);
+    atemFilter.Q.value = 1.2;
+    const atemGain = ctx.createGain();
+    atemGain.gain.setValueAtTime(0.25, t0);
+    atemGain.gain.linearRampToValueAtTime(0.45, t0 + dauer);
+    atem.connect(atemFilter).connect(atemGain).connect(shaper);
+    quellen.push(atem);
 
-    for (const osc of oszis) {
-      osc.start(t0);
-      osc.stop(t0 + dauer);
+    // ---- 3. Kreischen (Oktave darüber, kommt verzögert) ----
+    const kreisch = ctx.createOscillator();
+    kreisch.type = 'sawtooth';
+    kreisch.detune.value = 7;
+    tonhoehe(kreisch.frequency, 2);
+    zitterTiefe.connect(kreisch.frequency);
+    const kreischFilter = ctx.createBiquadFilter();
+    kreischFilter.type = 'bandpass';
+    kreischFilter.frequency.value = 3200;
+    kreischFilter.Q.value = 1.5;
+    const kreischGain = ctx.createGain();
+    kreischGain.gain.setValueAtTime(0.0001, t0);
+    kreischGain.gain.setValueAtTime(0.0001, t0 + 0.35);
+    kreischGain.gain.exponentialRampToValueAtTime(0.5, t0 + 0.7);
+    kreischGain.gain.setValueAtTime(0.5, t0 + 1.6);
+    kreischGain.gain.exponentialRampToValueAtTime(0.0001, t0 + dauer);
+    const tremolo = ctx.createOscillator();
+    tremolo.frequency.value = 11;
+    const tremoloTiefe = ctx.createGain();
+    tremoloTiefe.gain.value = 0.25;
+    tremolo.connect(tremoloTiefe).connect(kreischGain.gain);
+    kreisch.connect(kreischFilter).connect(kreischGain).connect(shaper);
+    quellen.push(kreisch, tremolo);
+
+    // ---- 4. Grollen (Subharmonische) ----
+    const groll = ctx.createOscillator();
+    groll.type = 'square';
+    tonhoehe(groll.frequency, 0.5);
+    zitterTiefe.connect(groll.frequency);
+    const grollFilter = ctx.createBiquadFilter();
+    grollFilter.type = 'lowpass';
+    grollFilter.frequency.value = 420;
+    const grollGain = ctx.createGain();
+    grollGain.gain.setValueAtTime(0.3, t0);
+    grollGain.gain.linearRampToValueAtTime(0.5, t0 + dauer);
+    groll.connect(grollFilter).connect(grollGain).connect(shaper);
+    quellen.push(groll);
+
+    for (const q of quellen) {
+      q.start(t0);
+      q.stop(t0 + dauer + 0.05);
     }
-    vibrato.start(t0);
-    vibrato.stop(t0 + dauer);
-    rauschen.start(t0);
   }
 
   // Tiefes Motor-Brummen (synthetisch, kein Asset nötig)

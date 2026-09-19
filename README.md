@@ -27,6 +27,12 @@ Dann im Browser öffnen: http://localhost:5173
 | Scrollrad | Schnellinventar-Slot wechseln |
 | Esc | Pause |
 
+Der Knopf **⛶** rechts oben schaltet das Vollbild an und aus (am Rechner
+sichtbar, solange die Maus nicht im Spiel gefangen ist). Auf
+Touch-Geräten erscheint stattdessen der Steuerung ein Joystick links,
+eine Wischfläche rechts und Knöpfe für E, Auf/Ab, Inventar, Pause und
+das Debug-Menü.
+
 **Leitern** braucht man nicht anzuwählen: Wer nah genug davorsteht und
 zur Leiter blickt, greift sie automatisch. Von oben (Deck- bzw.
 Dachkante) genügt der Blick nach unten. Geklettert wird dann allein mit
@@ -98,7 +104,10 @@ stehen in `CONFIG.render.stoerung`, die Kurve in
 `CONFIG.stalker.stoerung`.
 
 **Der Schrei:** Beim Jumpscare schreit es. Das Spiel synthetisiert den
-Schrei selbst (Formantfilter über vibrierenden Sägezähnen, siehe
+Schrei selbst (mehrschichtig: Sub-Bass-Aufprall, eine von Rauschen
+zerrissene, mehrfach kippende Stimme durch wandernde Formanten und
+Verzerrer, ein verzögert einsetzendes Kreischen, ein subharmonisches
+Grollen, Faltungshall und Kompressor – siehe
 `src/systems/AudioManager.ts`) – es braucht also kein Asset. Liegt aber
 eine Datei unter `public/assets/sounds/scream.mp3`, wird sie stattdessen
 abgespielt; Pfad und Lautstärke stehen in `CONFIG.audio`.
@@ -188,11 +197,12 @@ auf (siehe unten). Voreinstellungen: `CONFIG.taucherhelm` in
 
 ## Cheats / Debug
 
-Die Taste **L** öffnet jederzeit das Cheat-Menü: Debug-Anzeige
-(FPS/Position), Kollisionsboxen, Teleports, Werte auffüllen,
-Materialpakete, Motor-Schnellreparatur, Hai herbeirufen, Stalker
-erscheinen lassen (an Deck / am Himmel / unter Wasser), Taucherhelm
-aufsetzen u. a. — kein URL-Parameter nötig.
+Die Taste **L** öffnet jederzeit das Cheat-Menü (auf Touch-Geräten der
+Knopf **DBG** oben rechts): Debug-Anzeige (FPS/Position),
+Kollisionsboxen, Teleports, Werte auffüllen, Materialpakete,
+Motor-Schnellreparatur, **3× schneller tauchen**, Hai herbeirufen,
+Stalker erscheinen lassen (an Deck / am Himmel / unter Wasser),
+Taucherhelm aufsetzen u. a. — kein URL-Parameter nötig.
 
 **Taucherhelm justieren:** Der Cheat *„Taucherhelm justieren (Tastatur)
 an/aus“* setzt den Helm auf und blendet links eine Anzeige mit den
@@ -222,6 +232,12 @@ Bis dahin merkt sich der Browser sie (localStorage).
   Upscaling, Posterisierung + Bayer-Dithering (`src/config.ts`)
 - Das Boot entsteht prozedural aus dem deklarativen Layout in
   `src/world/boatLayout.ts`
+- Seeboden: Relief aus Value-Noise (`src/world/lake.ts`), Geröll und
+  Klippen (`src/world/Seabed.ts`) sowie rund 150 versunkene Pagoden
+  (`src/world/Pagodas.ts`) – ca. 100 kleine mit vier Säulen und einem
+  Dach, ca. 50 große mit acht Säulen, Obergeschoss und zwei Dächern.
+  Alles deterministisch aus Rasterindizes geseedet; Anzahl und
+  Uferabstand in `CONFIG.pagoden`
 - Alle Stellschrauben: `src/config.ts` · Alle Texte: `src/ui/strings.de.ts`
 
 ## Build
