@@ -105,6 +105,15 @@ export const CONFIG = {
     schreiLautstaerke: 0.9, // Faktor auf die Master-Lautstärke
   },
 
+  // Tiefenanzeige am linken Bildrand (src/ui/DepthGauge.ts): Skala von
+  // der Wasseroberfläche (oben) bis `maxTiefe` (unten), Marke auf der
+  // aktuellen Kopftiefe, dazu der Seeboden unter dem Spieler.
+  tiefenanzeige: {
+    maxTiefe: 120, // Meter am unteren Ende der Skala
+    schritt: 10, // Teilstrich alle x Meter
+    beschriftung: 20, // Zahl an jedem x-ten Meter
+  },
+
   // Minimap oben rechts (src/ui/Minimap.ts)
   minimap: {
     radius: 100, // abgedeckter Radius in Metern

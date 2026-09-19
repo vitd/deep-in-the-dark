@@ -12,11 +12,13 @@ import { Hotbar, HOTBAR_SLOTS } from '../systems/Hotbar';
 import { MotorMaterial, MotorRepair } from '../systems/MotorRepair';
 import { Stats } from '../systems/Stats';
 import { isTouchDevice, TouchControls } from '../systems/TouchControls';
+import { DepthGauge } from '../ui/DepthGauge';
 import { HelmetOverlay } from '../ui/HelmetOverlay';
 import { Minimap } from '../ui/Minimap';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { StalkerMode, StalkerView } from '../world/Stalker';
+import { lakeFloorY } from '../world/lake';
 import { World } from '../world/World';
 import { DeathState } from './DeathState';
 import { GameState } from './GameState';
@@ -33,6 +35,7 @@ export class PlayState implements GameState {
   private readonly player: PlayerController;
   private readonly interaction = new InteractionSystem();
   private readonly minimap = new Minimap(UI.minimap);
+  private readonly depthGauge = new DepthGauge(UI.depth);
   // Taucherhelm-Overlay: getragen wird er bisher nur per Cheat
   private readonly helmet = new HelmetOverlay(UI.helmet, UI.helmetImg, UI.helmetTune);
   private readonly inventory = new Inventory();
@@ -810,6 +813,14 @@ export class PlayState implements GameState {
     const eyesUnderwater =
       this.player.state === PlayerState.Dive || this.eyeTmp.y < waveAtEye;
     this.world.setUnderwater(eyesUnderwater);
+
+    // Tiefenanzeige: Kopftiefe unter dem Meeresspiegel, dazu der Boden
+    // an dieser Stelle
+    const seaLevel = CONFIG.world.seaLevel;
+    this.depthGauge.update(
+      seaLevel - this.eyeTmp.y,
+      seaLevel - lakeFloorY(this.eyeTmp.x, this.eyeTmp.z),
+    );
 
     // Überlebenswerte: Nahrung (Anstrengung) und Luft (Tauchen).
     // Am Steuer strengt sich das Boot an, nicht der Spieler.

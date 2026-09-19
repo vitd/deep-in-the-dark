@@ -14,6 +14,7 @@ class UIManagerImpl {
   readonly pause = el('pause');
   readonly hud = el('hud');
   readonly minimap = el<HTMLCanvasElement>('minimap');
+  readonly depth = el('depth');
   readonly prompt = el('prompt');
   readonly inventory = el('inventory');
   readonly inventoryGrid = el('inventory-grid');

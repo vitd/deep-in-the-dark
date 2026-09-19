@@ -117,6 +117,19 @@ Zwischen zwei Auftritten vergehen 70–170 Sekunden. Alle Werte stehen in
 `src/world/Stalker.ts`. Zum Ausprobieren gibt es im Cheat-Menü (Taste L)
 je einen Eintrag pro Variante.
 
+## Tiefenanzeige
+
+Am linken Bildrand läuft eine senkrechte Skala über die ganze
+Bildschirmhöhe: oben die Wasseroberfläche (0 m), unten 120 m, alle 10 m
+ein Teilstrich, alle 20 m eine Zahl. Eine gelbe Marke mit Zahl zeigt die
+aktuelle Tiefe des Kopfes; an Deck und an der Oberfläche steht sie auf
+0 m. Der braune Sockel am unteren Ende ist der **Seeboden unter dem
+Spieler** – er zeigt, wie tief es an dieser Stelle überhaupt geht (am
+Küstenschelf rund 12 m, in der Seemitte über 100 m).
+
+Stellschrauben (Skalenende, Teilstriche): `CONFIG.tiefenanzeige` in
+`src/config.ts`; Aufbau in `src/ui/DepthGauge.ts`.
+
 ## Minimap
 
 Rechts oben liegt eine kreisrunde Minimap mit **100 m Radius**. Der
