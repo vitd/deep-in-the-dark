@@ -101,7 +101,7 @@ export const CONFIG = {
     // Schrei beim Jumpscare des Stalkers. Liegt die Datei da, wird sie
     // abgespielt; sonst synthetisiert das Spiel den Schrei selbst
     // (siehe src/systems/AudioManager.ts).
-    schreiDatei: 'assets/sounds/scream.mp3',
+    schreiDatei: 'assets/audio/stalker-scream.mp3',
     schreiLautstaerke: 0.9, // Faktor auf die Master-Lautstärke
   },
 
