@@ -103,14 +103,15 @@ im Upscale-Shader (`src/rendering/PixelRenderer.ts`), seine Stärken
 stehen in `CONFIG.render.stoerung`, die Kurve in
 `CONFIG.stalker.stoerung`.
 
-**Der Schrei:** Beim Jumpscare schreit es. Das Spiel synthetisiert den
-Schrei selbst (mehrschichtig: Sub-Bass-Aufprall, eine von Rauschen
-zerrissene, mehrfach kippende Stimme durch wandernde Formanten und
-Verzerrer, ein verzögert einsetzendes Kreischen, ein subharmonisches
+**Der Schrei:** Beim Jumpscare schreit es – ein kurzer Todesschrei, der
+in verzerrte, irre Lacher übergeht (`public/assets/sounds/scream.mp3`,
+5 s, erzeugt mit Suno und nachbearbeitet). Fehlt die Datei, synthetisiert
+das Spiel den Schrei selbst (mehrschichtig: Sub-Bass-Aufprall, eine von
+Rauschen zerrissene, mehrfach kippende Stimme durch wandernde Formanten
+und Verzerrer, ein verzögert einsetzendes Kreischen, ein subharmonisches
 Grollen, Faltungshall und Kompressor – siehe
-`src/systems/AudioManager.ts`) – es braucht also kein Asset. Liegt aber
-eine Datei unter `public/assets/sounds/scream.mp3`, wird sie stattdessen
-abgespielt; Pfad und Lautstärke stehen in `CONFIG.audio`.
+`src/systems/AudioManager.ts`). Pfad und Lautstärke stehen in
+`CONFIG.audio`.
 
 Zwischen zwei Auftritten vergehen 70–170 Sekunden. Alle Werte stehen in
 `CONFIG.stalker` (`src/config.ts`), die Auftritte selbst in
