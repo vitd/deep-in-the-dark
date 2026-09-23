@@ -88,6 +88,8 @@ const KEEP_CLEAR = [
   ...SEABED_ITEM_SPOTS.map((p) => ({ x: p.x, z: p.z, r: 3 })),
   { x: CONFIG.world.spawn.x, z: CONFIG.world.spawn.z, r: 12 },
   { x: CONFIG.world.boatPos.x, z: CONFIG.world.boatPos.z, r: 30 },
+  // Tiefentempel samt Sockel und Mulde
+  { x: CONFIG.tiefentempel.x, z: CONFIG.tiefentempel.z, r: CONFIG.tiefentempel.mulde * 1.45 },
 ];
 
 function blocked(x: number, z: number, half: number): boolean {

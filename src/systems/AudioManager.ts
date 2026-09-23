@@ -332,6 +332,50 @@ class AudioManagerImpl {
     }
   }
 
+  // Eine Falle im Tiefentempel trifft: metallisches Klirren mit
+  // dumpfem Schlag, gedämpft wie unter Wasser (synthetisch)
+  falle(): void {
+    try {
+      this.ctx = this.ctx ?? new AudioContext();
+      const ctx = this.ctx;
+      ctx.resume().catch(() => {});
+      const t0 = ctx.currentTime;
+      const out = ctx.createGain();
+      out.gain.value = 0.5 * settings.volume;
+      const tief = ctx.createBiquadFilter();
+      tief.type = 'lowpass';
+      tief.frequency.value = 2400;
+      tief.connect(out).connect(ctx.destination);
+
+      // Klirren: zwei unharmonische Teiltöne, schnell abklingend
+      for (const [f, g] of [[620, 0.5], [1410, 0.3]] as const) {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, t0);
+        osc.frequency.exponentialRampToValueAtTime(f * 0.8, t0 + 0.5);
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(g, t0);
+        env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.55);
+        osc.connect(env).connect(tief);
+        osc.start(t0);
+        osc.stop(t0 + 0.6);
+      }
+      // Schlag: kurzer Rauschstoß
+      const len = Math.floor(ctx.sampleRate * 0.12);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const nEnv = ctx.createGain();
+      nEnv.gain.value = 0.8;
+      noise.connect(nEnv).connect(tief);
+      noise.start(t0);
+    } catch {
+      // Audio nicht verfügbar – Spiel läuft stumm weiter
+    }
+  }
+
   // Tiefes Motor-Brummen (synthetisch, kein Asset nötig)
   startHum(): void {
     if (this.humGain) return;

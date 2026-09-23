@@ -67,6 +67,8 @@ const KEEP_CLEAR: ClearZone[] = [
   ...PAGODA_SPOTS.map((p) => ({ x: p.x, z: p.z, r: p.r, minSize: 0 })),
   { x: CONFIG.world.spawn.x, z: CONFIG.world.spawn.z, r: 4, minSize: 1.2 },
   { x: CONFIG.world.boatPos.x, z: CONFIG.world.boatPos.z, r: 11, minSize: 1.2 },
+  // Tiefentempel: keine Klippe durch die Mauern, kein Geröll im Sockel
+  { x: CONFIG.tiefentempel.x, z: CONFIG.tiefentempel.z, r: CONFIG.tiefentempel.mulde * 1.45, minSize: 0 },
 ];
 
 // Kleiner, schneller PRNG (mulberry32) – aus einem Kachel- bzw.

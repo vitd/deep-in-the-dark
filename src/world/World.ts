@@ -19,6 +19,8 @@ import { Seabed } from './Seabed';
 import { SeaMonster } from './SeaMonster';
 import { SharkManager } from './Shark';
 import { Stalker, StalkerView } from './Stalker';
+import { FallenArt } from './TempelPlan';
+import { Tiefentempel } from './Tiefentempel';
 import { BOAT_LAYOUT } from './boatLayout';
 
 // Setzt die komplette Spielwelt zusammen und verwaltet den
@@ -35,6 +37,7 @@ export class World {
   readonly monster: SeaMonster;
   readonly boss: BossMonster;
   readonly stalker: Stalker;
+  readonly tempel: Tiefentempel;
   readonly motor: MotorRef;
   readonly helm: HelmRef;
   readonly frame: BoatFrame;
@@ -78,6 +81,7 @@ export class World {
     onBossSurfaced: () => void,
     onBoatSwallowed: () => void,
     onStalkerJumpscare: () => void,
+    onFalle: (art: FallenArt, schaden: number) => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -100,6 +104,7 @@ export class World {
     buildCliffs(scene, this.collision);
     this.seabed = new Seabed(scene, this.collision);
     buildPagodas(scene, this.collision);
+    this.tempel = new Tiefentempel(scene, this.collision, onFalle);
 
     const boat = buildBoat(scene, this.collision, interaction, inventory, {
       onCraftingTable,
@@ -129,11 +134,15 @@ export class World {
     }
 
     this.resources = new Resources(scene, this.ocean, interaction, inventory, onFuelFound, boat.group);
+    // Der Schatz in der Mitte des Labyrinths
+    for (const [k, p] of this.tempel.schatzPlaetze.entries()) {
+      this.resources.spawnGold(p.x, p.y, p.z, k * 1.3);
+    }
     this.fish = new FishManager(scene, interaction, inventory);
     this.shark = new SharkManager(scene, onSharkBite);
     this.monster = new SeaMonster(scene, this.frame, onMonsterHitShip, onMonsterCaughtPlayer);
     this.boss = new BossMonster(scene, onBossSurfaced, onBoatSwallowed);
-    this.stalker = new Stalker(scene, onStalkerJumpscare);
+    this.stalker = new Stalker(scene, onStalkerJumpscare, this.tempel);
   }
 
   private addRoomLight(min: readonly number[], max: readonly number[]): void {
@@ -184,6 +193,8 @@ export class World {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.seabed.update(playerPos);
     this.resources.update();
+    // Fallen im Labyrinth, Perlen der Luftblasen
+    this.tempel.update(dt, playerPos);
     this.boatCenter.copy(this.frame.center).add(this.frame.offset);
     // Fische und Haie streifen um den Spieler und meiden das Boot
     this.fish.update(dt, playerPos, this.boatCenter);

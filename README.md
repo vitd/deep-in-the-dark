@@ -113,10 +113,64 @@ Grollen, Faltungshall und Kompressor – siehe
 `src/systems/AudioManager.ts`). Pfad und Lautstärke stehen in
 `CONFIG.audio`.
 
-Zwischen zwei Auftritten vergehen 70–170 Sekunden. Alle Werte stehen in
-`CONFIG.stalker` (`src/config.ts`), die Auftritte selbst in
-`src/world/Stalker.ts`. Zum Ausprobieren gibt es im Cheat-Menü (Taste L)
-je einen Eintrag pro Variante.
+Zwischen zwei Auftritten vergehen 70–170 Sekunden – außer im
+**Tiefentempel** (siehe unten): Dort ist er am häufigsten. Die Pausen
+schrumpfen auf 10–28 Sekunden, eine laufende lange Pause wird beim
+Betreten sofort gekürzt, und er steht dann immer in einem Gang, den man
+von seinem Platz aus einsehen kann – nie hinter einer Wand. Wer den
+Tempel verlässt, lässt ihn drinnen zurück. Alle Werte stehen in
+`CONFIG.stalker` (`src/config.ts`, der Tempel unter `labyrinth`), die
+Auftritte selbst in `src/world/Stalker.ts`. Zum Ausprobieren gibt es im
+Cheat-Menü (Taste L) je einen Eintrag pro Variante.
+
+## Der Tiefentempel
+
+Weit draußen im Südosten des Sees, bei x 460 / z 450, liegt in gut
+30 m Tiefe eine versunkene Tempelanlage: ein breiter, abgetreppter
+Sockel, darauf ein massiger Mauerblock mit Strebepfeilern, vier
+Ecktürmen und einem dreistufigen Dach mit Krone, Zinnen und Spitze.
+Vorn, zur Küste hin, springt ein Torhaus zwischen zwei Obelisken vor.
+Bernsteinfarbene Leuchtsteine markieren Tor, Türme und Krone. Auf der
+Minimap erscheint der Grundriss, sobald man in der Nähe ist.
+
+Innen läuft hinter dem Tor ein **langer Umgang** einmal rund um das
+Labyrinth – denn der **Eingang ins Labyrinth liegt auf der
+gegenüberliegenden Seite**. Das **Labyrinth** (15 × 15 Felder à 4 m)
+nimmt fast den ganzen Bau ein; in seiner Mitte wartet die
+**Schatzkammer** mit acht Goldbarren. Der Weg vom Labyrintheingang bis
+dorthin ist über 200 m lang.
+
+**Fallen** (48 Stück, übers ganze Labyrinth verteilt, nie zwei
+nebeneinander – zwischen zwei Fallen kann man immer den Takt abwarten):
+
+| Falle | Wirkung | Schaden |
+|---|---|---|
+| Stachelfalle | Spieße schießen aus Boden und Decke, vorher lugen die Spitzen kurz heraus | 25 |
+| Pendelaxt | breites Klingenblatt schwingt längs durch den Gang, darüber und darunter passt niemand durch | 35 |
+| Harpunenfalle | Mündungen in der Seitenwand glühen rot, dann fliegt eine Salve quer über den Gang | 15 |
+| Fallbeil | ruckelt kurz in der Decke und saust dann herab | 40 |
+
+Nach einem Treffer schützt eine kurze Schonfrist vor dem nächsten.
+
+**Luftblasen:** Unter der Decke hängen silbrig schimmernde Luftblasen,
+erkennbar an den aufsteigenden Perlen und einem Bronzering im Boden.
+Wer den Kopf hineinsteckt (ganz nach oben schwimmen), atmet durch – die
+Luft füllt sich wie an der Oberfläche. Im Umgang sitzen sie an den Ecken
+und Seitenmitten, im Labyrinth ist keine Stelle mehr als 8 Felder Weg
+von der nächsten entfernt.
+
+Die Gestalt ist eine eigene Schöpfung. Nur die Grundidee, eine
+versunkene Tempelanlage mit Innenleben, ist vom Ozeanmonument aus
+Minecraft inspiriert. Grundriss, Proportionen, Aufbau, Farben und
+Innenleben sind eigenständig. Es gibt keine Blöcke, kein Prismarin und
+keine Wächter.
+
+Stellschrauben (Lage, Labyrinthgröße, Luftblasen, Fallen und ihr Takt):
+`CONFIG.tiefentempel` in `src/config.ts`. Grundriss und Labyrinth-
+Generator: `src/world/TempelPlan.ts`, Bau und Fallen:
+`src/world/Tiefentempel.ts`. Das Labyrinth ist aus einem festen Seed
+erzeugt und sieht in jedem Spiel gleich aus. Im Cheat-Menü gibt es
+Teleports vor das Tor, an den Labyrintheingang und in die Schatzkammer.
 
 ## Tiefenanzeige
 
@@ -215,8 +269,9 @@ Die Taste **L** öffnet jederzeit das Cheat-Menü (auf Touch-Geräten der
 Knopf **DBG** oben rechts): Debug-Anzeige (FPS/Position),
 Kollisionsboxen, Teleports, Werte auffüllen, Materialpakete,
 Motor-Schnellreparatur, **3× schneller tauchen**, Hai herbeirufen,
-Stalker erscheinen lassen (an Deck / am Himmel / unter Wasser),
-Taucherhelm aufsetzen u. a. — kein URL-Parameter nötig.
+Stalker erscheinen lassen (an Deck / am Himmel / unter Wasser / im
+Tiefentempel), Teleports zum Tiefentempel, Taucherhelm aufsetzen u. a. —
+kein URL-Parameter nötig.
 
 **Taucherhelm justieren:** Der Cheat *„Taucherhelm justieren (Tastatur)
 an/aus“* setzt den Helm auf und blendet links eine Anzeige mit den
@@ -251,7 +306,8 @@ Bis dahin merkt sich der Browser sie (localStorage).
   (`src/world/Pagodas.ts`) – ca. 100 kleine mit vier Säulen und einem
   Dach, ca. 50 große mit acht Säulen, Obergeschoss und zwei Dächern.
   Alles deterministisch aus Rasterindizes geseedet; Anzahl und
-  Uferabstand in `CONFIG.pagoden`
+  Uferabstand in `CONFIG.pagoden`. Unter dem Tiefentempel wird der Grund
+  zu einer ebenen Mulde abgetragen (`lake.ts`)
 - Alle Stellschrauben: `src/config.ts` · Alle Texte: `src/ui/strings.de.ts`
 
 ## Build

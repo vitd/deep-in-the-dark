@@ -77,8 +77,23 @@ export function lakeFloorY(x: number, z: number): number {
   // bleiben es knietiefe Wellen im Sand, in der tiefen Mitte werden
   // daraus richtige Berge.
   const amp = Math.min(34, Math.max(1.2, (CONFIG.world.seaLevel - base - 4) * 0.55));
-  const y = base + seabedRelief(x, z) * amp;
+  const y = tempelMulde(x, z, base + seabedRelief(x, z) * amp);
   return Math.min(y, CONFIG.world.seaLevel - SEABED_MIN_DEPTH);
+}
+
+// Unter dem Tiefentempel (Tiefentempel.ts) wird der Grund bis knapp
+// unter den Tempelboden abgetragen: kein Hügel darf durch den Boden
+// des Labyrinths stechen – sonst schöbe clampToBounds den Spieler
+// durch die Decke. Um das Quadrat herum läuft die Mulde weich aus;
+// tiefer liegender Grund bleibt, wie er ist (dort steht der Sockel).
+const TT = CONFIG.tiefentempel;
+function tempelMulde(x: number, z: number, y: number): number {
+  const dx = Math.max(0, Math.abs(x - TT.x) - TT.mulde);
+  const dz = Math.max(0, Math.abs(z - TT.z) - TT.mulde);
+  if (dx >= TT.muldeAuslauf || dz >= TT.muldeAuslauf) return y;
+  const d = Math.hypot(dx, dz) / TT.muldeAuslauf;
+  if (d >= 1) return y;
+  return Math.min(y, TT.boden - 0.3 + d * d * 30);
 }
 
 // Hält einen Punkt horizontal im See; `margin` = Mindestabstand zur

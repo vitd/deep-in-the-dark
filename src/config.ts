@@ -325,6 +325,21 @@ export const CONFIG = {
       maxY: -3,
       minSpielerTiefe: -2.5, // flacher taucht er gar nicht erst auf
     },
+
+    // Im Tiefentempel (Umgang und Labyrinth) ist er am häufigsten: Die
+    // Pausen zwischen zwei Auftritten sind dort ein Bruchteil der
+    // üblichen 70–170 s, und wer den Tempel betritt, dem wird eine
+    // laufende lange Pause sofort auf `pauseMax` gekürzt. Er steht dann
+    // in einem Gang, den man einsehen kann – nie hinter einer Wand.
+    labyrinth: {
+      pauseMin: 10,
+      pauseMax: 28,
+      wiederholen: 1.5, // kein passender Gang in Sicht: so bald neuer Versuch
+      abstandMin: 7,
+      abstandMax: 26,
+      dauer: 18,
+      fluchtRadius: 3.5, // kommt der Spieler so nah, ist er weg
+    },
   },
 
   // Großer Fisch: seltener, tiefer, ergiebiger
@@ -360,6 +375,55 @@ export const CONFIG = {
     klein: 100, // 3×3 m, vier Säulen, ein Dach
     gross: 50, // ~6,5×6,5 m, acht Säulen, zwei Dächer
     uferAbstand: 60, // Mindestabstand zur Steilküste
+  },
+
+  // Der Tiefentempel (src/world/Tiefentempel.ts, Grundriss in
+  // src/world/TempelPlan.ts): eine versunkene, gestufte Tempelanlage
+  // am Seeboden. Innen läuft ein langer Umgang rund um ein riesiges
+  // Labyrinth; der Tempeleingang liegt vorn, der Labyrintheingang auf
+  // der gegenüberliegenden Seite. Im Labyrinth stecken Fallen, in der
+  // Mitte liegt die Schatzkammer.
+  tiefentempel: {
+    // Mitte des Hauptbaus. Der Grund ist hier eben und 31–40 m tief –
+    // gesucht außerhalb des Seemonster-Reviers und fern vom Boss-Nest.
+    x: 460,
+    z: 450,
+    boden: -31.5, // Oberkante des Tempelbodens (Welt-y)
+    // Blickrichtung des Tors: 0 = -z (Norden), 1 = -x (Westen, zur
+    // Küste und zum Startplatz), 2 = +z, 3 = +x
+    torRichtung: 1,
+    // Der Seeboden wird unter dem Tempel auf Bodenhöhe abgesenkt
+    // (lake.ts), damit kein Hügel durch den Boden sticht: Quadrat mit
+    // dieser halben Kantenlänge, danach weich auslaufend
+    mulde: 48,
+    muldeAuslauf: 16,
+
+    // Labyrinth: zellen × zellen Felder, Mitte = Schatzkammer (3×3)
+    zellen: 15,
+    zelle: 4, // Rastermaß in Metern (Wandmitte zu Wandmitte)
+    wand: 0.8, // Wandstärke im Labyrinth
+    innenHoehe: 5, // lichte Höhe von Umgang und Labyrinth
+    umgang: 4.1, // lichte Breite des Umgangs
+    schleifen: 10, // zusätzliche Durchbrüche: ein paar Rundwege
+    seed: 20260923,
+
+    // Luftblasen unter der Decke: Luft füllt sich wie an der
+    // Oberfläche. Keine Zelle liegt weiter als `luftAbstand` Felder
+    // (Weg, nicht Luftlinie) von der nächsten entfernt.
+    luftAbstand: 8,
+    luftRadius: 1.4,
+
+    schatzGold: 8, // Goldbarren in der Schatzkammer
+
+    fallen: {
+      anzahl: 48,
+      // nach einem Treffer: so lange keine weitere Falle
+      schutzZeit: 1.3,
+      stacheln: { schaden: 25, periode: 3.4, laenge: 2.1 },
+      axt: { schaden: 35, periode: 2.8, winkel: 0.75 }, // Ausschlag in rad
+      harpune: { schaden: 15, periode: 2.4, tempo: 11 },
+      fallbeil: { schaden: 40, periode: 3.6 },
+    },
   },
 
   // Fahrverhalten des Boots (Steuerstand auf der Brücke)

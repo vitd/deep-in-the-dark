@@ -126,6 +126,11 @@ export class Resources {
     }
   }
 
+  // Goldbarren an beliebiger Stelle (Schatzkammer des Tiefentempels)
+  spawnGold(x: number, y: number, z: number, yaw: number): void {
+    this.spawnModelPickup('gold.glb', 0.45, 'gold', x, y, z, yaw);
+  }
+
   private spawnFuelBarrel(x: number, y: number, z: number, yaw: number): THREE.Group {
     const group = new THREE.Group();
     group.position.set(x, y, z);

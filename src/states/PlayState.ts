@@ -18,6 +18,8 @@ import { Minimap } from '../ui/Minimap';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
 import { StalkerMode, StalkerView } from '../world/Stalker';
+import { FallenArt } from '../world/TempelPlan';
+import type { TempelTeleport } from '../world/Tiefentempel';
 import { lakeFloorY } from '../world/lake';
 import { World } from '../world/World';
 import { DeathState } from './DeathState';
@@ -73,6 +75,8 @@ export class PlayState implements GameState {
   private monsterHits = 0;
   // vom Seemonster erwischt: Todes-Screen nach dem Welt-Update
   private pendingDeath: string | null = null;
+  // Kopf steckt in einer Luftblase des Tiefentempels
+  private inLuftblase = false;
 
   // Cheat-Menü (Taste L) und Debug-Anzeigen – immer verfügbar
   private cheatsOpen = false;
@@ -117,7 +121,11 @@ export class PlayState implements GameState {
         this.pendingDeath = STR.bossSwallowedTitle;
       },
       () => this.onStalkerJumpscare(),
+      (art, schaden) => this.onFalle(art, schaden),
     );
+
+    // Der Tiefentempel steht als Grundriss auf der Minimap
+    this.minimap.setFlaechen(this.world.tempel.minimapFlaechen);
 
     // Kamera in die Szene hängen, damit das Hand-Item mitgerendert wird
     this.scene.add(this.camera);
@@ -332,6 +340,22 @@ export class PlayState implements GameState {
       {
         label: 'Stalker: unter Wasser erscheinen (ansehen = Jumpscare!)',
         action: () => this.spawnStalker('wasser'),
+      },
+      {
+        label: 'Stalker: im Tiefentempel erscheinen (nur drinnen)',
+        action: () => this.spawnStalker('labyrinth'),
+      },
+      {
+        label: 'Teleport: Tiefentempel, vor das Tor',
+        action: () => this.teleportTempel(this.world.tempel.vorDemTor),
+      },
+      {
+        label: 'Teleport: Tiefentempel, Labyrinth-Eingang (Rückseite)',
+        action: () => this.teleportTempel(this.world.tempel.amLabyrinthEingang),
+      },
+      {
+        label: 'Teleport: Tiefentempel, Schatzkammer',
+        action: () => this.teleportTempel(this.world.tempel.inDerSchatzkammer),
       },
       {
         label: 'Taucherhelm aufsetzen / absetzen',
@@ -601,6 +625,26 @@ export class PlayState implements GameState {
     UI.toast(ok ? STR.stalkerCheatDa : STR.stalkerCheatKeinPlatz);
   }
 
+  // Cheat: tauchend an einen Punkt im oder am Tiefentempel
+  private teleportTempel(ziel: TempelTeleport): void {
+    if (this.steering) this.toggleSteering();
+    this.player.position.copy(ziel.pos);
+    this.player.velocity.set(0, 0, 0);
+    this.player.state = PlayerState.Dive;
+    this.look.yaw = ziel.yaw;
+    this.look.pitch = 0;
+    UI.toast(STR.tempelTeleport);
+  }
+
+  // Eine Falle im Tiefentempel hat zugeschlagen
+  private onFalle(art: FallenArt, schaden: number): void {
+    this.stats.damage(schaden);
+    UI.damageFlash();
+    Audio.falle();
+    UI.toast(STR.falleTreffer(STR.fallenNamen[art], schaden));
+    if (this.stats.leben <= 0) this.pendingDeath = STR.fallenTodTitel;
+  }
+
   // Der Stalker springt einen an (zu lange direkt angesehen):
   // Schreck-Overlay, Kreischen – und was vom Leben übrig bleibt, sind 10 %.
   private onStalkerJumpscare(): void {
@@ -824,17 +868,20 @@ export class PlayState implements GameState {
 
     // Überlebenswerte: Nahrung (Anstrengung) und Luft (Tauchen).
     // Am Steuer strengt sich das Boot an, nicht der Spieler.
+    // Luftblase im Tiefentempel: der Kopf steckt in Luft, die Luft
+    // füllt sich wie an der Oberfläche (die Sicht bleibt unter Wasser)
+    this.inLuftblase = eyesUnderwater && this.world.tempel.inLuftblase(this.eyeTmp);
     const moving =
       !this.steering &&
       (this.keys.has('KeyW') || this.keys.has('KeyA') ||
         this.keys.has('KeyS') || this.keys.has('KeyD') ||
         this.player.climbMoving); // Klettern läuft auch ohne Taste
-    this.stats.update(dt, this.player.state, moving, eyesUnderwater);
+    this.stats.update(dt, this.player.state, moving, eyesUnderwater && !this.inLuftblase);
     this.player.speedFactor = this.stats.exhausted ? CONFIG.stats.erschoepftTempo : 1;
     UI.setBar(UI.barNahrung, this.stats.nahrung);
     UI.setBar(UI.barLuft, this.stats.luft);
     UI.setBar(UI.barLeben, this.stats.leben);
-    this.updateAirEffects(eyesUnderwater);
+    this.updateAirEffects(eyesUnderwater && !this.inLuftblase);
     if (this.stats.drowned) {
       this.game.setState(new DeathState(this.game, this, STR.drownedTitle));
       return;
@@ -888,7 +935,11 @@ export class PlayState implements GameState {
       // Wer auf der Leiter hängt, ohne zu klettern, bekommt die
       // Blicksteuerung erklärt – sobald es losgeht, ist der Hinweis weg.
       const hanging = this.player.state === PlayerState.Climb && !this.player.climbMoving;
-      UI.setPrompt(hanging ? STR.climbHint : this.interaction.promptText());
+      UI.setPrompt(
+        hanging
+          ? STR.climbHint
+          : this.interaction.promptText() ?? (this.inLuftblase ? STR.luftblase : null),
+      );
 
       // Reparatur-Panel zeigen, solange der Motor anvisiert ist
       const lookingAtMotor = this.interaction.current?.object === this.world.motor.group;

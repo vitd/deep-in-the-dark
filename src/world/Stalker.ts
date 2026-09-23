@@ -4,6 +4,7 @@ import { loadModel } from '../rendering/Models';
 import { BoatFrame } from './BoatFrame';
 import { DECK_Y, ROOF_Y } from './boatLayout';
 import { clampSwimY, insideLake } from './lake';
+import type { Tiefentempel } from './Tiefentempel';
 
 // Der Stalker: eine hagere, überlebensgroße Gestalt, die man immer nur
 // kurz zu sehen bekommt. Er verfolgt niemanden – er steht einfach da,
@@ -17,6 +18,10 @@ import { clampSwimY, insideLake } from './lake';
 //               nicht von der Stelle, dreht sich aber immer zum Spieler.
 //   'wasser'  – unter Wasser, aufrecht im Freiwasser. Taucht der
 //               Spieler auf, ist er weg.
+//   'labyrinth' – im Tiefentempel (Umgang und Labyrinth): er steht in
+//               einem Gang, den man einsehen kann. Hier ist er am
+//               häufigsten – die Pausen zwischen zwei Auftritten sind
+//               nur ein Bruchteil der sonstigen (CONFIG.stalker.labyrinth).
 //
 // Gefährlich wird er nur durch Hinsehen: Wer ihn `blick.sekunden` lang
 // ununterbrochen direkt ansieht (er steht im Fadenkreuz), wird
@@ -29,7 +34,7 @@ import { clampSwimY, insideLake } from './lake';
 
 const ST = CONFIG.stalker;
 
-export type StalkerMode = 'schiff' | 'himmel' | 'wasser';
+export type StalkerMode = 'schiff' | 'himmel' | 'wasser' | 'labyrinth';
 
 type Phase = 'versteckt' | 'da' | 'jumpscare' | 'weg';
 
@@ -86,7 +91,11 @@ export class Stalker {
   private readonly anker = new THREE.Vector3();
   private readonly tmp = new THREE.Vector3();
 
-  constructor(scene: THREE.Scene, private readonly onJumpscare: () => void) {
+  constructor(
+    scene: THREE.Scene,
+    private readonly onJumpscare: () => void,
+    private readonly tempel: Tiefentempel,
+  ) {
     this.group.visible = false;
     scene.add(this.group);
     loadModel('stalker.glb', ST.size)
@@ -159,12 +168,18 @@ export class Stalker {
     this.mixer?.update(dt);
 
     switch (this.phase) {
-      case 'versteckt':
+      case 'versteckt': {
+        // Im Tempel lauert er: eine lange Pause wird sofort gekürzt,
+        // und findet er keinen Gang, versucht er es gleich wieder
+        const imTempel = this.tempel.innen(view.eye);
+        if (imTempel) this.timer = Math.min(this.timer, ST.labyrinth.pauseMax);
         this.timer -= dt;
         if (this.timer <= 0 && !this.spawn(view, boatCenter, frame)) {
-          this.timer = 5; // Lage passt gerade nicht – gleich neu versuchen
+          // Lage passt gerade nicht – gleich neu versuchen
+          this.timer = imTempel ? ST.labyrinth.wiederholen : 5;
         }
         return;
+      }
 
       case 'da':
         this.updateDa(dt, view, frame);
@@ -186,7 +201,8 @@ export class Stalker {
           this.blickTimer = 0;
           this.currentClip = '';
           this.mixer?.stopAllAction();
-          this.timer = ST.pauseMin + Math.random() * (ST.pauseMax - ST.pauseMin);
+          const pause = this.tempel.innen(view.eye) ? ST.labyrinth : ST;
+          this.timer = pause.pauseMin + Math.random() * (pause.pauseMax - pause.pauseMin);
         }
         return;
     }
@@ -212,8 +228,14 @@ export class Stalker {
         this.vanish();
         return;
       }
+    } else if (this.mode === 'labyrinth' && !this.tempel.innen(view.eye)) {
+      // Wer den Tempel verlässt, lässt ihn drinnen zurück
+      this.vanish();
+      return;
     } else {
-      const flucht = this.mode === 'schiff' ? ST.schiff.fluchtRadius : ST.himmel.fluchtRadius;
+      const flucht = this.mode === 'schiff'
+        ? ST.schiff.fluchtRadius
+        : this.mode === 'himmel' ? ST.himmel.fluchtRadius : ST.labyrinth.fluchtRadius;
       if (dist < flucht) {
         // An Deck zwinkert er noch kurz, dann ist der Platz leer
         if (this.mode === 'schiff') this.play('wink');
@@ -301,21 +323,23 @@ export class Stalker {
         ? this.spawnSchiff(view, frame, !!force)
         : mode === 'himmel'
           ? this.spawnHimmel(view)
-          : this.spawnWasser(view, !!force);
+          : mode === 'labyrinth'
+            ? this.spawnLabyrinth(view, !!force)
+            : this.spawnWasser(view, !!force);
     if (!ok) return false;
     this.mode = mode;
     this.phase = 'da';
     this.blickTimer = 0;
     this.fade = 1;
     this.setOpacity(1);
-    this.timer =
-      mode === 'schiff' ? ST.schiff.dauer : mode === 'himmel' ? ST.himmel.dauer : ST.wasser.dauer;
+    this.timer = ST[mode].dauer;
     this.play(mode === 'himmel' ? 'fly' : 'idle');
     this.faceTo(view.eye);
     return true;
   }
 
   private pickMode(view: StalkerView, boatCenter: THREE.Vector3): StalkerMode | null {
+    if (this.tempel.innen(view.eye)) return 'labyrinth';
     if (view.underwater) {
       return view.eye.y < ST.wasser.minSpielerTiefe ? 'wasser' : null;
     }
@@ -383,7 +407,39 @@ export class Stalker {
     else this.streuPunkt(view, W.abstandMin, W.abstandMax, true);
     if (!insideLake(this.tmp.x, this.tmp.z, 5)) return false;
     this.tmp.y = clampSwimY(this.tmp.x, this.tmp.z, this.tmp.y, W.minY, W.maxY);
+    // nicht in den Mauern des Tiefentempels
+    if (this.tempel.umschliesst(this.tmp, ST.size)) return false;
     this.group.position.copy(this.tmp);
+    return true;
+  }
+
+  // Im Tiefentempel: ein Standplatz in einem Gang, den der Spieler von
+  // hier aus einsehen kann – Kopf und Körpermitte müssen frei zu sehen
+  // sein, er steht nie hinter einer Wand. Der Cheat (`force`) nimmt
+  // notfalls auch einen Platz außerhalb des Blickfelds und näher heran.
+  private spawnLabyrinth(view: StalkerView, force: boolean): boolean {
+    const L = ST.labyrinth;
+    if (!this.tempel.innen(view.eye)) return false;
+    const kopf = new THREE.Vector3();
+    const plaetze: THREE.Vector3[] = [];
+    for (const streng of force ? [true, false] : [true]) {
+      const min = streng ? L.abstandMin : L.abstandMin * 0.5;
+      for (const p of this.tempel.stalkerPlaetze) {
+        const d = Math.hypot(p.x - view.eye.x, p.z - view.eye.z);
+        if (d < min || d > L.abstandMax) continue;
+        this.tmp.copy(p).setY(p.y + ST.size / 2);
+        if (streng && !this.imBlickfeld(this.tmp, view)) continue;
+        kopf.copy(p).setY(p.y + ST.size * 0.9);
+        if (!this.tempel.sichtfrei(view.eye, kopf) || !this.tempel.sichtfrei(view.eye, this.tmp)) {
+          continue;
+        }
+        plaetze.push(p);
+      }
+      if (plaetze.length > 0) break;
+    }
+    if (plaetze.length === 0) return false;
+    const p = plaetze[Math.floor(Math.random() * plaetze.length)];
+    this.group.position.set(p.x, p.y + ST.size / 2, p.z);
     return true;
   }
 

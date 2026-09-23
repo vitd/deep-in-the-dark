@@ -18,7 +18,8 @@ import { insideLake, lakeFloorY } from '../world/lake';
 //    wird er nur noch gedreht darüberkopiert.
 //
 // 2. Die beweglichen Marken (Schiff, Hai, Seemonster, Boss). Sie kommen
-//    direkt aus der Welt und werden jedes Bild neu gezeichnet.
+//    direkt aus der Welt und werden jedes Bild neu gezeichnet. Darunter
+//    liegt der Grundriss fester Bauwerke (Tiefentempel).
 
 const M = CONFIG.minimap;
 
@@ -53,11 +54,20 @@ const COL = {
   monster: '#c84a3c',
   boss: '#ff3c2a',
   player: '#ffe9a8',
+  bauwerk: '#8d8a7c',
   dark: 'rgba(4, 10, 14, 0.85)',
   north: '#9fd4e0',
 };
 
 export type MinimapKind = 'ship' | 'shark' | 'monster' | 'boss';
+
+// Feste Bauwerke (Tiefentempel) als achsenparallele Welt-Rechtecke
+export interface MinimapFlaeche {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
 
 export interface MinimapMark {
   kind: MinimapKind;
@@ -85,6 +95,7 @@ export class Minimap {
   private buildRow = -1;
   private readonly prevRow = new Float32Array(N);
   private ready = false;
+  private flaechen: readonly MinimapFlaeche[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     canvas.width = PX;
@@ -101,6 +112,10 @@ export class Minimap {
     if (!tctx) throw new Error('Minimap: kein 2D-Kontext');
     this.terrainCtx = tctx;
     this.pending = tctx.createImageData(N, N);
+  }
+
+  setFlaechen(flaechen: readonly MinimapFlaeche[]): void {
+    this.flaechen = flaechen;
   }
 
   // ---------- Geländepuffer ----------
@@ -225,6 +240,15 @@ export class Minimap {
       const left = this.terrainX - (HALF + 0.5) * STEP;
       const top = this.terrainZ - (HALF + 0.5) * STEP;
       ctx.drawImage(this.terrain, left, top, N * STEP, N * STEP);
+    }
+
+    // Bauwerke: Grundriss über dem Gelände, unter den Marken
+    ctx.fillStyle = COL.bauwerk;
+    ctx.strokeStyle = COL.dark;
+    ctx.lineWidth = STEP;
+    for (const f of this.flaechen) {
+      ctx.fillRect(f.minX, f.minZ, f.maxX - f.minX, f.maxZ - f.minZ);
+      ctx.strokeRect(f.minX, f.minZ, f.maxX - f.minX, f.maxZ - f.minZ);
     }
 
     for (const m of marks) this.drawMark(ctx, m, px, pz);
