@@ -420,7 +420,9 @@ export const CONFIG = {
       // nach einem Treffer: so lange keine weitere Falle
       schutzZeit: 1.3,
       stacheln: { schaden: 25, periode: 3.4, laenge: 2.1 },
-      axt: { schaden: 35, periode: 2.8, winkel: 0.75 }, // Ausschlag in rad
+      // Ausschlag in rad, quer zum Gang; wird auf den größten Wert begrenzt,
+      // bei dem die Klinge nicht in die Wand schneidet (~0,24 rad)
+      axt: { schaden: 35, periode: 2.8, winkel: 0.24 },
       harpune: { schaden: 15, periode: 2.4, tempo: 11 },
       fallbeil: { schaden: 40, periode: 3.6 },
     },

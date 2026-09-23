@@ -146,13 +146,19 @@ const PFEILE: readonly [number, number][] = [-0.8, 0, 0.8].flatMap(
   (a) => [0.9, 2.5, 4.1].map((y) => [a, y] as [number, number]),
 );
 const HALB_GANG = (ZELLE - WAND) / 2; // halbe lichte Gangbreite
-// Pendelaxt: Arm vom Drehpunkt bis AXT_BLATT, dann ein breites
-// Klingenblatt bis AXT_ARM und darunter die halbrunde Schneide. Das
-// Blatt ist so hoch, dass weder darüber noch darunter ein Taucher
-// vorbeipasst – man muss den Takt abpassen.
+// Pendelaxt: Arm vom Drehpunkt bis AXT_BLATT, dann das Klingenblatt bis
+// AXT_ARM und darunter die halbrunde Schneide. Sie schwingt QUER zum
+// Gang, von Wand zu Wand, Blatt in der Schwingebene (die Schneide geht
+// voran). Das Blatt ist so hoch, dass weder darüber noch darunter ein
+// Taucher vorbeipasst, und in der Gangmitte ist nie Platz – vorbei kommt
+// nur, wer an der Seite durchschlüpft, von der die Axt gerade weg ist.
 const AXT_BLATT = 1.6;
-const AXT_ARM = 3.2; // Drehpunkt bis Oberkante der Schneide
-const AXT_R = 1.35; // Radius der halbrunden Schneide
+const AXT_ARM = 3.85; // Drehpunkt bis Oberkante der Schneide
+const AXT_R = 0.6; // Radius der halbrunden Schneide = halbe Blattbreite
+// Größter Ausschlag, bei dem die Klinge noch nicht in die Gangwand
+// schneidet (seitlich weitester Punkt: AXT_ARM·sin w + AXT_R, dazu 8 cm
+// Luft). CONFIG.tempel.fallen.axt.winkel wird darauf begrenzt.
+const AXT_MAX_WINKEL = Math.asin((HALB_GANG - 0.08 - AXT_R) / AXT_ARM);
 const BEIL_H = 1.7;
 
 // Takt 0..periode, pro Falle versetzt
@@ -635,8 +641,8 @@ export class Tiefentempel {
       }
       case 'axt': {
         const u = takt(t, F.axt.periode, f.phase) / F.axt.periode;
-        f.winkel = F.axt.winkel * Math.sin(u * Math.PI * 2);
-        f.teil[0].rotation.z = f.winkel;
+        f.winkel = Math.min(F.axt.winkel, AXT_MAX_WINKEL) * Math.sin(u * Math.PI * 2);
+        f.teil[0].rotation.x = f.winkel; // Drehung um die Gangachse: quer schwingen
         break;
       }
       case 'harpune': {
@@ -685,20 +691,19 @@ export class Tiefentempel {
         return y < f.aus || kopf > HOEHE - f.aus;
       }
       case 'axt': {
-        // Spielerachse in den Rahmen der Klinge drehen und gegen die
-        // halbrunde Klinge prüfen (an vier Punkten entlang des Körpers)
+        // Die Klinge ist nur 10 cm dick (entlang des Gangs) – wer nicht
+        // gerade in ihrer Ebene steckt, ist sicher
+        if (Math.abs(a) > 0.05 + r) return false;
+        // Punkte entlang des Körpers in den Rahmen der Klinge drehen
+        // (Drehung um die Gangachse) und gegen Blatt und Schneide prüfen
         const cos = Math.cos(f.winkel);
         const sin = Math.sin(f.winkel);
-        for (let k = 0; k < 4; k++) {
-          const v = y + (P.height * k) / 3 - (HOEHE - 0.05);
-          const ar = a * cos + v * sin;
-          const q = -(-a * sin + v * cos); // Abstand vom Drehpunkt entlang des Arms
-          if (Math.abs(ar) > 0.06 + r) continue;
-          // Abstand zum Blatt (Rechteck) und zur Schneide (Halbkreis)
-          const blatt = Math.max(Math.abs(c) - AXT_R, AXT_BLATT - q, q - AXT_ARM);
-          const schneide = q >= AXT_ARM
-            ? Math.hypot(q - AXT_ARM, c) - AXT_R
-            : Math.max(Math.abs(c) - AXT_R, AXT_ARM - q);
+        for (let k = 0; k < 6; k++) {
+          const v = y + (P.height * k) / 5 - (HOEHE - 0.05); // relativ zum Drehpunkt
+          const q = -(v * cos + c * sin); // Abstand vom Drehpunkt entlang des Arms
+          const ck = -v * sin + c * cos; // quer zum Arm, in der Blattebene
+          const blatt = Math.max(Math.abs(ck) - AXT_R, AXT_BLATT - q, q - AXT_ARM);
+          const schneide = q >= AXT_ARM ? Math.hypot(q - AXT_ARM, ck) - AXT_R : Infinity;
           if (Math.min(blatt, schneide) < r) return true;
         }
         return false;

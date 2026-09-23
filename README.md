@@ -146,7 +146,7 @@ nebeneinander – zwischen zwei Fallen kann man immer den Takt abwarten):
 | Falle | Wirkung | Schaden |
 |---|---|---|
 | Stachelfalle | Spieße schießen aus Boden und Decke, vorher lugen die Spitzen kurz heraus | 25 |
-| Pendelaxt | breites Klingenblatt schwingt längs durch den Gang, darüber und darunter passt niemand durch | 35 |
+| Pendelaxt | schwingt quer zum Gang von Wand zu Wand; darüber, darunter und in der Mitte passt niemand durch – nur an der Seite, von der sie gerade weg ist | 35 |
 | Harpunenfalle | Mündungen in der Seitenwand glühen rot, dann fliegt eine Salve quer über den Gang | 15 |
 | Fallbeil | ruckelt kurz in der Decke und saust dann herab | 40 |
 
