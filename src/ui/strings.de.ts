@@ -49,6 +49,10 @@ export const STR = {
   motorApplied: (name: string, n: number) => `${n}x ${name} verbaut`,
   motorFuelApplied: (l: number) => `+${l} L Treibstoff eingefüllt`,
   motorComplete: 'Der Motor brummt! Die Brücke ist jetzt zugänglich.',
+  cheatUnendlichAn: 'Cheat: Luft, Nahrung und Leben bleiben voll',
+  cheatUnendlichAus: 'Cheat: Luft, Nahrung und Leben wieder normal',
+  cheatLabKarteAn: 'Cheat: Karte des Tiefentempels an',
+  cheatLabKarteAus: 'Cheat: Karte des Tiefentempels aus',
   taucherhelmAuf: 'Taucherhelm aufgesetzt',
   taucherhelmAb: 'Taucherhelm abgesetzt',
   taucherhelmTuneAn:

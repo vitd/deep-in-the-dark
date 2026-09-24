@@ -14,6 +14,9 @@ class UIManagerImpl {
   readonly pause = el('pause');
   readonly hud = el('hud');
   readonly minimap = el<HTMLCanvasElement>('minimap');
+  readonly labkarte = el('labkarte');
+  readonly labkarteCanvas = el<HTMLCanvasElement>('labkarte-canvas');
+  readonly labkarteInfo = el('labkarte-info');
   readonly depth = el('depth');
   readonly prompt = el('prompt');
   readonly inventory = el('inventory');
@@ -124,6 +127,7 @@ class UIManagerImpl {
     this.gameCanvas.classList.remove('shake');
     this.hide(this.helmet);
     this.hide(this.helmetTune);
+    this.hide(this.labkarte);
     this.setPrompt(null);
   }
 }

@@ -14,6 +14,7 @@ import { Stats } from '../systems/Stats';
 import { isTouchDevice, TouchControls } from '../systems/TouchControls';
 import { DepthGauge } from '../ui/DepthGauge';
 import { HelmetOverlay } from '../ui/HelmetOverlay';
+import { LabyrinthKarte } from '../ui/LabyrinthKarte';
 import { Minimap } from '../ui/Minimap';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
@@ -37,6 +38,9 @@ export class PlayState implements GameState {
   private readonly player: PlayerController;
   private readonly interaction = new InteractionSystem();
   private readonly minimap = new Minimap(UI.minimap);
+  // Karte des Tiefentempels (Cheat), erst beim ersten Einschalten gebaut
+  private labKarte: LabyrinthKarte | null = null;
+  private labKarteAn = false;
   private readonly depthGauge = new DepthGauge(UI.depth);
   // Taucherhelm-Overlay: getragen wird er bisher nur per Cheat
   private readonly helmet = new HelmetOverlay(UI.helmet, UI.helmetImg, UI.helmetTune);
@@ -254,6 +258,25 @@ export class PlayState implements GameState {
         action: () => {
           this.player.diveBoost = this.player.diveBoost > 1 ? 1 : 3;
           UI.toast(this.player.diveBoost > 1 ? 'Cheat: Tauchtempo ×3' : 'Cheat: Tauchtempo normal');
+        },
+      },
+      {
+        label: `Unendlich Luft, Nahrung und Leben: ${this.stats.unendlich ? 'AN' : 'aus'}`,
+        action: () => {
+          this.stats.unendlich = !this.stats.unendlich;
+          if (this.stats.unendlich) this.stats.auffuellen();
+          UI.toast(this.stats.unendlich ? STR.cheatUnendlichAn : STR.cheatUnendlichAus);
+        },
+      },
+      {
+        label: `Karte des Tiefentempels: ${this.labKarteAn ? 'AN' : 'aus'}`,
+        action: () => {
+          this.labKarteAn = !this.labKarteAn;
+          if (this.labKarteAn && !this.labKarte) {
+            this.labKarte = new LabyrinthKarte(UI.labkarteCanvas, UI.labkarteInfo);
+          }
+          UI.setVisible(UI.labkarte, this.labKarteAn);
+          UI.toast(this.labKarteAn ? STR.cheatLabKarteAn : STR.cheatLabKarteAus);
         },
       },
       {
@@ -649,7 +672,7 @@ export class PlayState implements GameState {
   // Schreck-Overlay, Kreischen – und was vom Leben übrig bleibt, sind 10 %.
   private onStalkerJumpscare(): void {
     const J = CONFIG.stalker.jumpscare;
-    this.stats.leben = Math.min(this.stats.leben, J.restLeben);
+    if (!this.stats.unendlich) this.stats.leben = Math.min(this.stats.leben, J.restLeben);
     UI.jumpscare(J.dauer * 1000);
     UI.damageFlash();
     Audio.screech();
@@ -761,6 +784,7 @@ export class PlayState implements GameState {
     // Helm und Justier-Anzeige überstehen die Pause
     this.helmet.setWorn(this.helmet.isWorn);
     this.helmet.setTuning(this.helmet.isTuning);
+    UI.setVisible(UI.labkarte, this.labKarteAn);
   }
 
   exit(): void {
@@ -789,6 +813,7 @@ export class PlayState implements GameState {
     UI.hide(UI.debug);
     UI.hide(UI.helmet);
     UI.hide(UI.helmetTune);
+    UI.hide(UI.labkarte);
     UI.setPrompt(null);
     UI.hide(UI.underwater);
     UI.hide(UI.warnTauchauf);
@@ -925,6 +950,9 @@ export class PlayState implements GameState {
       this.look.yaw,
       this.world.minimapMarks,
     );
+    if (this.labKarteAn && this.labKarte) {
+      this.labKarte.render(this.player.position.x, this.player.position.z, this.look.yaw);
+    }
 
     if (this.steering) {
       // am Steuer: feste Bedien-Hinweise statt Raycast-Prompts

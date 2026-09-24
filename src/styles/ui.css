@@ -749,6 +749,41 @@ body.touch-mode #minimap {
   height: 132px;
 }
 
+/* ------- Karte des Tiefentempels (Cheat) ------- */
+/* links neben der Minimap; das Canvas ist klein und wird pixelig
+   hochskaliert wie die Minimap */
+#labkarte {
+  position: absolute;
+  right: 212px;
+  top: 20px;
+  width: min(300px, 42vh);
+  pointer-events: none;
+}
+
+#labkarte-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+  border: 3px solid #2b5a66;
+  box-shadow: 3px 3px 0 #051418;
+}
+
+#labkarte-info {
+  margin-top: 4px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #b8c8c0;
+  text-shadow: 1px 1px 0 #000;
+  text-align: center;
+}
+
+body.touch-mode #labkarte {
+  top: 76px;
+  right: 164px;
+  width: min(220px, 36vh);
+}
+
 /* ------- Motor-Reparatur-Panel ------- */
 #motor-panel {
   position: absolute;

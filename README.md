@@ -273,6 +273,19 @@ Stalker erscheinen lassen (an Deck / am Himmel / unter Wasser / im
 Tiefentempel), Teleports zum Tiefentempel, Taucherhelm aufsetzen u. a. —
 kein URL-Parameter nötig.
 
+Zwei Schalter zeigen im Menü, ob sie gerade an sind:
+
+- **Unendlich Luft, Nahrung und Leben:** Alle drei Balken bleiben voll,
+  Haibisse, Fallen und der Stalker-Jumpscare ziehen nichts ab, Ertrinken
+  ist abgeschaltet. Sofort-Tode, die nicht an den Werten hängen
+  (Seemonster, Boss, sinkendes Schiff), bleiben tödlich.
+- **Karte des Tiefentempels:** Links neben der Minimap erscheint der
+  komplette Grundriss – Außenwand mit Tor, Umgang, jede Labyrinthwand,
+  die Schatzkammer (gold), Luftblasen (hellblau) und Fallen (rot), dazu
+  der Spieler als Pfeil in Blickrichtung. Norden ist oben. Außerhalb
+  des Tempels klebt der Pfeil am Kartenrand und darunter steht die
+  Entfernung. Code: `src/ui/LabyrinthKarte.ts`.
+
 **Taucherhelm justieren:** Der Cheat *„Taucherhelm justieren (Tastatur)
 an/aus“* setzt den Helm auf und blendet links eine Anzeige mit den
 aktuellen Werten ein. Justiert wird im laufenden Spiel:

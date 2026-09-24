@@ -21,6 +21,11 @@ export class Stats {
   private pendingFood = 0;
   private pendingRate = 0;
 
+  // Cheat: Luft, Nahrung und Leben bleiben dauerhaft voll, Schaden
+  // prallt ab. Sofort-Tode (Seemonster, Boss, sinkendes Schiff) hängen
+  // nicht an diesen Werten und bleiben tödlich.
+  unendlich = false;
+
   // Countdown bei Luft 0 unter Wasser; null = nicht am Ertrinken
   drownTimer: number | null = null;
   // Einmal ertrunken bleibt ertrunken – sonst könnte ein einzelner
@@ -28,6 +33,11 @@ export class Stats {
   private dead = false;
 
   update(dt: number, state: PlayerState, moving: boolean, underwater: boolean): void {
+    if (this.unendlich) {
+      this.auffuellen();
+      return;
+    }
+
     // Essen langsam anrechnen (animiertes Auffüllen des Balkens)
     if (this.pendingFood > 0) {
       const step = Math.min(this.pendingFood, this.pendingRate * dt);
@@ -77,7 +87,17 @@ export class Stats {
   }
 
   damage(amount: number): void {
+    if (this.unendlich) return;
     this.leben = Math.max(0, this.leben - amount);
+  }
+
+  // Alle Werte voll, Ertrinken abgebrochen
+  auffuellen(): void {
+    this.nahrung = 100;
+    this.luft = 100;
+    this.leben = 100;
+    this.pendingFood = 0;
+    this.drownTimer = null;
   }
 
   eat(amount: number): void {
