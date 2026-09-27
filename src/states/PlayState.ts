@@ -882,6 +882,13 @@ export class PlayState implements GameState {
   // ---------- Loop ----------
 
   update(dt: number): void {
+    // Ein Tod aus dem letzten Bild, der dort nicht mehr umgesetzt wurde
+    // (z. B. weil danach noch etwas schiefging): jetzt sofort zum
+    // Todes-Screen, bevor irgendetwas anderes läuft
+    if (this.pendingDeath) {
+      this.game.setState(new DeathState(this.game, this, this.pendingDeath));
+      return;
+    }
     // Spielwelt pausiert bei offenem Inventar oder offener Werkbank
     if (this.inventoryOpen || this.craftingOpen || this.cheatsOpen) return;
 

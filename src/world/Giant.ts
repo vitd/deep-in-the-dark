@@ -321,6 +321,20 @@ export class Giant {
       this.ecke.applyMatrix4(this.handblock.matrixWorld).applyMatrix4(this.inv);
       this.box.expandByPoint(this.ecke);
     }
+    // Zuerst der Treffer – Spritzer und Ton danach, damit ein Fehler dort
+    // den Tod nicht verschlucken kann. Spieler in den Rahmen des Riesen
+    // und gegen das Feld prüfen.
+    if (erreichbar) {
+      this.lokal.copy(ziel.pos).applyMatrix4(this.inv);
+      const r = G.trefferRand;
+      if (
+        this.lokal.x > this.box.min.x - r && this.lokal.x < this.box.max.x + r &&
+        this.lokal.z > this.box.min.z - r && this.lokal.z < this.box.max.z + r
+      ) {
+        this.onTreffer();
+      }
+    }
+
     // Mitte des Feldes auf dem Wasser (Welt) – für Spritzer und Ton
     this.box.getCenter(this.tmp);
     this.tmp.y = this.box.min.y;
@@ -330,17 +344,6 @@ export class Giant {
     // Feldmaße sind schon Meter (die Skalierung steckt im Modell)
     this.spritzer.start(feldX, feldZ, this.yaw, this.box.max.z - this.box.min.z, this.box.max.x - this.box.min.x);
     this.onSchlag(feldX, feldZ, Math.hypot(ziel.pos.x - feldX, ziel.pos.z - feldZ));
-
-    if (!erreichbar) return;
-    // Spieler in den Rahmen des Riesen und gegen das Feld prüfen
-    this.lokal.copy(ziel.pos).applyMatrix4(this.inv);
-    const r = G.trefferRand;
-    if (
-      this.lokal.x > this.box.min.x - r && this.lokal.x < this.box.max.x + r &&
-      this.lokal.z > this.box.min.z - r && this.lokal.z < this.box.max.z + r
-    ) {
-      this.onTreffer();
-    }
   }
 
   // ---------- Kollision ----------

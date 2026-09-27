@@ -34,7 +34,28 @@ export class Game {
     const now = performance.now();
     const dt = Math.min((now - this.last) / 1000, 0.05);
     this.last = now;
-    this.state?.update(dt);
-    this.state?.render();
+    // Ein Fehler in einem einzelnen Bild darf die Schleife nicht
+    // lahmlegen: sonst bleibt das letzte Bild stehen, und Zustands-
+    // wechsel (z. B. zum Todes-Screen) kommen nie an. Jeder Fehler wird
+    // nur einmal gemeldet, damit die Konsole nicht vollläuft.
+    try {
+      this.state?.update(dt);
+    } catch (e) {
+      this.melde('update', e);
+    }
+    try {
+      this.state?.render();
+    } catch (e) {
+      this.melde('render', e);
+    }
   };
+
+  private readonly gemeldet = new Set<string>();
+
+  private melde(wo: string, e: unknown): void {
+    const text = `${wo}: ${e instanceof Error ? e.message : String(e)}`;
+    if (this.gemeldet.has(text)) return;
+    this.gemeldet.add(text);
+    console.error(`Fehler in der Spielschleife (${wo})`, e);
+  }
 }
