@@ -126,6 +126,18 @@ export class PlayState implements GameState {
       },
       () => this.onStalkerJumpscare(),
       (art, schaden) => this.onFalle(art, schaden),
+      () => {
+        UI.toast(STR.giantAuftauchen, 4000);
+        Audio.riesenAuftauchen();
+      },
+      () => {
+        // vom Unterarm des Riesen getroffen: sofort tot
+        this.pendingDeath = STR.giantTodTitel;
+      },
+      (_x, _z, entfernung) => {
+        Audio.riesenSchlag(entfernung);
+        if (entfernung < 160) UI.shake(entfernung < 60 ? 900 : 450);
+      },
     );
 
     // Der Tiefentempel steht als Grundriss auf der Minimap
@@ -395,6 +407,33 @@ export class PlayState implements GameState {
           // zum Justieren muss der Helm natürlich aufsein
           if (on && !this.helmet.isWorn) this.helmet.setWorn(true);
           UI.toast(on ? STR.taucherhelmTuneAn : STR.taucherhelmTuneAus, on ? 6000 : 2200);
+        },
+      },
+      {
+        label: 'Teleport: Boot in die Seemitte zum Riesen (Vorsicht!)',
+        action: () => {
+          // Motor fertigstellen, damit sich das Boot steuern lässt
+          const m = this.motorRepair;
+          if (!m.complete) {
+            m.apply('eisen', m.remaining('eisen'));
+            m.apply('gold', m.remaining('gold'));
+            m.apply('nyzerin', m.remaining('nyzerin'));
+            m.apply('glyzerin', m.remaining('glyzerin'));
+            m.applyFuel(m.fuelRemaining);
+            this.finishMotor();
+          }
+          // Boot 130 m westlich der Seemitte, Bug nach Osten auf ihn zu
+          const R = CONFIG.giant;
+          const f = this.world.frame;
+          f.offset.x = R.x - 130 - f.center.x;
+          f.offset.z = R.z - f.center.z;
+          f.yaw = -Math.PI / 2;
+          this.world.boat.stop();
+          this.world.helmStandWorld(this.player.position);
+          this.player.state = PlayerState.Walk;
+          this.look.yaw = f.yaw;
+          this.look.pitch = 0.25;
+          UI.toast(STR.giantCheat);
         },
       },
       {
@@ -931,6 +970,8 @@ export class PlayState implements GameState {
     this.view.inWater = playerInWater;
     this.view.underwater = eyesUnderwater;
     this.world.update(dt, this.player.position, playerInWater, this.view);
+    // Schwimmer prallen am Körper des Riesen ab
+    if (playerInWater) this.world.giant.schiebeSchwimmer(this.player.position);
     if (this.pendingDeath) {
       this.game.setState(new DeathState(this.game, this, this.pendingDeath));
       return;

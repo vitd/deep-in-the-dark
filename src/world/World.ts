@@ -11,6 +11,7 @@ import { BoatFrame } from './BoatFrame';
 import { BossMonster } from './BossMonster';
 import { buildCliffs } from './Cliffs';
 import { FishManager } from './Fish';
+import { Giant } from './Giant';
 import { LadderDef } from './Ladder';
 import { Ocean } from './Ocean';
 import { buildPagodas } from './Pagodas';
@@ -36,6 +37,7 @@ export class World {
   readonly shark: SharkManager;
   readonly monster: SeaMonster;
   readonly boss: BossMonster;
+  readonly giant: Giant;
   readonly stalker: Stalker;
   readonly tempel: Tiefentempel;
   readonly motor: MotorRef;
@@ -58,12 +60,17 @@ export class World {
     { kind: 'shark', x: 0, z: 0, yaw: 0 },
     { kind: 'monster', x: 0, z: 0, yaw: 0 },
     { kind: 'boss', x: 0, z: 0, yaw: 0 },
+    { kind: 'giant', x: 0, z: 0, yaw: 0 },
   ];
   // Lichter mit Basis-Intensität, damit Unterwasser einheitlich gedimmt wird
   private readonly lights: { light: THREE.Light; base: number }[] = [];
   private readonly fogColor = new THREE.Color(CONFIG.world.fogAbove.color);
   private fogDensity: number = CONFIG.world.fogAbove.density;
   private underwater = false;
+  // Trübung des Wassers um den Riesen (0..1), zuletzt angewendet;
+  // -1 = beim nächsten Bild neu setzen
+  private truebung = -1;
+  private readonly tmpFarbe = new THREE.Color();
 
   constructor(
     readonly scene: THREE.Scene,
@@ -82,6 +89,9 @@ export class World {
     onBoatSwallowed: () => void,
     onStalkerJumpscare: () => void,
     onFalle: (art: FallenArt, schaden: number) => void,
+    onGiantAuftauchen: () => void,
+    onGiantTreffer: () => void,
+    onGiantSchlag: (x: number, z: number, entfernung: number) => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -142,6 +152,7 @@ export class World {
     this.shark = new SharkManager(scene, onSharkBite);
     this.monster = new SeaMonster(scene, this.frame, onMonsterHitShip, onMonsterCaughtPlayer);
     this.boss = new BossMonster(scene, onBossSurfaced, onBoatSwallowed);
+    this.giant = new Giant(scene, onGiantAuftauchen, onGiantTreffer, onGiantSchlag);
     this.stalker = new Stalker(scene, onStalkerJumpscare, this.tempel);
   }
 
@@ -183,6 +194,24 @@ export class World {
       light.intensity = under ? base * 0.45 : base;
     }
     UI.setVisible(UI.underwater, under);
+    this.truebung = -1;
+  }
+
+  // Unter Wasser trübt sich das Wasser rund um den Riesen ein: der
+  // Nebel wird dicht und schlammig, seine Beine bleiben unsichtbar.
+  private wendeTruebungAn(t: number): void {
+    if (Math.abs(t - this.truebung) < 0.003) return;
+    this.truebung = t;
+    const G = CONFIG.giant;
+    const unten = CONFIG.world.fogBelow;
+    this.fogColor.set(unten.color).lerp(this.tmpFarbe.set(G.truebFarbe), t);
+    this.fogDensity = unten.density + (G.truebDichte - unten.density) * t;
+    const fog = this.scene.fog as THREE.FogExp2;
+    fog.color.copy(this.fogColor);
+    fog.density = this.fogDensity;
+    (this.scene.background as THREE.Color)
+      .set(CONFIG.world.skyBelow)
+      .lerp(this.tmpFarbe.set(G.truebFarbe), t);
   }
 
   nearestFishPos(from: THREE.Vector3): THREE.Vector3 | null {
@@ -190,6 +219,7 @@ export class World {
   }
 
   update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean, view: StalkerView): void {
+    if (this.underwater) this.wendeTruebungAn(this.giant.truebung(playerPos.x, playerPos.z));
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.seabed.update(playerPos);
     this.resources.update();
@@ -201,12 +231,16 @@ export class World {
     this.shark.update(dt, playerPos, playerInWater, this.boatCenter);
     this.monster.update(dt, playerPos, playerInWater, this.boatCenter);
     this.boss.update(dt, this.boatCenter);
+    // Der Riese in der Seemitte: erhebt sich, wenn man ihm nahe kommt
+    this.giant.update(dt, { pos: playerPos });
     // Der Stalker ist meistens gar nicht da – er sucht sich seine
     // Auftritte selbst (an Deck, am Himmel, unter Wasser)
     this.stalker.update(dt, view, this.boatCenter, this.frame);
     // Die Maulwände des Bosses sind undurchdringlich: notfalls wird das
     // Boot herausgedrückt und seine Pose neu angewendet
     if (this.boss.resolveBoatCollision(this.frame)) this.boat.syncPose();
+    // Durch den Riesen fährt man nicht hindurch
+    if (this.giant.schiebeBoot(this.frame)) this.boat.syncPose();
     if (this.sinking && !this.sunk) {
       this.frame.offset.y -= CONFIG.seaMonster.sinkSpeed * dt;
       this.boat.syncPose();
@@ -226,7 +260,7 @@ export class World {
   // die Kreaturen laufen mit +sin/+cos, ihre Marke wird deshalb um 180°
   // gedreht.
   private updateMinimapMarks(playerPos: THREE.Vector3): void {
-    const [ship, shark, monster, boss] = this.minimapMarks;
+    const [ship, shark, monster, boss, giant] = this.minimapMarks;
     ship.x = this.boatCenter.x;
     ship.z = this.boatCenter.z;
     ship.yaw = this.frame.yaw;
@@ -240,6 +274,10 @@ export class World {
       mark.z = obj.position.z;
       mark.yaw = obj.rotation.y + Math.PI;
     }
+    // Der Riese nutzt schon die Gier-Konvention von Spieler und Boot
+    giant.x = this.giant.group.position.x;
+    giant.z = this.giant.group.position.z;
+    giant.yaw = this.giant.group.rotation.y;
   }
 
   // Drittes Rammen des Seemonsters: das Schiff sinkt langsam weg;

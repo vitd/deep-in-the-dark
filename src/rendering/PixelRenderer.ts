@@ -125,6 +125,8 @@ export class PixelRenderer {
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
     this.renderer.setPixelRatio(1);
+    // Der Riese wird an der Wasserlinie abgeschnitten (Material-Clipping)
+    this.renderer.localClippingEnabled = true;
 
     this.target = new THREE.WebGLRenderTarget(CONFIG.render.width, CONFIG.render.height, {
       depthBuffer: true,

@@ -123,6 +123,27 @@ Tempel verlässt, lässt ihn drinnen zurück. Alle Werte stehen in
 Auftritte selbst in `src/world/Stalker.ts`. Zum Ausprobieren gibt es im
 Cheat-Menü (Taste L) je einen Eintrag pro Variante.
 
+## Der Riese
+
+In der Seemitte wartet ein Riese (`giant.glb`). Kommt man ihm auf etwa
+160 m nahe, steigen seine Glieder aus der Tiefe, und er steht bis zur
+Hüfte im Wasser. Sein Kopf ragt so hoch auf wie das Maul des Bosses beim
+Durchbruch – rund 60 m über dem Wasserspiegel. Seine Beine sieht man nie:
+Unter der Wasserlinie wird er abgeschnitten, und wer in seiner Nähe
+taucht, steckt in trübem, schlammigem Wasser.
+
+Er dreht sich zum Spieler und watet langsam auf ihn zu. Ist man in
+Reichweite (etwa 30–75 m), holt er mit dem linken Arm weit über den Kopf
+aus und schlägt den Unterarm flach aufs Wasser – ein 20 m breiter und
+65 m langer Streifen links vor ihm. **Wer darin ist, an der Oberfläche
+oder an Deck, ist sofort tot.** Die Richtung steht fest, sobald er
+ausholt: Wer dann quer zum Arm ausweicht, überlebt. Wer tiefer als 8 m
+taucht, ist außer Reichweite – dann greift er gar nicht erst an.
+Entfernt man sich weiter als 340 m, versinkt er wieder.
+
+Werte: `CONFIG.giant` (`src/config.ts`), Verhalten in
+`src/world/Giant.ts`. Auf der Minimap ist er die große violette Marke.
+
 ## Der Tiefentempel
 
 Weit draußen im Südosten des Sees, bei x 460 / z 450, liegt in gut
@@ -199,7 +220,8 @@ Karte dreht mit dem Schiff.
   weiter als 100 m weg, bleibt es als kleiner Punkt am Kartenrand
   sichtbar – so findet man zurück.
 - **Kreaturen:** Pfeilspitzen in Fahrtrichtung – orange der Hai, rot das
-  Seemonster, groß und hellrot der Boss.
+  Seemonster, groß und hellrot der Boss, noch größer und violett der
+  Riese.
 - Der helle Bogen am Kartenrand markiert **Norden**.
 
 Stellschrauben (Radius, Auflösung): `CONFIG.minimap` in `src/config.ts`.
@@ -270,7 +292,8 @@ Knopf **DBG** oben rechts): Debug-Anzeige (FPS/Position),
 Kollisionsboxen, Teleports, Werte auffüllen, Materialpakete,
 Motor-Schnellreparatur, **3× schneller tauchen**, Hai herbeirufen,
 Stalker erscheinen lassen (an Deck / am Himmel / unter Wasser / im
-Tiefentempel), Teleports zum Tiefentempel, Taucherhelm aufsetzen u. a. —
+Tiefentempel), Teleports zum Tiefentempel, **Boot in die Seemitte zum
+Riesen**, Taucherhelm aufsetzen u. a. —
 kein URL-Parameter nötig.
 
 Zwei Schalter zeigen im Menü, ob sie gerade an sind:

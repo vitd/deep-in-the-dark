@@ -342,6 +342,35 @@ export const CONFIG = {
     },
   },
 
+  // Der Riese (src/world/Giant.ts): steht in der Seemitte bis zur Hüfte
+  // im Wasser. Sein Kopf ragt so hoch auf wie die Maulspitze des Bosses
+  // beim senkrechten Durchbruch (breachY + halbe Körperlänge = 60 m).
+  // Er schlägt mit dem Unterarm flach aufs Wasser – wer im Aufschlagfeld
+  // ist (an der Oberfläche oder an Deck), ist sofort tot. Tief tauchen
+  // schützt.
+  giant: {
+    x: 945, // Seemitte (CONFIG.world.lake.center)
+    z: 0,
+    kopfHoehe: 60, // Scheitel über dem Wasserspiegel
+    weckRadius: 160, // so nah an ihm erhebt er sich
+    aufgebenRadius: 340, // so weit weg: er versinkt wieder
+    revierRadius: 260, // so weit watet er höchstens aus der Seemitte
+    watTempo: 3, // m/s
+    drehTempo: 0.3, // rad/s
+    auftauchTempo: 0.6, // Abspieltempo der spawn-Animation (1 = 3 s)
+    angriffTempo: 0.45, // Abspieltempo der attack-Animation: ~2,2 s bis zum Aufschlag
+    pause: 4, // Sekunden zwischen zwei Schlägen
+    trefferRand: 4, // Meter Zugabe rund um das Aufschlagfeld
+    tauchSchutz: 8, // tiefer getaucht als das: außer Reichweite
+    koerperRadius: 16, // Boot und Schwimmer prallen daran ab
+    schnittTiefe: 0.6, // so tief unter dem Wasserspiegel endet das Modell
+    // Trübes Wasser um ihn herum (Unterwasser-Nebel)
+    truebRadius: 110,
+    truebAuslauf: 60,
+    truebDichte: 0.32,
+    truebFarbe: 0x2a3428,
+  },
+
   // Großer Fisch: seltener, tiefer, ergiebiger
   fishBig: {
     count: 3,

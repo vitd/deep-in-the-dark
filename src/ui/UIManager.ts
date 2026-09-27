@@ -87,6 +87,15 @@ class UIManagerImpl {
     }, ms);
   }
 
+  private shakeTimer = 0;
+
+  // Das Bild wackelt kurz (z. B. wenn der Riese in der Nähe aufschlägt)
+  shake(ms: number): void {
+    this.gameCanvas.classList.add('shake');
+    window.clearTimeout(this.shakeTimer);
+    this.shakeTimer = window.setTimeout(() => this.gameCanvas.classList.remove('shake'), ms);
+  }
+
   setBar(bar: HTMLElement, value: number): void {
     bar.style.width = `${Math.max(0, Math.min(100, value))}%`;
   }

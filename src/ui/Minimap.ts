@@ -53,13 +53,14 @@ const COL = {
   shark: '#d8883c',
   monster: '#c84a3c',
   boss: '#ff3c2a',
+  giant: '#b86ae0',
   player: '#ffe9a8',
   bauwerk: '#8d8a7c',
   dark: 'rgba(4, 10, 14, 0.85)',
   north: '#9fd4e0',
 };
 
-export type MinimapKind = 'ship' | 'shark' | 'monster' | 'boss';
+export type MinimapKind = 'ship' | 'shark' | 'monster' | 'boss' | 'giant';
 
 // Feste Bauwerke (Tiefentempel) als achsenparallele Welt-Rechtecke
 export interface MinimapFlaeche {
@@ -305,8 +306,9 @@ export class Minimap {
       ctx.stroke();
     } else {
       // Monster: Pfeilspitze in Fahrtrichtung, Größe nach Gefahr
-      const s = m.kind === 'boss' ? 7 * u : m.kind === 'monster' ? 5 * u : 3.5 * u;
-      ctx.fillStyle = m.kind === 'boss' ? COL.boss : m.kind === 'monster' ? COL.monster : COL.shark;
+      const s = m.kind === 'giant' ? 9 * u : m.kind === 'boss' ? 7 * u : m.kind === 'monster' ? 5 * u : 3.5 * u;
+      ctx.fillStyle = m.kind === 'giant' ? COL.giant
+        : m.kind === 'boss' ? COL.boss : m.kind === 'monster' ? COL.monster : COL.shark;
       ctx.beginPath();
       ctx.moveTo(0, -s);
       ctx.lineTo(s * 0.85, s * 0.8);

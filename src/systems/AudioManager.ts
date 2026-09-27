@@ -376,6 +376,98 @@ class AudioManagerImpl {
     }
   }
 
+  // Der Riese schlägt aufs Wasser: tiefer Donnerschlag plus Wasserschwall,
+  // leiser mit der Entfernung (synthetisch)
+  riesenSchlag(entfernung: number): void {
+    try {
+      this.ctx = this.ctx ?? new AudioContext();
+      const ctx = this.ctx;
+      ctx.resume().catch(() => {});
+      const t0 = ctx.currentTime;
+      const nah = 1 / (1 + Math.max(0, entfernung - 60) / 120);
+      const out = ctx.createGain();
+      out.gain.value = 0.9 * nah * settings.volume;
+      out.connect(ctx.destination);
+
+      // Donner: Sinus, der tief absackt
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(70, t0);
+      osc.frequency.exponentialRampToValueAtTime(22, t0 + 1.4);
+      const oEnv = ctx.createGain();
+      oEnv.gain.setValueAtTime(0.0001, t0);
+      oEnv.gain.exponentialRampToValueAtTime(1, t0 + 0.02);
+      oEnv.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
+      osc.connect(oEnv).connect(out);
+      osc.start(t0);
+      osc.stop(t0 + 1.7);
+
+      // Schwall: Rauschen, erst dumpf, dann rauschend abklingend
+      const dauer = 2.4;
+      const len = Math.floor(ctx.sampleRate * dauer);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 1.6;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(500, t0);
+      lp.frequency.exponentialRampToValueAtTime(2600, t0 + 0.35);
+      lp.frequency.exponentialRampToValueAtTime(700, t0 + dauer);
+      const nEnv = ctx.createGain();
+      nEnv.gain.value = 0.7;
+      noise.connect(lp).connect(nEnv).connect(out);
+      noise.start(t0);
+    } catch {
+      // Audio nicht verfügbar – Spiel läuft stumm weiter
+    }
+  }
+
+  // Der Riese erhebt sich: langes, tiefes Grollen und Rauschen (synthetisch)
+  riesenAuftauchen(): void {
+    try {
+      this.ctx = this.ctx ?? new AudioContext();
+      const ctx = this.ctx;
+      ctx.resume().catch(() => {});
+      const t0 = ctx.currentTime;
+      const dauer = 5;
+      const out = ctx.createGain();
+      out.gain.setValueAtTime(0.0001, t0);
+      out.gain.exponentialRampToValueAtTime(0.7 * settings.volume + 0.0001, t0 + 1.5);
+      out.gain.setValueAtTime(0.7 * settings.volume + 0.0001, t0 + 3.5);
+      out.gain.exponentialRampToValueAtTime(0.0001, t0 + dauer);
+      out.connect(ctx.destination);
+      for (const f of [31, 46.5]) {
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = f;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 140;
+        osc.connect(lp).connect(out);
+        osc.start(t0);
+        osc.stop(t0 + dauer);
+      }
+      const len = Math.floor(ctx.sampleRate * dauer);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 380;
+      bp.Q.value = 0.6;
+      const nG = ctx.createGain();
+      nG.gain.value = 0.35;
+      noise.connect(bp).connect(nG).connect(out);
+      noise.start(t0);
+    } catch {
+      // Audio nicht verfügbar – Spiel läuft stumm weiter
+    }
+  }
+
   // Tiefes Motor-Brummen (synthetisch, kein Asset nötig)
   startHum(): void {
     if (this.humGain) return;
