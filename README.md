@@ -123,6 +123,29 @@ Tempel verlässt, lässt ihn drinnen zurück. Alle Werte stehen in
 Auftritte selbst in `src/world/Stalker.ts`. Zum Ausprobieren gibt es im
 Cheat-Menü (Taste L) je einen Eintrag pro Variante.
 
+## Sunkey
+
+Eine flache, lila Gestalt (`sunkey.glb`), die knapp über dem Wasser
+steht – immer genau so weit weg, dass sie gerade noch aus dem Nebel
+schaut (rund 100 m), und immer mit dem Gesicht zum Spieler. Näher kommt
+man ihr nicht: Sie hält den Abstand, egal wohin man schwimmt oder fährt.
+Sie erscheint nur, wenn man über Wasser schaut (an Deck oder an der
+Oberfläche), nie gleichzeitig mit dem Stalker, und taucht man ab, ist
+sie weg.
+
+**Nicht hinsehen:** Wie beim Stalker baut direktes Ansehen einen
+Countdown auf (5 Sekunden, dazu die wachsende Bildstörung). Ist er
+durch, springt sie einen an – aber ohne Schrei: Alles verstummt. Dann
+wird der Bildschirm schwarz, nach 5 Sekunden erscheint langsam ein
+großes, zitterndes **„WHY?“**, und ganz, ganz leise spielt „Daisy Bell“
+(1892, gemeinfrei; synthetisch, leicht verstimmt wie eine alte
+Spieluhr). Das Spiel ist damit zu Ende; nach einer Weile tauchen dezent
+„Neuer Versuch“ und „Zum Hauptmenü“ auf.
+
+Werte: `CONFIG.sunkey` (`src/config.ts`), die Gestalt in
+`src/world/Sunkey.ts`, der schwarze Bildschirm in
+`src/states/WhyState.ts`. Cheat: „Sunkey erscheinen lassen“.
+
 ## Der Riese
 
 In der Seemitte wartet ein Riese (`giant.glb`). Kommt man ihm auf etwa
@@ -293,7 +316,7 @@ Kollisionsboxen, Teleports, Werte auffüllen, Materialpakete,
 Motor-Schnellreparatur, **3× schneller tauchen**, Hai herbeirufen,
 Stalker erscheinen lassen (an Deck / am Himmel / unter Wasser / im
 Tiefentempel), Teleports zum Tiefentempel, **Boot in die Seemitte zum
-Riesen**, Taucherhelm aufsetzen u. a. —
+Riesen**, **Sunkey erscheinen lassen**, Taucherhelm aufsetzen u. a. —
 kein URL-Parameter nötig.
 
 Zwei Schalter zeigen im Menü, ob sie gerade an sind:

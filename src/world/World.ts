@@ -20,6 +20,7 @@ import { Seabed } from './Seabed';
 import { SeaMonster } from './SeaMonster';
 import { SharkManager } from './Shark';
 import { Stalker, StalkerView } from './Stalker';
+import { Sunkey } from './Sunkey';
 import { FallenArt } from './TempelPlan';
 import { Tiefentempel } from './Tiefentempel';
 import { BOAT_LAYOUT } from './boatLayout';
@@ -39,6 +40,7 @@ export class World {
   readonly boss: BossMonster;
   readonly giant: Giant;
   readonly stalker: Stalker;
+  readonly sunkey: Sunkey;
   readonly tempel: Tiefentempel;
   readonly motor: MotorRef;
   readonly helm: HelmRef;
@@ -92,6 +94,7 @@ export class World {
     onGiantAuftauchen: () => void,
     onGiantTreffer: () => void,
     onGiantSchlag: (x: number, z: number, entfernung: number) => void,
+    onSunkeyJumpscare: () => void,
   ) {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
@@ -153,6 +156,7 @@ export class World {
     this.monster = new SeaMonster(scene, this.frame, onMonsterHitShip, onMonsterCaughtPlayer);
     this.boss = new BossMonster(scene, onBossSurfaced, onBoatSwallowed);
     this.giant = new Giant(scene, onGiantAuftauchen, onGiantTreffer, onGiantSchlag);
+    this.sunkey = new Sunkey(scene, this.ocean, onSunkeyJumpscare);
     this.stalker = new Stalker(scene, onStalkerJumpscare, this.tempel);
   }
 
@@ -235,7 +239,11 @@ export class World {
     this.giant.update(dt, { pos: playerPos });
     // Der Stalker ist meistens gar nicht da – er sucht sich seine
     // Auftritte selbst (an Deck, am Himmel, unter Wasser)
+    // Stalker und Sunkey treten nie gleichzeitig auf
+    this.stalker.gesperrt = this.sunkey.sichtbar;
     this.stalker.update(dt, view, this.boatCenter, this.frame);
+    this.sunkey.gesperrt = this.stalker.sichtbar;
+    this.sunkey.update(dt, view);
     // Die Maulwände des Bosses sind undurchdringlich: notfalls wird das
     // Boot herausgedrückt und seine Pose neu angewendet
     if (this.boss.resolveBoatCollision(this.frame)) this.boat.syncPose();

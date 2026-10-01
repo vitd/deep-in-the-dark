@@ -626,6 +626,56 @@ body.touch-mode #stats {
   text-shadow: 3px 3px 0 #200404;
 }
 
+/* ------- Sunkey: schwarzer Bildschirm mit „WHY?“ ------- */
+#why {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+
+#why-text {
+  font-size: clamp(72px, 18vw, 240px);
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: #d8d2c4;
+  opacity: 0;
+  /* Einblenden: Dauer setzt WhyState aus CONFIG.sunkey.ende.einblenden */
+  transition-property: opacity;
+  transition-timing-function: ease-in;
+  animation: why-zittern 0.09s steps(1, end) infinite;
+}
+
+#why-text.zeigen {
+  opacity: 1;
+}
+
+@keyframes why-zittern {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-3px, 2px) rotate(-0.4deg); }
+  40% { transform: translate(2px, -2px) rotate(0.3deg); }
+  60% { transform: translate(-2px, -1px) rotate(0.2deg); }
+  80% { transform: translate(3px, 1px) rotate(-0.3deg); }
+}
+
+#why-knoepfe {
+  position: absolute;
+  bottom: 8vh;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 3s ease-in;
+}
+
+#why-knoepfe.zeigen {
+  opacity: 0.55;
+  pointer-events: auto;
+}
+
 /* ------- Inventar ------- */
 #inventory {
   background: rgba(4, 10, 16, 0.8);

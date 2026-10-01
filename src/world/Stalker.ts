@@ -91,6 +91,9 @@ export class Stalker {
   private readonly anker = new THREE.Vector3();
   private readonly tmp = new THREE.Vector3();
 
+  // Ein anderes Wesen (Sunkey) ist gerade da: dann kein neuer Auftritt
+  gesperrt = false;
+
   constructor(
     scene: THREE.Scene,
     private readonly onJumpscare: () => void,
@@ -169,6 +172,7 @@ export class Stalker {
 
     switch (this.phase) {
       case 'versteckt': {
+        if (this.gesperrt) return;
         // Im Tempel lauert er: eine lange Pause wird sofort gekürzt,
         // und findet er keinen Gang, versucht er es gleich wieder
         const imTempel = this.tempel.innen(view.eye);

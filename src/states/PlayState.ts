@@ -26,6 +26,7 @@ import { World } from '../world/World';
 import { DeathState } from './DeathState';
 import { GameState } from './GameState';
 import { PauseState } from './PauseState';
+import { WhyState } from './WhyState';
 
 // Der eigentliche Spielzustand: besitzt Szene, Welt, Spieler und Systeme.
 // Bleibt beim Pausieren am Leben (exit/enter), dispose() räumt endgültig auf.
@@ -79,6 +80,8 @@ export class PlayState implements GameState {
   private monsterHits = 0;
   // vom Seemonster erwischt: Todes-Screen nach dem Welt-Update
   private pendingDeath: string | null = null;
+  // Sunkey ist gesprungen: Sekunden bis zum schwarzen Bildschirm
+  private sunkeyEnde: number | null = null;
   // Kopf steckt in einer Luftblase des Tiefentempels
   private inLuftblase = false;
 
@@ -138,6 +141,7 @@ export class PlayState implements GameState {
         Audio.riesenSchlag(entfernung);
         if (entfernung < 160) UI.shake(entfernung < 60 ? 900 : 450);
       },
+      () => this.onSunkeyJumpscare(),
     );
 
     // Der Tiefentempel steht als Grundriss auf der Minimap
@@ -407,6 +411,19 @@ export class PlayState implements GameState {
           // zum Justieren muss der Helm natürlich aufsein
           if (on && !this.helmet.isWorn) this.helmet.setWorn(true);
           UI.toast(on ? STR.taucherhelmTuneAn : STR.taucherhelmTuneAus, on ? 6000 : 2200);
+        },
+      },
+      {
+        label: 'Sunkey erscheinen lassen (nur über Wasser, ansehen = Ende!)',
+        action: () => {
+          this.player.eye(this.eyeTmp);
+          this.view.eye.copy(this.eyeTmp);
+          this.look.forward(this.view.dir);
+          this.view.underwater =
+            this.player.state === PlayerState.Dive ||
+            this.eyeTmp.y < this.world.ocean.height(this.eyeTmp.x, this.eyeTmp.z);
+          const ok = !this.view.underwater && this.world.sunkey.erscheineJetzt(this.view);
+          UI.toast(ok ? STR.sunkeyCheat : STR.sunkeyCheatNein);
         },
       },
       {
@@ -718,6 +735,16 @@ export class PlayState implements GameState {
     UI.toast(STR.stalkerJumpscare(J.restLeben), 3200);
   }
 
+  // Sunkey springt einen an: wie beim Stalker, aber ohne Schrei – alles
+  // verstummt. Danach schwarzer Bildschirm (WhyState).
+  private onSunkeyJumpscare(): void {
+    if (this.sunkeyEnde !== null) return;
+    Audio.stopHum();
+    Audio.stille();
+    UI.jumpscare(CONFIG.sunkey.jumpscare.dauer * 1000);
+    this.sunkeyEnde = CONFIG.sunkey.jumpscare.dauer;
+  }
+
   // Rammstoß des Seemonsters: nach dem dritten Treffer sinkt das Schiff
   private onMonsterHitShip(): void {
     this.monsterHits++;
@@ -889,6 +916,15 @@ export class PlayState implements GameState {
       this.game.setState(new DeathState(this.game, this, this.pendingDeath));
       return;
     }
+    // Sunkey hat zugeschlagen: nach dem Sprung wird es schwarz
+    if (this.sunkeyEnde !== null) {
+      this.sunkeyEnde -= dt;
+      if (this.sunkeyEnde <= 0) {
+        this.sunkeyEnde = null;
+        this.game.setState(new WhyState(this.game, this));
+        return;
+      }
+    }
     // Spielwelt pausiert bei offenem Inventar oder offener Werkbank
     if (this.inventoryOpen || this.craftingOpen || this.cheatsOpen) return;
 
@@ -1033,7 +1069,7 @@ export class PlayState implements GameState {
   // zieht die Kurve an – zum Schluss flimmert das ganze Bild.
   private updateStoerung(): void {
     const S = CONFIG.stalker.stoerung;
-    const anteil = this.world.stalker.blickAnteil;
+    const anteil = Math.max(this.world.stalker.blickAnteil, this.world.sunkey.blickAnteil);
     const roh = Math.max(0, (anteil - S.abBlick) / (1 - S.abBlick));
     this.game.pixelRenderer.setStoerung(Math.pow(roh, S.kurve));
   }

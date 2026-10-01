@@ -342,6 +342,41 @@ export const CONFIG = {
     },
   },
 
+  // Sunkey (src/world/Sunkey.ts): flache lila Gestalt knapp über dem
+  // Wasser, immer gerade noch vor dem Nebel, immer mit dem Gesicht zum
+  // Spieler. Zu lange angesehen: Sprung in völliger Stille, danach
+  // schwarzer Bildschirm mit „WHY?“ (src/states/WhyState.ts).
+  sunkey: {
+    size: 4.5, // Höhe in Metern
+    ersteWartezeit: 120, // Ruhe nach dem Spielstart
+    pauseMin: 80, // Wartezeit zwischen zwei Auftritten
+    pauseMax: 200,
+    dauer: 50, // so lange steht sie da, wenn man nicht hinsieht
+    // Abstand: dort, wo der Nebel über Wasser nur noch diesen Anteil
+    // ihrer Farbe durchlässt (0,3 bei Dichte 0,011 ≈ 100 m)
+    sichtAnteil: 0.3,
+    schwebeHoehe: 0.3, // Luft zwischen Wellenkamm und Füßen
+    streuung: 0.45, // rad: so weit neben der Blickrichtung erscheint sie
+    verschwindenDauer: 0.6,
+    blick: {
+      sekunden: 5, // so lange ansehen, dann springt sie
+      toleranz: 0.06,
+      abklingen: 1.5,
+    },
+    jumpscare: {
+      dauer: 1.2, // so lange klebt sie vor der Kamera
+      abstand: 1.6,
+    },
+    // Danach: schwarzer Bildschirm, „WHY?“, leise Daisy Bell
+    ende: {
+      schwarz: 5, // Sekunden reines Schwarz
+      einblenden: 4, // so langsam erscheint „WHY?“
+      knoepfeNach: 14, // Sekunden nach „WHY?“: Neuer Versuch / Hauptmenü
+      daisyLautstaerke: 0.03, // ganz, ganz leise
+      daisySchlag: 0.5, // Sekunden je Viertel (langsamer Walzer)
+    },
+  },
+
   // Der Riese (src/world/Giant.ts): steht in der Seemitte bis zur Hüfte
   // im Wasser. Sein Kopf ragt so hoch auf wie die Maulspitze des Bosses
   // beim senkrechten Durchbruch (breachY + halbe Körperlänge = 60 m).

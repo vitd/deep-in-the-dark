@@ -35,6 +35,9 @@ class UIManagerImpl {
   readonly warnTauchauf = el('warn-tauchauf');
   readonly drownTimer = el('drown-timer');
   readonly death = el('death');
+  readonly why = el('why');
+  readonly whyText = el('why-text');
+  readonly whyKnoepfe = el('why-knoepfe');
   readonly crafting = el('crafting');
   readonly craftGrid = el('craft-grid');
   readonly craftResult = el('craft-result');
@@ -137,6 +140,7 @@ class UIManagerImpl {
     this.hide(this.helmet);
     this.hide(this.helmetTune);
     this.hide(this.labkarte);
+    this.hide(this.why);
     this.setPrompt(null);
   }
 }

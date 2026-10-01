@@ -37,6 +37,8 @@ export const STR = {
   tempelTeleport: 'Cheat: Tiefentempel',
   bossSurfaced: 'Das Wasser bebt – etwas Kolossales taucht auf!',
   bossSwallowedTitle: 'DAS BOOT WURDE VERSCHLUCKT',
+  sunkeyCheat: 'Cheat: Sunkey steht am Rand des Nebels',
+  sunkeyCheatNein: 'Cheat: Sunkey erscheint nur über Wasser',
   giantAuftauchen: 'Die Seemitte brodelt – ein Riese erhebt sich aus dem Wasser!',
   giantTodTitel: 'DER RIESE HAT DICH ZERSCHMETTERT',
   giantCheat: 'Cheat: Seemitte voraus – der Riese erhebt sich',

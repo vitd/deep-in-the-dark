@@ -15,6 +15,106 @@ class AudioManagerImpl {
   private schrei: AudioBuffer | false | null = null;
   private schreiLaeuft = false;
 
+  // Völlige Stille (Sunkey): der Audio-Kontext wird angehalten, bis
+  // laut() ihn wieder freigibt – auch neue Geräusche bleiben stumm
+  private stumm = false;
+
+  private weiter(): void {
+    if (!this.stumm) this.ctx?.resume().catch(() => {});
+  }
+
+  stille(): void {
+    this.stumm = true;
+    this.ctx?.suspend().catch(() => {});
+  }
+
+  laut(): void {
+    this.stumm = false;
+    this.ctx?.resume().catch(() => {});
+  }
+
+  // „Daisy Bell“ (Harry Dacre, 1892 – gemeinfrei), ganz leise und leicht
+  // verstimmt wie von einer alten Spieluhr, in Endlosschleife. Läuft in
+  // einem eigenen Audio-Kontext, damit sie auch während der Stille
+  // spielt. Liefert eine Funktion zum Anhalten.
+  daisyBell(lautstaerke: number, schlag: number): () => void {
+    let ctx: AudioContext;
+    try {
+      ctx = new AudioContext();
+    } catch {
+      return () => {};
+    }
+    ctx.resume().catch(() => {});
+    const out = ctx.createGain();
+    out.gain.value = lautstaerke * settings.volume;
+    // weicher Klang: Tiefpass, dazu ein hallendes Echo
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1700;
+    const echo = ctx.createDelay(1.5);
+    echo.delayTime.value = 0.42;
+    const rueck = ctx.createGain();
+    rueck.gain.value = 0.38;
+    lp.connect(out);
+    lp.connect(echo);
+    echo.connect(rueck).connect(echo);
+    rueck.connect(out);
+    out.connect(ctx.destination);
+    // langsames Leiern (wie ein ausgeleiertes Band)
+    const leier = ctx.createOscillator();
+    leier.frequency.value = 0.35;
+    const leierTiefe = ctx.createGain();
+    leierTiefe.gain.value = 9; // Cent
+    leier.connect(leierTiefe);
+    leier.start();
+
+    const freq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
+    const liedLaenge = DAISY.reduce((n, [, b]) => n + b, 0) * schlag;
+    let start = ctx.currentTime + 0.2;
+    let aus = false;
+
+    const spiele = (t0: number) => {
+      let t = t0;
+      for (const [midi, beats] of DAISY) {
+        const dauer = beats * schlag;
+        if (midi > 0) {
+          for (const verstimmt of [-6, 5]) {
+            const osc = ctx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.value = freq(midi);
+            osc.detune.value = -28 + verstimmt; // insgesamt etwas zu tief
+            leierTiefe.connect(osc.detune);
+            const env = ctx.createGain();
+            env.gain.setValueAtTime(0.0001, t);
+            env.gain.exponentialRampToValueAtTime(0.5, t + 0.04);
+            env.gain.exponentialRampToValueAtTime(0.18, t + Math.min(0.5, dauer * 0.6));
+            env.gain.exponentialRampToValueAtTime(0.0001, t + dauer * 0.98);
+            osc.connect(env).connect(lp);
+            osc.start(t);
+            osc.stop(t + dauer);
+          }
+        }
+        t += dauer;
+      }
+    };
+
+    // Strophe für Strophe nachplanen, solange nicht angehalten
+    const schleife = () => {
+      if (aus) return;
+      spiele(start);
+      start += liedLaenge + schlag * 6; // kurze Pause zwischen den Durchgängen
+      timer = window.setTimeout(schleife, (start - ctx.currentTime - 1) * 1000);
+    };
+    let timer = 0;
+    schleife();
+
+    return () => {
+      aus = true;
+      window.clearTimeout(timer);
+      ctx.close().catch(() => {});
+    };
+  }
+
   get volume(): number {
     return settings.volume;
   }
@@ -54,7 +154,7 @@ class AudioManagerImpl {
   screech(): void {
     try {
       this.ctx = this.ctx ?? new AudioContext();
-      this.ctx.resume().catch(() => {}); // ohne Nutzergeste ggf. blockiert
+      this.weiter(); // ohne Nutzergeste ggf. blockiert
       if (this.schrei) {
         this.spieleSchrei(this.schrei);
         return;
@@ -338,7 +438,7 @@ class AudioManagerImpl {
     try {
       this.ctx = this.ctx ?? new AudioContext();
       const ctx = this.ctx;
-      ctx.resume().catch(() => {});
+      this.weiter();
       const t0 = ctx.currentTime;
       const out = ctx.createGain();
       out.gain.value = 0.5 * settings.volume;
@@ -382,7 +482,7 @@ class AudioManagerImpl {
     try {
       this.ctx = this.ctx ?? new AudioContext();
       const ctx = this.ctx;
-      ctx.resume().catch(() => {});
+      this.weiter();
       const t0 = ctx.currentTime;
       const nah = 1 / (1 + Math.max(0, entfernung - 60) / 120);
       const out = ctx.createGain();
@@ -429,7 +529,7 @@ class AudioManagerImpl {
     try {
       this.ctx = this.ctx ?? new AudioContext();
       const ctx = this.ctx;
-      ctx.resume().catch(() => {});
+      this.weiter();
       const t0 = ctx.currentTime;
       const dauer = 5;
       const out = ctx.createGain();
@@ -512,5 +612,19 @@ class AudioManagerImpl {
     }
   }
 }
+
+// Daisy Bell, Refrain: [MIDI-Note, Schläge] im 3/4-Takt, 0 = Pause.
+// "Daisy, Daisy, give me your answer do. I'm half crazy all for the love
+// of you. It won't be a stylish marriage, I can't afford a carriage, but
+// you'll look sweet upon the seat of a bicycle built for two."
+const G4 = 67, A4 = 69, B4 = 71, C5 = 72, D5 = 74, E5 = 76, F5 = 77, G5 = 79;
+const DAISY: readonly (readonly [number, number])[] = [
+  [G5, 3], [E5, 3], [C5, 3], [G4, 3], [A4, 1], [B4, 1], [C5, 1], [A4, 2], [C5, 1], [G4, 5], [0, 1],
+  [D5, 3], [G5, 3], [E5, 3], [C5, 3], [A4, 1], [B4, 1], [C5, 1], [D5, 2], [E5, 1], [D5, 5], [0, 1],
+  [E5, 1], [F5, 1], [E5, 1], [D5, 1], [G5, 2], [E5, 1], [D5, 2], [C5, 5], [0, 1],
+  [D5, 1], [E5, 2], [C5, 1], [A4, 2], [C5, 1], [A4, 2], [G4, 5], [0, 1],
+  [G4, 1], [C5, 2], [E5, 1], [D5, 2], [G4, 1], [C5, 2], [E5, 1], [D5, 2],
+  [D5, 1], [E5, 1], [F5, 1], [G5, 2], [E5, 1], [D5, 2], [G4, 1], [C5, 5], [0, 1],
+];
 
 export const Audio = new AudioManagerImpl();
