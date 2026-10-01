@@ -38,6 +38,8 @@ class UIManagerImpl {
   readonly why = el('why');
   readonly whyText = el('why-text');
   readonly whyKnoepfe = el('why-knoepfe');
+  readonly whyWanderer = el('why-wanderer');
+  readonly whyBlitz = el('why-blitz');
   readonly crafting = el('crafting');
   readonly craftGrid = el('craft-grid');
   readonly craftResult = el('craft-result');

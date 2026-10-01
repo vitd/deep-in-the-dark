@@ -115,6 +115,53 @@ class AudioManagerImpl {
     };
   }
 
+  // Der Stalker-Schrei rückwärts (Sunkey-Ende). Lädt das Sample sofort in
+  // einen eigenen Audio-Kontext – der Haupt-Kontext ist dann stumm – und
+  // dreht es um. `spielen` startet ihn (oder sobald er geladen ist),
+  // `schliessen` räumt auf.
+  schreiRueckwaerts(): { spielen: () => void; schliessen: () => void } {
+    let ctx: AudioContext;
+    try {
+      ctx = new AudioContext();
+    } catch {
+      return { spielen: () => {}, schliessen: () => {} };
+    }
+    let puffer: AudioBuffer | null = null;
+    let gewuenscht = false;
+    let gespielt = false;
+    const abspielen = () => {
+      if (!puffer || gespielt) return;
+      gespielt = true;
+      ctx.resume().catch(() => {});
+      const src = ctx.createBufferSource();
+      src.buffer = puffer;
+      const g = ctx.createGain();
+      g.gain.value = CONFIG.audio.schreiLautstaerke * settings.volume;
+      src.connect(g).connect(ctx.destination);
+      src.start();
+    };
+    fetch(CONFIG.audio.schreiDatei)
+      .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error('keine Datei'))))
+      .then((daten) => ctx.decodeAudioData(daten))
+      .then((b) => {
+        for (let k = 0; k < b.numberOfChannels; k++) b.getChannelData(k).reverse();
+        puffer = b;
+        if (gewuenscht) abspielen();
+      })
+      .catch(() => {
+        // ohne Sample bleibt der Blitz stumm
+      });
+    return {
+      spielen: () => {
+        gewuenscht = true;
+        abspielen();
+      },
+      schliessen: () => {
+        ctx.close().catch(() => {});
+      },
+    };
+  }
+
   get volume(): number {
     return settings.volume;
   }

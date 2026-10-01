@@ -139,8 +139,13 @@ durch, springt sie einen an – aber ohne Schrei: Alles verstummt. Dann
 wird der Bildschirm schwarz, nach 5 Sekunden erscheint langsam ein
 großes, zitterndes **„WHY?“**, und ganz, ganz leise spielt „Daisy Bell“
 (1892, gemeinfrei; synthetisch, leicht verstimmt wie eine alte
-Spieluhr). Das Spiel ist damit zu Ende; nach einer Weile tauchen dezent
-„Neuer Versuch“ und „Zum Hauptmenü“ auf.
+Spieluhr). Steht das „WHY?“, wandern 14 Sekunden lang Sunkeys von links
+nach rechts über den Bildschirm, immer fünf zugleich, watschelnd, in
+verschiedenen Größen und Tempi. Dann eine Blendgranate: der Bildschirm
+wird schlagartig weiß und klingt langsam wieder ins Schwarz ab, dazu
+läuft der Stalker-Schrei **rückwärts** – erst die verzerrten Lacher
+rückwärts, am Ende der Schrei. Das Spiel ist damit zu Ende; kurz danach
+tauchen dezent „Neuer Versuch“ und „Zum Hauptmenü“ auf.
 
 Werte: `CONFIG.sunkey` (`src/config.ts`), die Gestalt in
 `src/world/Sunkey.ts`, der schwarze Bildschirm in

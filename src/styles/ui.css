@@ -663,8 +663,34 @@ body.touch-mode #stats {
   80% { transform: translate(3px, 1px) rotate(-0.3deg); }
 }
 
+/* Wandernde Sunkeys über dem „WHY?“ (Positionen setzt WhyState) */
+#why-wanderer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#why-wanderer img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  image-rendering: pixelated;
+  will-change: transform;
+}
+
+/* Blendgranate: Deckkraft steuert WhyState */
+#why-blitz {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
 #why-knoepfe {
   position: absolute;
+  z-index: 1;
   bottom: 8vh;
   opacity: 0;
   pointer-events: none;

@@ -371,9 +371,19 @@ export const CONFIG = {
     ende: {
       schwarz: 5, // Sekunden reines Schwarz
       einblenden: 4, // so langsam erscheint „WHY?“
-      knoepfeNach: 14, // Sekunden nach „WHY?“: Neuer Versuch / Hauptmenü
       daisyLautstaerke: 0.03, // ganz, ganz leise
       daisySchlag: 0.5, // Sekunden je Viertel (langsamer Walzer)
+      // Steht „WHY?“, ziehen Sunkeys über den Bildschirm, immer 5 zugleich
+      wandern: 14, // Sekunden
+      wandererAnzahl: 5,
+      querungMin: 1.8, // Sekunden für einmal quer über den Bildschirm
+      querungMax: 3.4,
+      groesseMin: 0.18, // Höhe als Anteil der Bildschirmhöhe
+      groesseMax: 0.42,
+      // Danach: Blendgranate – weißer Blitz und der Stalker-Schrei rückwärts
+      blitzHalten: 0.35, // Sekunden voll weiß
+      blitzAbklingen: 3.5, // Sekunden bis wieder schwarz
+      knoepfeNachBlitz: 4, // dann: Neuer Versuch / Zum Hauptmenü
     },
   },
 
