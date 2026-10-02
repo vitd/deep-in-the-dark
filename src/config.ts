@@ -373,19 +373,23 @@ export const CONFIG = {
     // Danach: schwarzer Bildschirm, „WHY?“, leise Daisy Bell
     ende: {
       schwarz: 5, // Sekunden reines Schwarz
-      einblenden: 4, // so langsam erscheint „WHY?“
-      daisyLautstaerke: 0.03, // ganz, ganz leise
+      einblenden: 4, // so langsam erscheint das rote „WHY?“
+      // Mit „WHY?“ beginnt Daisy Bell rückwärts und schwillt bis zum
+      // Schrei von 0 auf volle Lautstärke an
+      musikAnschwellen: 18, // Sekunden von „WHY?“ bis zum Schrei
+      musikVoll: 0.55, // volle Lautstärke (Faktor auf die Master-Lautstärke)
       daisySchlag: 0.5, // Sekunden je Viertel (langsamer Walzer)
-      // Steht „WHY?“, wandert eine riesige Sunkey von ganz rechts nach
-      // ganz links über den Bildschirm, dazu ihr irres Lachen
-      wandern: 14, // Sekunden
-      wandererHoehe: 0.94, // Höhe als Anteil der Bildschirmhöhe
+      // Dann der Stalker-Schrei rückwärts; ist er vorbei, verschwindet
+      // der schwarze Bildschirm mit einem Blitz – das Spiel geht weiter
+      blitzHalten: 0.35, // Sekunden voll weiß
+      blitzAbklingen: 3.5, // Sekunden, bis man wieder klar sieht
+      // Über dem laufenden Spiel ziehen danach große Sunkeys direkt
+      // hintereinander von rechts nach links, dazu ihr irres Lachen
+      paradeAnzahl: 8,
+      paradeHoehe: 0.8, // Höhe als Anteil der Bildschirmhöhe
+      paradeDauer: 14, // Sekunden, bis die letzte links hinaus ist
       lachenDatei: 'assets/audio/sunkey-lachen.mp3',
       lachenLautstaerke: 0.85, // Faktor auf die Master-Lautstärke
-      // Danach: Blendgranate – weißer Blitz und der Stalker-Schrei rückwärts
-      blitzHalten: 0.35, // Sekunden voll weiß
-      blitzAbklingen: 3.5, // Sekunden bis wieder schwarz
-      knoepfeNachBlitz: 4, // dann: Neuer Versuch / Zum Hauptmenü
     },
   },
 

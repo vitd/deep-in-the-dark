@@ -15,6 +15,7 @@ import { isTouchDevice, TouchControls } from '../systems/TouchControls';
 import { DepthGauge } from '../ui/DepthGauge';
 import { HelmetOverlay } from '../ui/HelmetOverlay';
 import { LabyrinthKarte } from '../ui/LabyrinthKarte';
+import { sunkeyNachspielAbbrechen } from '../ui/SunkeyParade';
 import { Minimap } from '../ui/Minimap';
 import { STR } from '../ui/strings.de';
 import { UI } from '../ui/UIManager';
@@ -847,6 +848,8 @@ export class PlayState implements GameState {
       this.touch.attach();
     }
     if (this.debugVisible) UI.show(UI.debug);
+    // exit() hat das Motorbrummen gestoppt – läuft der Motor, wieder an
+    if (this.motorRepair.complete) Audio.startHum();
     // Helm und Justier-Anzeige überstehen die Pause
     this.helmet.setWorn(this.helmet.isWorn);
     this.helmet.setTuning(this.helmet.isTuning);
@@ -894,6 +897,7 @@ export class PlayState implements GameState {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    sunkeyNachspielAbbrechen();
     this.interaction.clear();
     this.world.collision.clear();
     this.scene.traverse((obj) => {

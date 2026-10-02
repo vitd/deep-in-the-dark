@@ -33,85 +33,61 @@ class AudioManagerImpl {
     this.ctx?.resume().catch(() => {});
   }
 
-  // „Daisy Bell“ (Harry Dacre, 1892 – gemeinfrei), ganz leise und leicht
-  // verstimmt wie von einer alten Spieluhr, in Endlosschleife. Läuft in
-  // einem eigenen Audio-Kontext, damit sie auch während der Stille
-  // spielt. Liefert eine Funktion zum Anhalten.
-  daisyBell(lautstaerke: number, schlag: number): () => void {
+  // „Daisy Bell“ (Harry Dacre, 1892 – gemeinfrei) RÜCKWÄRTS: Die Melodie
+  // wird einmal als verstimmte Spieluhr in einen Puffer gerendert, der
+  // Puffer umgedreht und in Endlosschleife abgespielt. Die Lautstärke
+  // schwillt in `anschwellen` Sekunden von 0 auf `voll` an. Läuft in einem
+  // eigenen Audio-Kontext, damit sie auch während der Stille spielt.
+  daisyBellRueckwaerts(voll: number, anschwellen: number, schlag: number): { stoppen: (ausblenden: number) => void } {
     let ctx: AudioContext;
     try {
       ctx = new AudioContext();
     } catch {
-      return () => {};
+      return { stoppen: () => {} };
     }
     ctx.resume().catch(() => {});
-    const out = ctx.createGain();
-    out.gain.value = lautstaerke * settings.volume;
-    // weicher Klang: Tiefpass, dazu ein hallendes Echo
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 1700;
-    const echo = ctx.createDelay(1.5);
-    echo.delayTime.value = 0.42;
-    const rueck = ctx.createGain();
-    rueck.gain.value = 0.38;
-    lp.connect(out);
-    lp.connect(echo);
-    echo.connect(rueck).connect(echo);
-    rueck.connect(out);
-    out.connect(ctx.destination);
-    // langsames Leiern (wie ein ausgeleiertes Band)
-    const leier = ctx.createOscillator();
-    leier.frequency.value = 0.35;
-    const leierTiefe = ctx.createGain();
-    leierTiefe.gain.value = 9; // Cent
-    leier.connect(leierTiefe);
-    leier.start();
-
-    const freq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
-    const liedLaenge = DAISY.reduce((n, [, b]) => n + b, 0) * schlag;
-    let start = ctx.currentTime + 0.2;
+    const pegel = ctx.createGain();
+    pegel.gain.value = 0;
+    pegel.connect(ctx.destination);
     let aus = false;
 
-    const spiele = (t0: number) => {
-      let t = t0;
-      for (const [midi, beats] of DAISY) {
-        const dauer = beats * schlag;
-        if (midi > 0) {
-          for (const verstimmt of [-6, 5]) {
-            const osc = ctx.createOscillator();
-            osc.type = 'triangle';
-            osc.frequency.value = freq(midi);
-            osc.detune.value = -28 + verstimmt; // insgesamt etwas zu tief
-            leierTiefe.connect(osc.detune);
-            const env = ctx.createGain();
-            env.gain.setValueAtTime(0.0001, t);
-            env.gain.exponentialRampToValueAtTime(0.5, t + 0.04);
-            env.gain.exponentialRampToValueAtTime(0.18, t + Math.min(0.5, dauer * 0.6));
-            env.gain.exponentialRampToValueAtTime(0.0001, t + dauer * 0.98);
-            osc.connect(env).connect(lp);
-            osc.start(t);
-            osc.stop(t + dauer);
-          }
-        }
-        t += dauer;
-      }
-    };
+    const SR = 22050;
+    const liedLaenge = DAISY.reduce((n, [, b]) => n + b, 0) * schlag;
+    const laenge = liedLaenge + schlag * 6; // mit Pause und Echo-Ausklang
+    const off = new OfflineAudioContext(1, Math.ceil(laenge * SR), SR);
+    planeDaisy(off, off.destination, 0.05, schlag);
+    off
+      .startRendering()
+      .then((puffer) => {
+        if (aus) return;
+        const d = puffer.getChannelData(0);
+        d.reverse();
+        let spitze = 0;
+        for (let i = 0; i < d.length; i++) spitze = Math.max(spitze, Math.abs(d[i]));
+        const norm = 1 / (spitze || 1);
+        for (let i = 0; i < d.length; i++) d[i] *= norm;
+        const src = ctx.createBufferSource();
+        src.buffer = puffer;
+        src.loop = true;
+        src.connect(pegel);
+        const t0 = ctx.currentTime;
+        pegel.gain.setValueAtTime(0, t0);
+        pegel.gain.linearRampToValueAtTime(voll * settings.volume, t0 + anschwellen);
+        src.start(t0);
+      })
+      .catch(() => {
+        // ohne Musik geht es eben still weiter
+      });
 
-    // Strophe für Strophe nachplanen, solange nicht angehalten
-    const schleife = () => {
-      if (aus) return;
-      spiele(start);
-      start += liedLaenge + schlag * 6; // kurze Pause zwischen den Durchgängen
-      timer = window.setTimeout(schleife, (start - ctx.currentTime - 1) * 1000);
-    };
-    let timer = 0;
-    schleife();
-
-    return () => {
-      aus = true;
-      window.clearTimeout(timer);
-      ctx.close().catch(() => {});
+    return {
+      stoppen: (ausblenden: number) => {
+        aus = true;
+        const t = ctx.currentTime;
+        pegel.gain.cancelScheduledValues(t);
+        pegel.gain.setValueAtTime(pegel.gain.value, t);
+        pegel.gain.linearRampToValueAtTime(0, t + Math.max(0.01, ausblenden));
+        window.setTimeout(() => ctx.close().catch(() => {}), (ausblenden + 0.2) * 1000);
+      },
     };
   }
 
@@ -119,7 +95,7 @@ class AudioManagerImpl {
   // einen eigenen Audio-Kontext – der Haupt-Kontext ist dann stumm – und
   // dreht es um. `spielen` startet ihn (oder sobald er geladen ist),
   // `schliessen` räumt auf.
-  schreiRueckwaerts(): { spielen: () => void; schliessen: () => void } {
+  schreiRueckwaerts(): ReturnType<AudioManagerImpl['sampleVorladen']> {
     return this.sampleVorladen(CONFIG.audio.schreiDatei, CONFIG.audio.schreiLautstaerke, true);
   }
 
@@ -130,12 +106,12 @@ class AudioManagerImpl {
     datei: string,
     lautstaerke: number,
     rueckwaerts = false,
-  ): { spielen: () => void; stoppen: () => void; schliessen: () => void } {
+  ): { spielen: () => void; stoppen: () => void; schliessen: () => void; dauer: () => number | null } {
     let ctx: AudioContext;
     try {
       ctx = new AudioContext();
     } catch {
-      return { spielen: () => {}, stoppen: () => {}, schliessen: () => {} };
+      return { spielen: () => {}, stoppen: () => {}, schliessen: () => {}, dauer: () => null };
     }
     let puffer: AudioBuffer | null = null;
     let gewuenscht = false;
@@ -180,6 +156,7 @@ class AudioManagerImpl {
       schliessen: () => {
         ctx.close().catch(() => {});
       },
+      dauer: () => puffer?.duration ?? null,
     };
   }
 
@@ -694,5 +671,52 @@ const DAISY: readonly (readonly [number, number])[] = [
   [G4, 1], [C5, 2], [E5, 1], [D5, 2], [G4, 1], [C5, 2], [E5, 1], [D5, 2],
   [D5, 1], [E5, 1], [F5, 1], [G5, 2], [E5, 1], [D5, 2], [G4, 1], [C5, 5], [0, 1],
 ];
+
+// Daisy Bell als verstimmte Spieluhr auf `ziel` planen: zwei leicht
+// gegeneinander verstimmte Dreiecke je Note, weicher Tiefpass, Echo
+function planeDaisy(ctx: BaseAudioContext, ziel: AudioNode, start: number, schlag: number): void {
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 1700;
+  const echo = ctx.createDelay(1.5);
+  echo.delayTime.value = 0.42;
+  const rueck = ctx.createGain();
+  rueck.gain.value = 0.38;
+  lp.connect(ziel);
+  lp.connect(echo);
+  echo.connect(rueck).connect(echo);
+  rueck.connect(ziel);
+  // langsames Leiern wie ein ausgeleiertes Band
+  const leier = ctx.createOscillator();
+  leier.frequency.value = 0.35;
+  const leierTiefe = ctx.createGain();
+  leierTiefe.gain.value = 9; // Cent
+  leier.connect(leierTiefe);
+  leier.start(start);
+
+  const freq = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
+  let t = start;
+  for (const [midi, beats] of DAISY) {
+    const dauer = beats * schlag;
+    if (midi > 0) {
+      for (const verstimmt of [-6, 5]) {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = freq(midi);
+        osc.detune.value = -28 + verstimmt; // insgesamt etwas zu tief
+        leierTiefe.connect(osc.detune);
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(0.5, t + 0.04);
+        env.gain.exponentialRampToValueAtTime(0.18, t + Math.min(0.5, dauer * 0.6));
+        env.gain.exponentialRampToValueAtTime(0.0001, t + dauer * 0.98);
+        osc.connect(env).connect(lp);
+        osc.start(t);
+        osc.stop(t + dauer);
+      }
+    }
+    t += dauer;
+  }
+}
 
 export const Audio = new AudioManagerImpl();

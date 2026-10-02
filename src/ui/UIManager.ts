@@ -37,9 +37,8 @@ class UIManagerImpl {
   readonly death = el('death');
   readonly why = el('why');
   readonly whyText = el('why-text');
-  readonly whyKnoepfe = el('why-knoepfe');
-  readonly whyWanderer = el('why-wanderer');
-  readonly whyBlitz = el('why-blitz');
+  readonly sunkeyParade = el('sunkey-parade');
+  readonly blitz = el('blitz');
   readonly crafting = el('crafting');
   readonly craftGrid = el('craft-grid');
   readonly craftResult = el('craft-result');
@@ -143,6 +142,7 @@ class UIManagerImpl {
     this.hide(this.helmetTune);
     this.hide(this.labkarte);
     this.hide(this.why);
+    this.blitz.style.opacity = '0';
     this.setPrompt(null);
   }
 }

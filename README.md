@@ -139,24 +139,25 @@ sie weg.
 
 **Nicht hinsehen:** Wie beim Stalker baut direktes Ansehen einen
 Countdown auf (5 Sekunden, dazu die wachsende Bildstörung). Ist er
-durch, springt sie einen an – aber ohne Schrei: Alles verstummt. Dann
-wird der Bildschirm schwarz, nach 5 Sekunden erscheint langsam ein
-großes, zitterndes, rotes **„WHY?“**, und ganz, ganz leise spielt „Daisy
-Bell“ (1892, gemeinfrei; synthetisch, leicht verstimmt wie eine alte
-Spieluhr). Steht das „WHY?“, wandert 14 Sekunden lang eine riesige
-Sunkey – fast so hoch wie der Bildschirm – schwer watschelnd von ganz
-rechts nach ganz links, dazu ihr irres Lachen
-(`public/assets/audio/sunkey-lachen.mp3`: hohes, manisches Gackern,
-mit Suno erzeugt und danach verzerrt, in mehreren Tonhöhen geschichtet
-und zerhackt). Dann eine Blendgranate: der Bildschirm
-wird schlagartig weiß und klingt langsam wieder ins Schwarz ab, dazu
-läuft der Stalker-Schrei **rückwärts** – erst die verzerrten Lacher
-rückwärts, am Ende der Schrei. Das Spiel ist damit zu Ende; kurz danach
-tauchen dezent „Neuer Versuch“ und „Zum Hauptmenü“ auf.
+durch, springt sie einen an – aber ohne Schrei: Alles verstummt. Man
+stirbt nicht, aber es folgt eine Sequenz:
+
+1. Schwarzer Bildschirm, völlige Stille.
+2. Nach 5 Sekunden erscheint langsam ein großes, zitterndes, rotes
+   **„WHY?“**. Dazu beginnt „Daisy Bell“ (1892, gemeinfrei; als
+   verstimmte Spieluhr synthetisiert) **rückwärts** und schwillt in
+   18 Sekunden von 0 auf volle Lautstärke an.
+3. Die Musik bricht ab, der Stalker-Schrei läuft **rückwärts**.
+4. Ist er vorbei, verschwindet der schwarze Bildschirm mit einem weißen
+   Blitz – man ist wieder im Spiel. Über dem laufenden Spiel ziehen
+   14 Sekunden lang acht große Sunkeys direkt hintereinander von rechts
+   nach links, dazu ihr irres Lachen (`public/assets/audio/sunkey-lachen.mp3`:
+   hohes, manisches Gackern, mit Suno erzeugt und danach verzerrt, in
+   mehreren Tonhöhen geschichtet und zerhackt).
 
 Werte: `CONFIG.sunkey` (`src/config.ts`), die Gestalt in
 `src/world/Sunkey.ts`, der schwarze Bildschirm in
-`src/states/WhyState.ts`. Cheat: „Sunkey erscheinen lassen“.
+`src/states/WhyState.ts`, Blitz und Parade in `src/ui/SunkeyParade.ts`. Cheat: „Sunkey erscheinen lassen“.
 
 ## Der Riese
 

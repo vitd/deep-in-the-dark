@@ -643,8 +643,8 @@ body.touch-mode #stats {
   font-size: clamp(72px, 18vw, 240px);
   font-weight: bold;
   letter-spacing: 0.08em;
-  color: #d4140c;
-  text-shadow: 0 0 18px rgba(200, 0, 0, 0.55);
+  color: #ff0000;
+  text-shadow: 0 0 14px rgba(255, 0, 0, 0.8), 0 0 40px rgba(160, 0, 0, 0.7);
   opacity: 0;
   /* Einblenden: Dauer setzt WhyState aus CONFIG.sunkey.ende.einblenden */
   transition-property: opacity;
@@ -664,15 +664,19 @@ body.touch-mode #stats {
   80% { transform: translate(3px, 1px) rotate(-0.3deg); }
 }
 
-/* Wandernde Sunkeys über dem „WHY?“ (Positionen setzt WhyState) */
-#why-wanderer {
-  position: absolute;
+/* Nach dem „WHY?“: Sunkey-Parade über dem laufenden Spiel (über dem
+   HUD, unter Menüs) und der Blitz, mit dem der schwarze Bildschirm
+   verschwindet (ganz oben). Positionen und Deckkraft setzt
+   src/ui/SunkeyParade.ts. */
+#sunkey-parade {
+  position: fixed;
   inset: 0;
+  z-index: 9;
   overflow: hidden;
   pointer-events: none;
 }
 
-#why-wanderer img {
+#sunkey-parade img {
   position: absolute;
   left: 0;
   top: 0;
@@ -680,27 +684,13 @@ body.touch-mode #stats {
   will-change: transform;
 }
 
-/* Blendgranate: Deckkraft steuert WhyState */
-#why-blitz {
-  position: absolute;
+#blitz {
+  position: fixed;
   inset: 0;
+  z-index: 70;
   background: #fff;
   opacity: 0;
   pointer-events: none;
-}
-
-#why-knoepfe {
-  position: absolute;
-  z-index: 1;
-  bottom: 8vh;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 3s ease-in;
-}
-
-#why-knoepfe.zeigen {
-  opacity: 0.55;
-  pointer-events: auto;
 }
 
 /* ------- Inventar ------- */
