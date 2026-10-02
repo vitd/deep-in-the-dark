@@ -149,9 +149,9 @@ stirbt nicht, aber es folgt eine Sequenz:
    18 Sekunden von 0 auf volle Lautstärke an.
 3. Die Musik bricht ab, der Stalker-Schrei läuft **rückwärts**.
 4. Ist er vorbei, verschwindet der schwarze Bildschirm mit einem weißen
-   Blitz – man ist wieder im Spiel. Über dem laufenden Spiel ziehen
-   14 Sekunden lang acht große Sunkeys direkt hintereinander von rechts
-   nach links, dazu ihr irres Lachen (`public/assets/audio/sunkey-lachen.mp3`:
+   Blitz – man ist wieder im Spiel. Über dem laufenden Spiel gleiten
+   14 Sekunden lang acht große Sunkeys direkt hintereinander und ganz
+   ruhig von rechts nach links, dazu ihr irres Lachen (`public/assets/audio/sunkey-lachen.mp3`:
    hohes, manisches Gackern, mit Suno erzeugt und danach verzerrt, in
    mehreren Tonhöhen geschichtet und zerhackt).
 

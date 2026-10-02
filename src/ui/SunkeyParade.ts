@@ -3,7 +3,7 @@ import { UI } from './UIManager';
 
 // Das Nachspiel nach Sunkeys „WHY?“, über dem schon wieder laufenden
 // Spiel: Ein weißer Blitz löscht den schwarzen Bildschirm aus und klingt
-// ab, dann ziehen große Sunkeys direkt hintereinander von rechts nach
+// ab, dann gleiten große Sunkeys direkt hintereinander von rechts nach
 // links über den Bildschirm, dazu ihr irres Lachen. Läuft mit eigener
 // Animationsschleife – unabhängig vom Spielzustand – und räumt sich
 // am Ende selbst auf.
@@ -65,11 +65,9 @@ export function sunkeyNachspiel(bildUrl: string | null, lachen: Lachen): void {
     const u = Math.min(1, t / E.paradeDauer);
     const kopf = breite - u * (breite + zug); // linke Kante der vordersten Figur
     const y = (window.innerHeight - h) / 2;
+    // ruhiges Gleiten: kein Hüpfen, kein Kippen
     figuren.forEach((el, k) => {
-      const phase = t * 4.2 + k * 0.9; // jede Figur im eigenen Schritt
-      const hopp = -Math.abs(Math.sin(phase)) * h * 0.035;
-      const kipp = Math.sin(phase) * 3.5;
-      el.style.transform = `translate(${(kopf + k * figurBreite).toFixed(1)}px, ${(y + hopp).toFixed(1)}px) rotate(${kipp.toFixed(2)}deg)`;
+      el.style.transform = `translate(${(kopf + k * figurBreite).toFixed(1)}px, ${y.toFixed(1)}px)`;
     });
 
     if (t >= E.paradeDauer && deck <= 0) {
