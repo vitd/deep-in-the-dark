@@ -643,7 +643,8 @@ body.touch-mode #stats {
   font-size: clamp(72px, 18vw, 240px);
   font-weight: bold;
   letter-spacing: 0.08em;
-  color: #d8d2c4;
+  color: #d4140c;
+  text-shadow: 0 0 18px rgba(200, 0, 0, 0.55);
   opacity: 0;
   /* Einblenden: Dauer setzt WhyState aus CONFIG.sunkey.ende.einblenden */
   transition-property: opacity;

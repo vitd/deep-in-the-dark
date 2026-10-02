@@ -125,6 +125,10 @@ Cheat-Menü (Taste L) je einen Eintrag pro Variante.
 
 ## Sunkey
 
+**Sehr selten:** Nur in jedem tausendsten Spiel gibt es Sunkey
+überhaupt – beim Start eines neuen Spiels wird einmal gewürfelt
+(`CONFIG.sunkey.chance`). In allen anderen Spielen erscheint sie nie.
+
 Eine flache, lila Gestalt (`sunkey.glb`), die knapp über dem Wasser
 steht – immer genau so weit weg, dass sie gerade noch aus dem Nebel
 schaut (rund 100 m), und immer mit dem Gesicht zum Spieler. Näher kommt
@@ -137,11 +141,14 @@ sie weg.
 Countdown auf (5 Sekunden, dazu die wachsende Bildstörung). Ist er
 durch, springt sie einen an – aber ohne Schrei: Alles verstummt. Dann
 wird der Bildschirm schwarz, nach 5 Sekunden erscheint langsam ein
-großes, zitterndes **„WHY?“**, und ganz, ganz leise spielt „Daisy Bell“
-(1892, gemeinfrei; synthetisch, leicht verstimmt wie eine alte
-Spieluhr). Steht das „WHY?“, wandern 14 Sekunden lang Sunkeys von links
-nach rechts über den Bildschirm, immer fünf zugleich, watschelnd, in
-verschiedenen Größen und Tempi. Dann eine Blendgranate: der Bildschirm
+großes, zitterndes, rotes **„WHY?“**, und ganz, ganz leise spielt „Daisy
+Bell“ (1892, gemeinfrei; synthetisch, leicht verstimmt wie eine alte
+Spieluhr). Steht das „WHY?“, wandert 14 Sekunden lang eine riesige
+Sunkey – fast so hoch wie der Bildschirm – schwer watschelnd von ganz
+rechts nach ganz links, dazu ihr irres Lachen
+(`public/assets/audio/sunkey-lachen.mp3`: hohes, manisches Gackern,
+mit Suno erzeugt und danach verzerrt, in mehreren Tonhöhen geschichtet
+und zerhackt). Dann eine Blendgranate: der Bildschirm
 wird schlagartig weiß und klingt langsam wieder ins Schwarz ab, dazu
 läuft der Stalker-Schrei **rückwärts** – erst die verzerrten Lacher
 rückwärts, am Ende der Schrei. Das Spiel ist damit zu Ende; kurz danach

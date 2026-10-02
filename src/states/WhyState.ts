@@ -10,23 +10,13 @@ import { PlayState } from './PlayState';
 // Nach Sunkeys Sprung – das Spiel ist hier zu Ende:
 //   1. völlige Stille, schwarzer Bildschirm
 //   2. langsam ein großes, zitterndes „WHY?“, dazu ganz leise „Daisy Bell“
-//   3. Sunkeys wandern von links nach rechts über den Bildschirm, immer
-//      fünf zugleich
+//   3. eine riesige Sunkey wandert von ganz rechts nach ganz links über
+//      den Bildschirm, dazu ihr irres, verzerrtes Lachen
 //   4. Blendgranate: weißer Blitz, dazu der Stalker-Schrei rückwärts
 //   5. dezent „Neuer Versuch“ und „Zum Hauptmenü“
 
 const E = CONFIG.sunkey.ende;
 
-interface Wanderer {
-  el: HTMLImageElement;
-  x: number; // linke Kante in px
-  y: number; // obere Kante in px
-  hoehe: number; // px
-  tempo: number; // px/s
-  schritt: number; // Phase des Watschelns
-}
-
-const zufall = (a: number, b: number): number => a + Math.random() * (b - a);
 
 export class WhyState implements GameState {
   private zeit = 0;
@@ -37,8 +27,10 @@ export class WhyState implements GameState {
   private knoepfeGezeigt = false;
   private stopDaisy: (() => void) | null = null;
   private readonly schrei = Audio.schreiRueckwaerts(); // lädt schon vor
+  private readonly lachen = Audio.sampleVorladen(E.lachenDatei, E.lachenLautstaerke);
   private bildUrl: string | null = null;
-  private readonly wanderer: Wanderer[] = [];
+  private wanderer: HTMLImageElement | null = null;
+  private lachtSchon = false;
   private readonly btnRetry = document.getElementById('btn-why-retry') as HTMLButtonElement;
   private readonly btnMenu = document.getElementById('btn-why-menu') as HTMLButtonElement;
 
@@ -82,12 +74,13 @@ export class WhyState implements GameState {
     this.stopDaisy?.();
     this.stopDaisy = null;
     this.schrei.schliessen();
+    this.lachen.schliessen();
     UI.hide(UI.why);
     UI.whyText.classList.remove('zeigen');
     UI.whyKnoepfe.classList.remove('zeigen');
     UI.whyWanderer.innerHTML = '';
     UI.whyBlitz.style.opacity = '0';
-    this.wanderer.length = 0;
+    this.wanderer = null;
     Audio.laut();
   }
 
@@ -101,16 +94,21 @@ export class WhyState implements GameState {
       this.stopDaisy = Audio.daisyBell(E.daisyLautstaerke, E.daisySchlag);
     }
 
-    // Wandern, sobald „WHY?“ ganz da ist, bis zum Blitz
+    // Wandern und Lachen, sobald „WHY?“ ganz da ist, bis zum Blitz
     if (t >= this.wandernAb && t < this.blitzAb) {
-      if (this.wanderer.length === 0 && this.bildUrl) this.wandererStarten();
-      this.wandererBewegen(dt);
+      if (!this.lachtSchon) {
+        this.lachtSchon = true;
+        this.lachen.spielen();
+      }
+      if (!this.wanderer && this.bildUrl) this.wandererStarten();
+      this.wandererBewegen((t - this.wandernAb) / E.wandern);
     }
 
     if (!this.geblitzt && t >= this.blitzAb) {
       this.geblitzt = true;
       UI.whyWanderer.innerHTML = '';
-      this.wanderer.length = 0;
+      this.wanderer = null;
+      this.lachen.stoppen();
       this.schrei.spielen();
     }
     if (this.geblitzt) {
@@ -126,43 +124,30 @@ export class WhyState implements GameState {
     }
   }
 
-  // Fünf Sunkeys, gestaffelt links außerhalb des Bildes
+  // Eine einzige, riesige Sunkey – fast so hoch wie der Bildschirm
   private wandererStarten(): void {
-    const breite = window.innerWidth;
-    for (let k = 0; k < E.wandererAnzahl; k++) {
-      const el = document.createElement('img');
-      el.src = this.bildUrl!;
-      el.alt = '';
-      UI.whyWanderer.append(el);
-      const w: Wanderer = { el, x: 0, y: 0, hoehe: 0, tempo: 0, schritt: 0 };
-      this.neuAufstellen(w);
-      w.x = -w.hoehe * 0.6 - (k * breite) / E.wandererAnzahl;
-      this.wanderer.push(w);
-    }
+    const el = document.createElement('img');
+    el.src = this.bildUrl!;
+    el.alt = '';
+    el.style.height = `${Math.round(window.innerHeight * E.wandererHoehe)}px`;
+    UI.whyWanderer.append(el);
+    this.wanderer = el;
   }
 
-  private neuAufstellen(w: Wanderer): void {
+  // u = 0..1 über die Wanderzeit: von ganz rechts (komplett außerhalb)
+  // bis ganz links (komplett außerhalb), schwer watschelnd
+  private wandererBewegen(u: number): void {
+    const el = this.wanderer;
+    if (!el) return;
     const breite = window.innerWidth;
-    const hoehe = window.innerHeight;
-    w.hoehe = hoehe * zufall(E.groesseMin, E.groesseMax);
-    w.el.style.height = `${Math.round(w.hoehe)}px`;
-    w.y = zufall(-w.hoehe * 0.1, hoehe - w.hoehe * 0.9);
-    w.tempo = (breite + w.hoehe) / zufall(E.querungMin, E.querungMax);
-    w.schritt = Math.random() * Math.PI * 2;
-    w.x = -w.hoehe * 0.6;
-  }
-
-  private wandererBewegen(dt: number): void {
-    const breite = window.innerWidth;
-    for (const w of this.wanderer) {
-      w.x += w.tempo * dt;
-      if (w.x > breite) this.neuAufstellen(w);
-      // Watscheln: hüpfen und kippen im Schritttakt
-      w.schritt += dt * 9;
-      const hopp = -Math.abs(Math.sin(w.schritt)) * w.hoehe * 0.06;
-      const kipp = Math.sin(w.schritt) * 5;
-      w.el.style.transform = `translate(${w.x.toFixed(1)}px, ${(w.y + hopp).toFixed(1)}px) rotate(${kipp.toFixed(1)}deg)`;
-    }
+    const hoehe = window.innerHeight * E.wandererHoehe;
+    const figurBreite = el.offsetWidth || hoehe * 0.53;
+    const x = breite - u * (breite + figurBreite);
+    const y = (window.innerHeight - hoehe) / 2;
+    const schritt = u * E.wandern * 4.2; // Schritte
+    const hopp = -Math.abs(Math.sin(schritt)) * hoehe * 0.035;
+    const kipp = Math.sin(schritt) * 3.5;
+    el.style.transform = `translate(${x.toFixed(1)}px, ${(y + hopp).toFixed(1)}px) rotate(${kipp.toFixed(2)}deg)`;
   }
 
   render(): void {

@@ -414,7 +414,7 @@ export class PlayState implements GameState {
         },
       },
       {
-        label: 'Sunkey erscheinen lassen (nur über Wasser, ansehen = Ende!)',
+        label: `Sunkey erscheinen lassen (dieses Spiel hat sie: ${this.world.sunkey.aktiv ? 'ja' : 'nein'}; ansehen = Ende!)`,
         action: () => {
           this.player.eye(this.eyeTmp);
           this.view.eye.copy(this.eyeTmp);

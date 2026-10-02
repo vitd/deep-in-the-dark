@@ -120,15 +120,27 @@ class AudioManagerImpl {
   // dreht es um. `spielen` startet ihn (oder sobald er geladen ist),
   // `schliessen` räumt auf.
   schreiRueckwaerts(): { spielen: () => void; schliessen: () => void } {
+    return this.sampleVorladen(CONFIG.audio.schreiDatei, CONFIG.audio.schreiLautstaerke, true);
+  }
+
+  // Ein Sample in einen eigenen Audio-Kontext vorladen (läuft auch, wenn
+  // der Haupt-Kontext stumm ist). `spielen` startet es – oder sobald es
+  // geladen ist –, `stoppen` bricht es ab, `schliessen` räumt auf.
+  sampleVorladen(
+    datei: string,
+    lautstaerke: number,
+    rueckwaerts = false,
+  ): { spielen: () => void; stoppen: () => void; schliessen: () => void } {
     let ctx: AudioContext;
     try {
       ctx = new AudioContext();
     } catch {
-      return { spielen: () => {}, schliessen: () => {} };
+      return { spielen: () => {}, stoppen: () => {}, schliessen: () => {} };
     }
     let puffer: AudioBuffer | null = null;
     let gewuenscht = false;
     let gespielt = false;
+    let quelle: AudioBufferSourceNode | null = null;
     const abspielen = () => {
       if (!puffer || gespielt) return;
       gespielt = true;
@@ -136,25 +148,34 @@ class AudioManagerImpl {
       const src = ctx.createBufferSource();
       src.buffer = puffer;
       const g = ctx.createGain();
-      g.gain.value = CONFIG.audio.schreiLautstaerke * settings.volume;
+      g.gain.value = lautstaerke * settings.volume;
       src.connect(g).connect(ctx.destination);
       src.start();
+      quelle = src;
     };
-    fetch(CONFIG.audio.schreiDatei)
+    fetch(datei)
       .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error('keine Datei'))))
       .then((daten) => ctx.decodeAudioData(daten))
       .then((b) => {
-        for (let k = 0; k < b.numberOfChannels; k++) b.getChannelData(k).reverse();
+        if (rueckwaerts) for (let k = 0; k < b.numberOfChannels; k++) b.getChannelData(k).reverse();
         puffer = b;
         if (gewuenscht) abspielen();
       })
       .catch(() => {
-        // ohne Sample bleibt der Blitz stumm
+        // ohne Sample bleibt es eben still
       });
     return {
       spielen: () => {
         gewuenscht = true;
         abspielen();
+      },
+      stoppen: () => {
+        gewuenscht = false;
+        try {
+          quelle?.stop();
+        } catch {
+          // schon zu Ende
+        }
       },
       schliessen: () => {
         ctx.close().catch(() => {});

@@ -15,7 +15,9 @@ import type { StalkerView } from './Stalker';
 // (schwarzer Bildschirm, „WHY?“, ganz leise „Daisy Bell“).
 //
 // Sie erscheint nur, wenn der Spieler über Wasser schaut (an Deck oder
-// an der Oberfläche) und gerade kein Stalker unterwegs ist.
+// an der Oberfläche) und gerade kein Stalker unterwegs ist – und nur in
+// jedem tausendsten Spiel (CONFIG.sunkey.chance, beim Spielstart
+// gewürfelt).
 
 const S = CONFIG.sunkey;
 
@@ -41,6 +43,9 @@ export class Sunkey {
   private readonly tmp = new THREE.Vector3();
   // Andere Wesen (Stalker) dürfen sie vorübergehend fernhalten
   gesperrt = false;
+  // Nur in jedem tausendsten Spiel gibt es sie überhaupt (CONFIG.sunkey.
+  // chance) – einmal beim Erzeugen gewürfelt, gilt für das ganze Spiel
+  aktiv = Math.random() < S.chance;
 
   constructor(
     scene: THREE.Scene,
@@ -102,7 +107,7 @@ export class Sunkey {
   update(dt: number, view: StalkerView): void {
     switch (this.phase) {
       case 'versteckt':
-        if (this.gesperrt || view.underwater) return; // wartet ab
+        if (!this.aktiv || this.gesperrt || view.underwater) return; // wartet ab
         this.timer -= dt;
         if (this.timer <= 0 && !this.erscheinen(view, false)) this.timer = 5;
         return;
@@ -221,6 +226,7 @@ export class Sunkey {
 
   // Cheat: sofort erscheinen, mitten im Blickfeld
   erscheineJetzt(view: StalkerView): boolean {
+    this.aktiv = true; // wer sie ruft, hat sie für dieses Spiel
     this.phase = 'versteckt';
     return this.erscheinen(view, true);
   }

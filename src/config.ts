@@ -347,6 +347,9 @@ export const CONFIG = {
   // Spieler. Zu lange angesehen: Sprung in völliger Stille, danach
   // schwarzer Bildschirm mit „WHY?“ (src/states/WhyState.ts).
   sunkey: {
+    // Nur in jedem tausendsten Spiel gibt es sie überhaupt: beim Start
+    // eines neuen Spiels wird einmal gewürfelt
+    chance: 1 / 1000,
     size: 4.5, // Höhe in Metern
     ersteWartezeit: 120, // Ruhe nach dem Spielstart
     pauseMin: 80, // Wartezeit zwischen zwei Auftritten
@@ -373,13 +376,12 @@ export const CONFIG = {
       einblenden: 4, // so langsam erscheint „WHY?“
       daisyLautstaerke: 0.03, // ganz, ganz leise
       daisySchlag: 0.5, // Sekunden je Viertel (langsamer Walzer)
-      // Steht „WHY?“, ziehen Sunkeys über den Bildschirm, immer 5 zugleich
+      // Steht „WHY?“, wandert eine riesige Sunkey von ganz rechts nach
+      // ganz links über den Bildschirm, dazu ihr irres Lachen
       wandern: 14, // Sekunden
-      wandererAnzahl: 5,
-      querungMin: 1.8, // Sekunden für einmal quer über den Bildschirm
-      querungMax: 3.4,
-      groesseMin: 0.18, // Höhe als Anteil der Bildschirmhöhe
-      groesseMax: 0.42,
+      wandererHoehe: 0.94, // Höhe als Anteil der Bildschirmhöhe
+      lachenDatei: 'assets/audio/sunkey-lachen.mp3',
+      lachenLautstaerke: 0.85, // Faktor auf die Master-Lautstärke
       // Danach: Blendgranate – weißer Blitz und der Stalker-Schrei rückwärts
       blitzHalten: 0.35, // Sekunden voll weiß
       blitzAbklingen: 3.5, // Sekunden bis wieder schwarz
