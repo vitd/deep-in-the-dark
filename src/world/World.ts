@@ -5,6 +5,7 @@ import { InteractionSystem } from '../systems/Interaction';
 import { Inventory } from '../systems/Inventory';
 import { MinimapMark } from '../ui/Minimap';
 import { UI } from '../ui/UIManager';
+import { LICHT, PALETTE, SONNE_RICHTUNG } from '../rendering/Palette';
 import { buildBoat, HelmRef, MotorRef } from './Boat';
 import { BoatController } from './BoatController';
 import { BoatFrame } from './BoatFrame';
@@ -13,6 +14,7 @@ import { buildCliffs } from './Cliffs';
 import { FishManager } from './Fish';
 import { Giant } from './Giant';
 import { LadderDef } from './Ladder';
+import { Meerespartikel } from './Meerespartikel';
 import { Ocean } from './Ocean';
 import { buildPagodas } from './Pagodas';
 import { Resources } from './Resources';
@@ -31,6 +33,7 @@ import { BOAT_LAYOUT } from './boatLayout';
 export class World {
   readonly ocean: Ocean;
   readonly collision = new CollisionWorld();
+  private readonly partikel = new Meerespartikel();
   readonly ladders: LadderDef[];
   private readonly seabed: Seabed;
   private readonly resources: Resources;
@@ -73,6 +76,7 @@ export class World {
   // -1 = beim nächsten Bild neu setzen
   private truebung = -1;
   private readonly tmpFarbe = new THREE.Color();
+  private readonly tmpPartikelAuge = new THREE.Vector3();
 
   constructor(
     readonly scene: THREE.Scene,
@@ -99,12 +103,13 @@ export class World {
     scene.background = new THREE.Color(CONFIG.world.skyAbove);
     scene.fog = new THREE.FogExp2(CONFIG.world.fogAbove.color, CONFIG.world.fogAbove.density);
 
-    const ambient = new THREE.AmbientLight(0xbfd4dc, 0.5);
-    const hemi = new THREE.HemisphereLight(0xcfe0e8, 0x54483c, 0.7);
-    const sun = new THREE.DirectionalLight(0xfff2d8, 2.2);
-    sun.position.set(30, 60, 20);
+    const ambient = new THREE.AmbientLight(PALETTE.umgebung, LICHT.umgebung);
+    const hemi = new THREE.HemisphereLight(PALETTE.hemisphaereOben, PALETTE.hemisphaereUnten, LICHT.hemisphaere);
+    const sun = new THREE.DirectionalLight(PALETTE.sonne, LICHT.sonne);
+    // Eine gemeinsame Sonnenrichtung für Weltlicht und Wasser-Shader
+    sun.position.set(SONNE_RICHTUNG.x * 100, SONNE_RICHTUNG.y * 100, SONNE_RICHTUNG.z * 100);
     // Fülllicht von der sonnenabgewandten Seite, damit keine Fläche absäuft
-    const fill = new THREE.DirectionalLight(0xbfd0d8, 0.8);
+    const fill = new THREE.DirectionalLight(PALETTE.fuellung, LICHT.fuellung);
     fill.position.set(-40, 25, -15);
     for (const l of [ambient, hemi, sun, fill]) {
       scene.add(l);
@@ -113,6 +118,7 @@ export class World {
 
     this.ocean = new Ocean();
     scene.add(this.ocean.mesh);
+    scene.add(this.partikel.points);
 
     buildCliffs(scene, this.collision);
     this.seabed = new Seabed(scene, this.collision);
@@ -195,7 +201,7 @@ export class World {
     (this.scene.fog as THREE.FogExp2).density = fog.density;
     (this.scene.background as THREE.Color).set(sky);
     for (const { light, base } of this.lights) {
-      light.intensity = under ? base * 0.45 : base;
+      light.intensity = under ? base * LICHT.unterwasserFaktor : base;
     }
     UI.setVisible(UI.underwater, under);
     this.truebung = -1;
@@ -225,6 +231,8 @@ export class World {
   update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean, view: StalkerView): void {
     if (this.underwater) this.wendeTruebungAn(this.giant.truebung(playerPos.x, playerPos.z));
     this.ocean.update(dt, this.fogColor, this.fogDensity);
+    this.tmpPartikelAuge.set(playerPos.x, playerPos.y + CONFIG.player.eyeHeight, playerPos.z);
+    this.partikel.update(dt, this.tmpPartikelAuge, this.underwater);
     this.seabed.update(playerPos);
     this.resources.update();
     // Fallen im Labyrinth, Perlen der Luftblasen

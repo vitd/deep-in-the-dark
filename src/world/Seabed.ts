@@ -44,10 +44,10 @@ const CAP = 3000; // Instanzen je Felsform
 // Farbunterschiede, weit auseinanderliegende Grundtöne bleiben eher
 // als Abwechslung erkennbar.
 const PALETTE = [
-  0x8e8b84, 0x6e6a62, 0xa39a88, 0x7b6b55, 0x66705f,
-  0x9a8f7c, 0x807a70, 0x8a8f9a, 0x7a5f48, 0x5f6b58,
+  0x71766f, 0x575c56, 0x7d776a, 0x615a48, 0x545d54,
+  0x766f62, 0x676158, 0x676d75, 0x63503e, 0x4e594c,
 ];
-const ROCK_LIGHT = 18;
+const ROCK_LIGHT = 2.0;
 
 // Flächen, die von Steinen frei bleiben. `minSize` filtert, ab welcher
 // Steingröße die Zone überhaupt greift: Kies darf überall liegen, nur
@@ -132,7 +132,7 @@ export class Seabed {
     const white = new THREE.Color(0xffffff);
     for (const make of shapes) {
       for (const uvScale of [1, 3]) {
-        const mat = texturedMat('stone.png', 1, 1);
+        const mat = texturedMat('rock.png', 1, 1);
         mat.vertexColors = true; // schaltet die Farbe pro Instanz frei
         const mesh = new THREE.InstancedMesh(
           tinted(scaleUv(make(), uvScale), white),
@@ -329,7 +329,7 @@ export class Seabed {
     if (parts.length === 0) return;
     const merged = mergeGeometries(parts);
     for (const g of parts) g.dispose();
-    const mat = texturedMat('stone.png', 1, 1);
+    const mat = texturedMat('rock.png', 1, 1);
     mat.vertexColors = true;
     scene.add(new THREE.Mesh(merged, mat));
   }

@@ -18,6 +18,9 @@ export const CONFIG = {
     posterizeLevels: 22,
     dither: true,
     farPlane: 300,
+    // Dezente Vignette im Upscale-Shader: dunkelt die Bildränder ab
+    // und zieht den Blick zur Mitte (Art-Bible, Abschnitt "Bild").
+    vignette: 0.3,
 
     // Atmosphärische Störung: ein Flimmern über dem ganzen Bild, wie
     // bei einem gestörten Empfang. Die Stärke (0..1) kommt aus dem

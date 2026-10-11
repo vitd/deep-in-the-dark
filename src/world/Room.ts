@@ -14,7 +14,7 @@ const WALL_T = 0.15;
 const DOOR_W = 1.0;
 const DOOR_H = 2.0;
 
-const wallMat = texturedMat('boat-wall.png', 2, 1, 0xffffff, 2.4);
+const wallMat = texturedMat('boat-wall.png', 2, 1, 0xffffff, 1.5);
 const doorMat = texturedMat('door.png', 1, 1, 0xffffff, 1.2);
 
 // Referenzen einer versperrten Tür – zum späteren Freischalten

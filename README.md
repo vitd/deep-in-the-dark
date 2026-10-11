@@ -13,6 +13,22 @@ npm run dev
 
 Dann im Browser öffnen: http://localhost:5173
 
+## Optik / Art-Bible
+
+Der Retro-Pixel-Look ist die visuelle Marke des Spiels. Der verbindliche
+Maßstab steht in **[docs/art-bible.md](docs/art-bible.md)** (Palette,
+Texel-Dichte, Material-, Licht- und Effektregeln) – Änderungen an der
+Optik werden dagegen geprüft.
+
+- **Texturen** entstehen lokal und deterministisch:
+  `npm run textures` → `tools/gen-textures.mjs` schreibt alle PNGs in
+  `public/assets/textures/` (kein externer Download).
+- **Vorher/Nachher-Bilder** aus festen Kameraposen:
+  `npm run dev` starten, dann `npm run capture` → `art/nachher/`.
+  Die Standpunkte definiert `src/dev/photo.ts` (nur im Dev-Modus,
+  URL-Parameter `?photo=1&seed=1`). `art/baseline/` zeigt denselben
+  Standpunkt vor der Überarbeitung.
+
 ## Steuerung
 
 | Taste | Aktion |

@@ -1137,3 +1137,9 @@ body.touch-mode #hotbar {
   white-space: pre;
   pointer-events: none;
 }
+
+/* Foto-Modus (nur Entwicklung, src/dev/photo.ts): blendet das HUD aus,
+   damit Vorher/Nachher-Aufnahmen nur Spielwelt und Effekte zeigen. */
+body.photo-mode #ui {
+  display: none !important;
+}

@@ -34,6 +34,7 @@ uniform float uFlimmern;     // max. Helligkeitsschwankung
 uniform float uTakt;         // Störbilder pro Sekunde
 uniform float uBalkenTempo;  // Bildhöhen pro Sekunde
 uniform float uBalkenHoehe;  // Höhe des Störbalkens (Anteil des Bildes)
+uniform float uVignette;     // Randabdunklung (0 = aus)
 varying vec2 vUv;
 
 float hash(vec2 p) {
@@ -108,6 +109,11 @@ void main() {
     color = floor((color + d) * uLevels + 0.5) / uLevels;
   }
 
+  // Dezente Vignette: die Bildränder dunkeln sanft ab
+  vec2 vc = centered - 0.5;
+  float vig = 1.0 - uVignette * dot(vc, vc) * 1.4;
+  color *= clamp(vig, 0.0, 1.0);
+
   gl_FragColor = vec4(color, 1.0);
   #include <colorspace_fragment>
 }
@@ -156,6 +162,7 @@ export class PixelRenderer {
         uTakt: { value: ST.takt },
         uBalkenTempo: { value: ST.balkenTempo },
         uBalkenHoehe: { value: ST.balkenHoehe },
+        uVignette: { value: CONFIG.render.vignette },
       },
       depthTest: false,
       depthWrite: false,

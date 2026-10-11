@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "capture": "node tools/capture.mjs",
+    "textures": "node tools/gen-textures.mjs"
   },
   "dependencies": {
     "three": "^0.170.0"

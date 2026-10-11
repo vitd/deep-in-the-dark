@@ -9,6 +9,7 @@ import { BOAT_LAYOUT, DECK_Y, ROOF_Y } from './boatLayout';
 import { addBox, buildRoom, DoorRef, RoomBuildContext } from './Room';
 import { buildLadderMesh, LadderDef } from './Ladder';
 import { loadModel } from '../rendering/Models';
+import { PALETTE } from '../rendering/Palette';
 import { texturedMat } from '../rendering/Textures';
 import {
   buildBulwarkMesh,
@@ -26,13 +27,13 @@ import {
 // Die Leitern liefern nur ihre Definition – gegriffen werden sie
 // automatisch vom PlayerController (siehe Ladder.ts).
 
-const hullMat = texturedMat('boat-wall.png', 3, 5, 0xffffff, 2.3);
+const hullMat = texturedMat('boat-wall.png', 3, 5, PALETTE.rumpfTon, 1.15);
 const deckMat = texturedMat('plank.png', 4, 12);
-const roofMat = new THREE.MeshLambertMaterial({ color: 0xb0a890 });
-const railMat = new THREE.MeshLambertMaterial({ color: 0x7a5c40 });
-const engineMat = new THREE.MeshLambertMaterial({ color: 0x7a2a20 });
-const metalMat = new THREE.MeshLambertMaterial({ color: 0x4a545c });
-const phoneMat = new THREE.MeshLambertMaterial({ color: 0x3a4a40 });
+const roofMat = new THREE.MeshLambertMaterial({ color: PALETTE.dach });
+const railMat = new THREE.MeshLambertMaterial({ color: PALETTE.reling });
+const engineMat = new THREE.MeshLambertMaterial({ color: PALETTE.motor });
+const metalMat = new THREE.MeshLambertMaterial({ color: PALETTE.metall });
+const phoneMat = new THREE.MeshLambertMaterial({ color: PALETTE.telefon });
 const woodMat = texturedMat('plank.png', 1, 1);
 
 export interface BoatResult {

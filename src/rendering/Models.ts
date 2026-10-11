@@ -26,15 +26,25 @@ export function loadModel(file: string, targetSize: number): Promise<LoadedModel
           inner.traverse((obj) => {
             const mesh = obj as THREE.Mesh;
             if (!mesh.isMesh) return;
+            // Modelle auf dasselbe flache Lambert-Schema wie die Welt
+            // bringen (Art-Bible, Abschnitt 6): kein Glanzlicht, keine
+            // Metall-Reflexe – nur Grundfarbe und Textur.
             const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-            for (const mat of mats) {
+            const neu = mats.map((mat) => {
               const std = mat as THREE.MeshStandardMaterial;
               if (std.map) {
                 std.map.magFilter = THREE.NearestFilter;
                 std.map.minFilter = THREE.NearestFilter;
                 std.map.needsUpdate = true;
               }
-            }
+              const lambert = new THREE.MeshLambertMaterial({
+                map: std.map ?? null,
+                color: std.color ? std.color.clone() : new THREE.Color(0xffffff),
+              });
+              std.dispose();
+              return lambert;
+            });
+            mesh.material = Array.isArray(mesh.material) ? neu : neu[0];
           });
           const box = new THREE.Box3().setFromObject(inner);
           const size = box.getSize(new THREE.Vector3());

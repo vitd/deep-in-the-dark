@@ -29,6 +29,13 @@ export class Game {
     requestAnimationFrame(this.loop);
   }
 
+  // Direkt mit einem bestimmten Zustand starten (ohne Intro/Menü).
+  // Wird vom Entwicklungs-Fotowerkzeug genutzt (src/dev/photo.ts).
+  startWith(state: GameState): void {
+    this.setState(state);
+    requestAnimationFrame(this.loop);
+  }
+
   private readonly loop = () => {
     requestAnimationFrame(this.loop);
     const now = performance.now();

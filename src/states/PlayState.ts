@@ -95,6 +95,13 @@ export class PlayState implements GameState {
   private fpsFrames = 0;
   private fps = 0;
 
+  // ---------- Fotowerkzeug (nur Entwicklung, src/dev/photo.ts) ----------
+  // Feste Kamerapose für reproduzierbare Vorher/Nachher-Aufnahmen:
+  // überspringt das Spieler-Update, damit die Kamera exakt stehen bleibt.
+  private photoActive = false;
+  private photoFrozen = false;
+  private readonly photoEye = new THREE.Vector3();
+
   constructor(private readonly game: Game) {
     this.camera = new THREE.PerspectiveCamera(
       70,
@@ -932,6 +939,12 @@ export class PlayState implements GameState {
     // Spielwelt pausiert bei offenem Inventar oder offener Werkbank
     if (this.inventoryOpen || this.craftingOpen || this.cheatsOpen) return;
 
+    // Foto-Modus: feste Kamera, kein Spieler-Update (Entwicklungswerkzeug)
+    if (this.photoActive) {
+      this.updatePhoto(dt);
+      return;
+    }
+
     if (this.steering) {
       // Bootsfahrt: WASD steuert das Boot statt des Spielers. Die Kamera
       // dreht mit der Gierbewegung mit, der Spieler bleibt am Pult.
@@ -1116,5 +1129,48 @@ export class PlayState implements GameState {
 
   render(): void {
     this.game.pixelRenderer.render(this.scene, this.camera);
+  }
+
+  // ---------- Fotowerkzeug (nur Entwicklung) ----------
+
+  /** Setzt eine feste Augenpose und aktiviert den Foto-Modus. */
+  photoPose(x: number, y: number, z: number, yaw: number, pitch: number): void {
+    this.photoActive = true;
+    this.photoEye.set(x, y, z);
+    this.look.yaw = yaw;
+    this.look.pitch = pitch;
+    this.player.position.set(x, y - CONFIG.player.eyeHeight, z);
+  }
+
+  /** Friert Wellen und Kreaturen ein, damit zwei Bilder vergleichbar sind. */
+  photoSetFrozen(frozen: boolean): void {
+    this.photoFrozen = frozen;
+  }
+
+  get photoScene(): THREE.Scene {
+    return this.scene;
+  }
+
+  get photoWorld(): World {
+    return this.world;
+  }
+
+  get photoCamera(): THREE.PerspectiveCamera {
+    return this.camera;
+  }
+
+  // Ein Bild im Foto-Modus: Kamera aus der festen Pose, Welt ohne
+  // Spielerlogik weiterzeichnen (Wellen/Kreaturen je nach Frozen).
+  private updatePhoto(dt: number): void {
+    this.look.applyTo(this.camera, this.photoEye);
+    const wave = this.world.ocean.height(this.photoEye.x, this.photoEye.z);
+    const underwater = this.photoEye.y < wave;
+    this.view.eye.copy(this.photoEye);
+    this.look.forward(this.view.dir);
+    this.view.inWater = false;
+    this.view.underwater = underwater;
+    this.world.setUnderwater(underwater);
+    this.world.update(this.photoFrozen ? 0 : dt, this.player.position, false, this.view);
+    this.updateStoerung();
   }
 }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
+import { PALETTE, SONNE_RICHTUNG } from '../rendering/Palette';
 import { pixelTexture } from '../rendering/Textures';
 
 // Animierte Wasserfläche. Die Wellenfunktion existiert zweimal mit
@@ -142,10 +143,10 @@ export class Ocean {
       fragmentShader: WATER_FRAG.replace('__DEPTH__', depthGLSL()),
       uniforms: {
         uTime: { value: 0 },
-        uSunDir: { value: new THREE.Vector3(0.4, 1.0, 0.6).normalize() },
-        uColorDeep: { value: new THREE.Color(0x14424f) },
-        uColorShallow: { value: new THREE.Color(0x3f8a96) },
-        uFogColor: { value: new THREE.Color(CONFIG.world.fogAbove.color) },
+        uSunDir: { value: new THREE.Vector3(SONNE_RICHTUNG.x, SONNE_RICHTUNG.y, SONNE_RICHTUNG.z).normalize() },
+        uColorDeep: { value: new THREE.Color(PALETTE.wasserTief) },
+        uColorShallow: { value: new THREE.Color(PALETTE.wasserFlach) },
+        uFogColor: { value: new THREE.Color(PALETTE.nebelOben) },
         uFogDensity: { value: CONFIG.world.fogAbove.density },
         uWaterTex: { value: pixelTexture('water.png') },
         uClarityMax: { value: CONFIG.world.waterClarity.max },
