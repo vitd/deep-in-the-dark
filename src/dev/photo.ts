@@ -121,7 +121,7 @@ function bauePosen(play: PlayState): PoseDef[] {
     { name: 'tiefsee', eye: [800, -25, 0], ziel: [1010, -95, 0] },
     { name: 'riese', eye: [860, 8, 0], ziel: [L.center.x, 45, 0], frozen: false, warte: 7000 },
     { name: 'seemonster', eye: [330, -1.0, 0], ziel: [360, -2, 0], frozen: false, warte: 1500 },
-    { name: 'tempel', ...teleport(tempel.vorDemTor) },
+    { name: 'tempel', ...teleport(tempel.vorDemTor, -6) },
     { name: 'umgang', ...umgang },
     { name: 'labyrinth', ...teleport(tempel.amLabyrinthEingang, 3) },
     { name: 'schatz', ...teleport(tempel.inDerSchatzkammer) },

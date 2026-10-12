@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
-import { loadModel, setzeAugen } from '../rendering/Models';
+import { loadModel } from '../rendering/Models';
 import { BoatFrame } from './BoatFrame';
 import { clampToLake } from './lake';
 
@@ -43,7 +43,6 @@ export class SeaMonster {
         template.rotation.y = Math.PI;
         const model = template.clone(true);
         this.group.add(model);
-        setzeAugen(this.group, { breite: 0.75, hoehe: 0.55, vorne: 4.0, radius: 0.24, farbe: 0xff3a20 });
         this.mixer = new THREE.AnimationMixer(model);
         const clip = THREE.AnimationClip.findByName(clips, 'walk');
         if (clip) this.mixer.clipAction(clip).play();

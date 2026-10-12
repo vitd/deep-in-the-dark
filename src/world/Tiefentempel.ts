@@ -273,6 +273,8 @@ export class Tiefentempel {
     this.bauSaeulen(bau);
     this.bauReliefs(bau);
     this.bauTorhaus(bau);
+    this.bauWaechter(bau);
+    const feuerschalen = this.bauFeuerschalen(bau);
     this.bauLabyrinth(bau);
     this.bauSchatzkammer(bau);
     this.perlenStart = new Float32Array(PLAN.luft.length * 14);
@@ -289,6 +291,16 @@ export class Tiefentempel {
     const leucht = mergeGeometries(bau.leucht);
     for (const g of bau.leucht) g.dispose();
     this.group.add(new THREE.Mesh(leucht, new THREE.MeshBasicMaterial({ vertexColors: true })));
+
+    // Warme Feuerschalen-Lichter (Art-Bible, Abschnitt 7): der Tempel
+    // hat sonst nur das gedämpfte Außenlicht. Die Lichter hängen am
+    // Tempel-Verbund und werden daher nicht mit der Unterwasser-Dämpfung
+    // abgesenkt.
+    for (const o of feuerschalen) {
+      const licht = new THREE.PointLight(0xffb463, 9, 17, 1.7);
+      licht.position.set(o.x, 1.9, o.z);
+      this.group.add(licht);
+    }
 
     this.bauFallen();
 
@@ -380,6 +392,37 @@ export class Tiefentempel {
       b.box(t, 0.8, g, 3.0, 3.0, 0.2, BASALT, false);
       b.boxFarbe(t, 1.2, g + 0.12, 2.1, 1.9, 0.16, farbe, 2.4);
     }
+  }
+
+  // Wächterstatuen flankieren den Zugang zum Tor: blockige Gestalten
+  // mit grünspanernem Haupt und bronzenem Kopfschmuck. Sie stehen auf
+  // dem Vorbau, in der Mitte bleibt der Weg frei.
+  private bauWaechter(b: Bau): void {
+    const z = -(AUSSEN + TORHAUS_TIEFE) - 1.6;
+    for (const s of [-1, 1]) {
+      const x = s * 6.2;
+      b.box(x, 0, z, 2.6, 0.6, 2.6, SOCKEL);
+      b.box(x, 0.6, z, 1.6, 2.5, 1.4, BASALT);
+      b.box(x, 3.1, z, 2.3, 0.7, 1.6, BASALT);
+      b.box(x, 3.8, z, 1.1, 1.1, 1.1, GRUENSPAN);
+      b.boxFarbe(x, 4.9, z, 1.4, 0.3, 1.4, 0x9a7440, 1.6);
+    }
+  }
+
+  // Feuerschalen im Umgang: Becken auf einem Sockel, darüber eine
+  // warme Flamme. Zusammen mit den Punktlichtern (siehe Konstruktor)
+  // heben sie den langen, sonst dunklen Gang an.
+  private bauFeuerschalen(b: Bau): { x: number; z: number }[] {
+    const g = INNEN - 1.1;
+    const orte = [
+      { x: g, z: 0 }, { x: -g, z: 0 }, { x: 0, z: g }, { x: 0, z: -g },
+    ];
+    for (const o of orte) {
+      b.box(o.x, 0, o.z, 0.9, 0.9, 0.9, SOCKEL);
+      b.box(o.x, 0.9, o.z, 1.2, 0.35, 1.2, BRONZE);
+      b.glow(o.x, 1.25, o.z, 0.8, 0.5, 0.8, 0xffb45a);
+    }
+    return orte;
   }
 
   // Außenwände mit Tor, Decke, Strebepfeiler, Glimmsteine im Umgang

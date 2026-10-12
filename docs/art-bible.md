@@ -113,18 +113,14 @@ Körnung überall gleich groß wirkt:
 
 ## 9. Modelle
 
-- Kreaturen und Items: mitgelieferte GLB-Modelle, nearest-gefiltert,
-  einheitlich normalisiert (`rendering/Models.ts`).
+- Kreaturen und Items sind **Leos Blockbench-Modelle** (`public/assets/models/*.glb`)
+  und bleiben unverändert. Nicht anfassen: keine zusätzlichen Meshes,
+  Augen oder Umformungen an den Tieren.
+- Das Spiel darf nur die Darstellung vereinheitlichen: nearest-gefiltert,
+  Material auf Lambert (`rendering/Models.ts`), korrekte Größe,
+  Ausrichtung und Einordnung.
 - Silhouette vor Detail: aus der Ferne als Wesen erkennbar.
-- Größe und Blickrichtung wie in `CONFIG` definiert.
-- **Akzent-Augen:** Raubtiere (Hai, Seemonster, Stalker) bekommen ein
-  Paar glühender Augen (`setzeAugen`), in Gruppenkoordinaten gesetzt
-  (+z = vorn, Ursprung in der Körpermitte). Sie umgehen Nebel und Licht
-  und machen die Tiere im trüben Wasser lesbar.
 - Prüfbild aller Modelle: Pose `katalog_modelle` (Foto-Werkzeug).
-- Grenze: Die Detailgeometrie der GLBs (z. B. die blockigen Umrisse des
-  Riesen) lässt sich ohne Neu-Modellierung nicht verändern; verfeinert
-  werden Material, Farbe, Akzente und Einordnung.
 
 ## 10. Inventar und Stand
 
@@ -148,9 +144,9 @@ npm run textures     # Texturen neu erzeugen
 | Unterwasser-Teilchen + Lichtschächte | `world/Meerespartikel.ts`, `Lichtschacht.ts` | ✓ neu |
 | Kaustik auf dem Seeboden | `rendering/Kaustik.ts` | ✓ neu |
 | Vignette | `rendering/PixelRenderer.ts` | ✓ neu |
-| Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | ✓ einheitliches Lambert-Material, Akzent-Augen bei Raubtieren |
+| Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | Leos Blockbench-Modelle – unverändert; nur Material/Darstellung vereinheitlicht |
 | Licht/Atmosphäre | `world/World.ts`, `rendering/Palette.ts` | ✓ zentrale Palette + Sonnenrichtung |
-| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulenreihe und Reliefs im Umgang |
+| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulen, Reliefs, Wächterstatuen, Feuerschalen mit Licht |
 | HUD/UI | `styles/ui.css` | ✓ in Farbvariablen zentralisiert (Palette) |
 
 Standpunkte der Prüfbilder (18): `klippen`, `klippen_fuss`, `boot_aussen`,
@@ -159,7 +155,9 @@ Standpunkte der Prüfbilder (18): `klippen`, `klippen_fuss`, `boot_aussen`,
 `tempel`, `umgang`, `labyrinth`, `schatz`, `katalog_modelle`,
 `katalog_texturen`.
 
-Noch offen: Neu-Modellierung der blockigen Kreaturen-Silhouetten, mehr
-Tempel-Props (Statuen), Kaustik-Intensität je Tiefe.
+Noch offen: Entscheidung, ob die Kreaturen-Modelle weiterhin über den
+Loader auf Lambert normalisiert werden (ändert die Schattierung von
+Leos Modellen) oder originalgetreu mit ihren eigenen Materialien
+gerendert werden sollen; mehr Tempel-Props (Statuen im Umgang).
 
 
