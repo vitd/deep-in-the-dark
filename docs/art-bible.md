@@ -116,9 +116,10 @@ Körnung überall gleich groß wirkt:
 - Kreaturen und Items sind **Leos Blockbench-Modelle** (`public/assets/models/*.glb`)
   und bleiben unverändert. Nicht anfassen: keine zusätzlichen Meshes,
   Augen oder Umformungen an den Tieren.
-- Das Spiel darf nur die Darstellung vereinheitlichen: nearest-gefiltert,
-  Material auf Lambert (`rendering/Models.ts`), korrekte Größe,
-  Ausrichtung und Einordnung.
+- Das Spiel vereinheitlicht nur die **Darstellung**: Texturen
+  nearest-gefiltert für den Pixel-Look, Normalisierung von Größe und
+  Ursprung. Die **originalen GLB-Materialien bleiben erhalten** (kein
+  Umbau auf ein anderes Materialmodell).
 - Silhouette vor Detail: aus der Ferne als Wesen erkennbar.
 - Prüfbild aller Modelle: Pose `katalog_modelle` (Foto-Werkzeug).
 
@@ -144,7 +145,7 @@ npm run textures     # Texturen neu erzeugen
 | Unterwasser-Teilchen + Lichtschächte | `world/Meerespartikel.ts`, `Lichtschacht.ts` | ✓ neu |
 | Kaustik auf dem Seeboden | `rendering/Kaustik.ts` | ✓ neu |
 | Vignette | `rendering/PixelRenderer.ts` | ✓ neu |
-| Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | Leos Blockbench-Modelle – unverändert; nur Material/Darstellung vereinheitlicht |
+| Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | Leos Blockbench-Modelle – unverändert, originale Materialien |
 | Licht/Atmosphäre | `world/World.ts`, `rendering/Palette.ts` | ✓ zentrale Palette + Sonnenrichtung |
 | Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulen, Reliefs, Wächterstatuen, Feuerschalen mit Licht |
 | HUD/UI | `styles/ui.css` | ✓ in Farbvariablen zentralisiert (Palette) |
@@ -155,9 +156,7 @@ Standpunkte der Prüfbilder (18): `klippen`, `klippen_fuss`, `boot_aussen`,
 `tempel`, `umgang`, `labyrinth`, `schatz`, `katalog_modelle`,
 `katalog_texturen`.
 
-Noch offen: Entscheidung, ob die Kreaturen-Modelle weiterhin über den
-Loader auf Lambert normalisiert werden (ändert die Schattierung von
-Leos Modellen) oder originalgetreu mit ihren eigenen Materialien
-gerendert werden sollen; mehr Tempel-Props (Statuen im Umgang).
+Noch offen: weitere Tempel-Props (Statuen im Umgang), Kaustik-Stärke je
+Tiefe.
 
 
