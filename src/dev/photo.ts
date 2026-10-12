@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import type { PlayState } from '../states/PlayState';
+import { RING } from '../world/TempelPlan';
 import { loadModel } from '../rendering/Models';
 import { pixelTexture } from '../rendering/Textures';
 
@@ -84,6 +85,12 @@ function seededRandom(seed: number): () => number {
 // Laufzeit aus der Welt abgeleitet, damit die Standpunkte exakt stimmen.
 function bauePosen(play: PlayState): PoseDef[] {
   const tempel = play.photoWorld.tempel;
+  const punkt = (lx: number, ly: number, lz: number): [number, number, number] => {
+    const p = tempel.welt(lx, ly, lz);
+    return [p.x, p.y, p.z];
+  };
+  // Blick den Umgang entlang: an der Ringmitte stehen, in +z schauen
+  const umgang = { eye: punkt(RING, 1.55, -20), ziel: punkt(RING, 1.4, 8) };
   const teleport = (
     tp: { pos: THREE.Vector3; yaw: number },
     vor = 0,
@@ -113,6 +120,7 @@ function bauePosen(play: PlayState): PoseDef[] {
     { name: 'boss', eye: [560, -30, 0], ziel: [700, -60, 0], frozen: false },
     { name: 'seemonster', eye: [330, -1.0, 0], ziel: [360, -2, 0], frozen: false },
     { name: 'tempel', ...teleport(tempel.vorDemTor) },
+    { name: 'umgang', ...umgang },
     { name: 'labyrinth', ...teleport(tempel.amLabyrinthEingang, 3) },
     { name: 'schatz', ...teleport(tempel.inDerSchatzkammer) },
     { name: 'katalog_modelle', eye: KATALOG_AUGE, ziel: [0, 25, 0], katalog: 'modelle' },

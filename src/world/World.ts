@@ -6,6 +6,7 @@ import { Inventory } from '../systems/Inventory';
 import { MinimapMark } from '../ui/Minimap';
 import { UI } from '../ui/UIManager';
 import { LICHT, PALETTE, SONNE_RICHTUNG } from '../rendering/Palette';
+import { aktualisiereKaustik } from '../rendering/Kaustik';
 import { buildBoat, HelmRef, MotorRef } from './Boat';
 import { BoatController } from './BoatController';
 import { BoatFrame } from './BoatFrame';
@@ -234,6 +235,7 @@ export class World {
   update(dt: number, playerPos: THREE.Vector3, playerInWater: boolean, view: StalkerView): void {
     if (this.underwater) this.wendeTruebungAn(this.giant.truebung(playerPos.x, playerPos.z));
     this.ocean.update(dt, this.fogColor, this.fogDensity);
+    aktualisiereKaustik(dt);
     this.tmpPartikelAuge.set(playerPos.x, playerPos.y + CONFIG.player.eyeHeight, playerPos.z);
     this.partikel.update(dt, this.tmpPartikelAuge, this.underwater);
     this.lichtschacht.update(dt, this.tmpPartikelAuge, this.underwater);

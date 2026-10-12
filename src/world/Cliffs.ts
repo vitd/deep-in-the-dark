@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config';
 import { CollisionWorld } from '../systems/Collision';
 import { texturedMat } from '../rendering/Textures';
+import { mitKaustik } from '../rendering/Kaustik';
 import { lakeFloorY } from './lake';
 
 // Kreisrunde Steilküste um den ganzen See plus Seeboden-Schüssel.
@@ -96,7 +97,7 @@ export function buildCliffs(scene: THREE.Scene, collision: CollisionWorld): void
   const sandRepeat = floorSize / 4;
   const floor = new THREE.Mesh(
     floorGeo,
-    texturedMat('sand.png', sandRepeat, sandRepeat),
+    mitKaustik(texturedMat('sand.png', sandRepeat, sandRepeat)),
   );
   floor.position.set(L.center.x, 0, L.center.z);
   scene.add(floor);

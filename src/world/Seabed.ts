@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CONFIG } from '../config';
+import { mitKaustik } from '../rendering/Kaustik';
 import { texturedMat } from '../rendering/Textures';
 import { CollisionWorld } from '../systems/Collision';
 import { SEABED_ITEM_SPOTS } from './Resources';
@@ -329,7 +330,7 @@ export class Seabed {
     if (parts.length === 0) return;
     const merged = mergeGeometries(parts);
     for (const g of parts) g.dispose();
-    const mat = texturedMat('rock.png', 1, 1);
+    const mat = mitKaustik(texturedMat('rock.png', 1, 1));
     mat.vertexColors = true;
     scene.add(new THREE.Mesh(merged, mat));
   }

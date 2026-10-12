@@ -256,6 +256,7 @@ export class Tiefentempel {
     this.bauFundament(bau);
     this.bauHuelle(bau);
     this.bauDach(bau);
+    this.bauSaeulen(bau);
     this.bauTorhaus(bau);
     this.bauLabyrinth(bau);
     this.bauSchatzkammer(bau);
@@ -314,6 +315,28 @@ export class Tiefentempel {
     const vorn = A + TORHAUS_TIEFE + 3;
     b.box(0, u, -(A + vorn) / 2, 26, -u, vorn - A, SOCKEL);
     b.box(0, u, -(vorn + 1.2), 10, -0.7 - u, 2.4, SOCKEL);
+  }
+
+  // Säulenreihe im Umgang: behauene Pfeiler mit Basis, Halsband und
+  // bronzenem Kapitell, dicht an der Außenwand. Sie gliedern den langen
+  // Gang und lassen in der Mitte genug Platz zum Durchgehen.
+  private bauSaeulen(b: Bau): void {
+    const g = INNEN - 0.85; // Abstand der Säulenachse von der Mitte
+    const grenze = INNEN - 4.5; // Ecken bleiben frei
+    const tor = TOR_BREITE / 2 + 1.5;
+    const achsen: [number, number][] = [];
+    for (let t = -grenze; t <= grenze; t += 7.5) {
+      achsen.push([g, t], [-g, t]);
+      // Vorder- und Rückreihe: in der Torachse aussetzen
+      if (Math.abs(t) > tor) achsen.push([t, -g]);
+      achsen.push([t, g]);
+    }
+    for (const [x, z] of achsen) {
+      b.box(x, 0, z, 1.4, 0.35, 1.4, SOCKEL);
+      b.box(x, 0.35, z, 1.15, 0.25, 1.15, BRONZE);
+      b.box(x, 0.6, z, 0.95, HOEHE - 1.2, 0.95, BASALT);
+      b.box(x, HOEHE - 0.6, z, 1.3, 0.35, 1.3, BRONZE);
+    }
   }
 
   // Außenwände mit Tor, Decke, Strebepfeiler, Glimmsteine im Umgang

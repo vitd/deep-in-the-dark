@@ -354,6 +354,31 @@ function tempel(seed) {
   return f;
 }
 
+function kaustik(seed) {
+  const S = 256;
+  const f = new Flaeche(S, S);
+  const TAU = Math.PI * 2;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      const v = y / S;
+      // zwei gekreuzte, ganzzahlige Wellensysteme -> kachelbar;
+      // hoch potenziert entsteht ein helles Netz dünner Linien
+      const a1 = Math.sin(TAU * 3 * u + 1.4 * Math.sin(TAU * 2 * v));
+      const b1 = Math.sin(TAU * 2 * v + 1.4 * Math.sin(TAU * 3 * u));
+      const o1 = Math.abs(a1 * b1);
+      const a2 = Math.sin(TAU * 5 * u + 1.2 * Math.sin(TAU * 3 * v));
+      const b2 = Math.sin(TAU * 4 * v + 1.2 * Math.sin(TAU * 4 * u));
+      const o2 = Math.abs(a2 * b2);
+      let c = Math.pow(1 - o1, 11) * 0.7 + Math.pow(1 - o2, 15) * 0.5;
+      c = Math.max(0, Math.min(1, c));
+      const g = Math.round(c * 255);
+      f.setz(x, y, [g, g, g]);
+    }
+  }
+  return f;
+}
+
 function tuer(seed) {
   const S = 128;
   const f = new Flaeche(S, S);
@@ -414,6 +439,7 @@ const TEXTUREN = {
   'stone.png': stein(101),
   'rock.png': fels(151),
   'temple.png': tempel(171),
+  'caustic.png': kaustik(181),
   'sand.png': sand(202),
   'plank.png': plank(303),
   'boat-wall.png': bootWand(404),
