@@ -24,6 +24,9 @@ interface PoseDef {
   ziel: [number, number, number];
   // false: Wellen/Kreaturen laufen weiter (für bewegte Motive wie Riese/Hai)
   frozen?: boolean;
+  // Wartezeit in ms nach dem Setzen der Pose, bevor der Screenshot fällt
+  // (z. B. bis der Riese sich erhoben oder der Boss aufgetaucht ist).
+  warte?: number;
   // Katalog-Ansicht statt Weltstandpunkt
   katalog?: 'modelle' | 'texturen';
 }
@@ -116,9 +119,8 @@ function bauePosen(play: PlayState): PoseDef[] {
     { name: 'unterwasser_flach', eye: [-44, -5, 12], ziel: [-26, -9, 2] },
     { name: 'seeboden', eye: [-46, -10, 26], ziel: [-18, -11.5, 6] },
     { name: 'tiefsee', eye: [800, -25, 0], ziel: [1010, -95, 0] },
-    { name: 'riese', eye: [860, 8, 0], ziel: [L.center.x, 45, 0], frozen: false },
-    { name: 'boss', eye: [560, -30, 0], ziel: [700, -60, 0], frozen: false },
-    { name: 'seemonster', eye: [330, -1.0, 0], ziel: [360, -2, 0], frozen: false },
+    { name: 'riese', eye: [860, 8, 0], ziel: [L.center.x, 45, 0], frozen: false, warte: 7000 },
+    { name: 'seemonster', eye: [330, -1.0, 0], ziel: [360, -2, 0], frozen: false, warte: 1500 },
     { name: 'tempel', ...teleport(tempel.vorDemTor) },
     { name: 'umgang', ...umgang },
     { name: 'labyrinth', ...teleport(tempel.amLabyrinthEingang, 3) },
@@ -223,6 +225,7 @@ export function installiereFotoWerkzeug(play: PlayState, seed: number): PhotoApi
     const { yaw, pitch } = winkelZu(p.eye, p.ziel);
     play.photoPose(p.eye[0], p.eye[1], p.eye[2], yaw, pitch);
     play.photoSetFrozen(p.frozen !== false);
+    if (p.warte) await new Promise((r) => window.setTimeout(r, p.warte));
     return true;
   };
 

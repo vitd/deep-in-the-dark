@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
-import { loadModel } from '../rendering/Models';
+import { loadModel, setzeAugen } from '../rendering/Models';
 import { BoatFrame } from './BoatFrame';
 import { DECK_Y, ROOF_Y } from './boatLayout';
 import { clampSwimY, insideLake } from './lake';
@@ -123,6 +123,14 @@ export class Stalker {
           this.materials.push(...copies);
         });
         this.group.add(model);
+        setzeAugen(this.group, {
+          breite: 0.085,
+          hoehe: 0.92,
+          vorne: 0.1,
+          radius: 0.05,
+          farbe: 0xdfe8f0,
+          sammlung: this.materials,
+        });
         this.mixer = new THREE.AnimationMixer(model);
         this.clips = clips;
         this.setOpacity(this.fade);

@@ -112,6 +112,20 @@ class Bau {
     }
   }
 
+  // Wie `box`, aber mit einer festen Farbe ohne den Paletten- und
+  // Helligkeitsfaktor – für Akzente, die sich klar vom Gestein abheben
+  // sollen (Reliefs, Einlegearbeiten).
+  boxFarbe(
+    x: number, y: number, z: number, w: number, h: number, d: number,
+    color: number, hell = 1,
+  ): void {
+    const geo = new THREE.BoxGeometry(w, h, d);
+    scaleUv(geo, Math.max(1, Math.round(Math.max(w, h, d) / 2.5)));
+    tinted(geo, new THREE.Color(color).multiplyScalar(hell));
+    geo.applyMatrix4(_m.makeTranslation(x, y + h / 2, z));
+    this.stein.push(geo);
+  }
+
   // Leuchtstein (ohne Kollision, vom Licht unabhängig)
   glow(x: number, y: number, z: number, w: number, h: number, d: number, color = BERNSTEIN): void {
     const geo = new THREE.BoxGeometry(w, h, d);
@@ -257,6 +271,7 @@ export class Tiefentempel {
     this.bauHuelle(bau);
     this.bauDach(bau);
     this.bauSaeulen(bau);
+    this.bauReliefs(bau);
     this.bauTorhaus(bau);
     this.bauLabyrinth(bau);
     this.bauSchatzkammer(bau);
@@ -336,6 +351,34 @@ export class Tiefentempel {
       b.box(x, 0.35, z, 1.15, 0.25, 1.15, BRONZE);
       b.box(x, 0.6, z, 0.95, HOEHE - 1.2, 0.95, BASALT);
       b.box(x, HOEHE - 0.6, z, 1.3, 0.35, 1.3, BRONZE);
+    }
+  }
+
+  // Reliefs an der Außenwand des Umgangs, zwischen den Säulen: ein
+  // eingelassenes, grünspan- oder bronzefarbenes Feld in einem dunklen
+  // Rahmen. Rein dekorativ, ohne Kollision.
+  private bauReliefs(b: Bau): void {
+    const g = INNEN - 0.16;
+    const grenze = INNEN - 4.5;
+    const tor = TOR_BREITE / 2 + 2.5;
+    const gruen = 0x5f9a82;
+    const bronze = 0x9a7440;
+    let k = 0;
+    for (let t = -grenze + 3.75; t <= grenze; t += 7.5) {
+      const farbe = k % 2 === 0 ? gruen : bronze;
+      k++;
+      // Seitenwände: Feld quer in z
+      for (const s of [-1, 1]) {
+        b.box(s * g, 0.8, t, 0.2, 3.0, 3.0, BASALT, false);
+        b.boxFarbe(s * (g + 0.12), 1.2, t, 0.16, 1.9, 2.1, farbe, 2.4);
+      }
+      // Front und Rück: Feld quer in x, in der Torachse ausgesetzt
+      if (Math.abs(t) > tor) {
+        b.box(t, 0.8, -g, 3.0, 3.0, 0.2, BASALT, false);
+        b.boxFarbe(t, 1.2, -(g + 0.12), 2.1, 1.9, 0.16, farbe, 2.4);
+      }
+      b.box(t, 0.8, g, 3.0, 3.0, 0.2, BASALT, false);
+      b.boxFarbe(t, 1.2, g + 0.12, 2.1, 1.9, 0.16, farbe, 2.4);
     }
   }
 

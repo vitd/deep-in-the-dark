@@ -117,7 +117,14 @@ Körnung überall gleich groß wirkt:
   einheitlich normalisiert (`rendering/Models.ts`).
 - Silhouette vor Detail: aus der Ferne als Wesen erkennbar.
 - Größe und Blickrichtung wie in `CONFIG` definiert.
+- **Akzent-Augen:** Raubtiere (Hai, Seemonster, Stalker) bekommen ein
+  Paar glühender Augen (`setzeAugen`), in Gruppenkoordinaten gesetzt
+  (+z = vorn, Ursprung in der Körpermitte). Sie umgehen Nebel und Licht
+  und machen die Tiere im trüben Wasser lesbar.
 - Prüfbild aller Modelle: Pose `katalog_modelle` (Foto-Werkzeug).
+- Grenze: Die Detailgeometrie der GLBs (z. B. die blockigen Umrisse des
+  Riesen) lässt sich ohne Neu-Modellierung nicht verändern; verfeinert
+  werden Material, Farbe, Akzente und Einordnung.
 
 ## 10. Inventar und Stand
 
@@ -141,18 +148,18 @@ npm run textures     # Texturen neu erzeugen
 | Unterwasser-Teilchen + Lichtschächte | `world/Meerespartikel.ts`, `Lichtschacht.ts` | ✓ neu |
 | Kaustik auf dem Seeboden | `rendering/Kaustik.ts` | ✓ neu |
 | Vignette | `rendering/PixelRenderer.ts` | ✓ neu |
-| Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | ✓ einheitliches Lambert-Material |
+| Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | ✓ einheitliches Lambert-Material, Akzent-Augen bei Raubtieren |
 | Licht/Atmosphäre | `world/World.ts`, `rendering/Palette.ts` | ✓ zentrale Palette + Sonnenrichtung |
-| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulenreihe im Umgang |
+| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulenreihe und Reliefs im Umgang |
 | HUD/UI | `styles/ui.css` | ✓ in Farbvariablen zentralisiert (Palette) |
 
-Standpunkte der Prüfbilder (19): `klippen`, `klippen_fuss`, `boot_aussen`,
+Standpunkte der Prüfbilder (18): `klippen`, `klippen_fuss`, `boot_aussen`,
 `boot_innen`, `boot_motorraum`, `boot_bruecke`, `oberflaeche`,
-`unterwasser_flach`, `seeboden`, `tiefsee`, `riese`, `boss`, `seemonster`,
+`unterwasser_flach`, `seeboden`, `tiefsee`, `riese`, `seemonster`,
 `tempel`, `umgang`, `labyrinth`, `schatz`, `katalog_modelle`,
 `katalog_texturen`.
 
-Noch offen (nächste Ausbaustufen): Modell-Detailfeinschliff der
-Kreaturen, weitere Tempel-Props (Reliefs, Statuen).
+Noch offen: Neu-Modellierung der blockigen Kreaturen-Silhouetten, mehr
+Tempel-Props (Statuen), Kaustik-Intensität je Tiefe.
 
 

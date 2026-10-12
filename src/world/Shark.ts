@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
-import { loadModel } from '../rendering/Models';
+import { loadModel, setzeAugen } from '../rendering/Models';
 import { clampSwimY, insideLake, randomSwimY, roamPoint } from './lake';
 
 // Haie: Sie patrouillieren im ganzen See unter Wasser; kommt der Spieler
@@ -38,6 +38,7 @@ export class Shark {
         template.rotation.y = Math.PI;
         const model = template.clone(true);
         this.group.add(model);
+        setzeAugen(this.group, { breite: 0.2, hoehe: 0.16, vorne: 1.05, radius: 0.06, farbe: 0xffb070 });
         this.mixer = new THREE.AnimationMixer(model);
         this.clips = clips;
         this.play('idle');

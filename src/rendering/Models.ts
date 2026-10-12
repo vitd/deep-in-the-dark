@@ -63,3 +63,29 @@ export function loadModel(file: string, targetSize: number): Promise<LoadedModel
   }
   return promise;
 }
+
+// Setzt ein Paar glühender Augen an ein Kreaturen-Objekt. Die Augen
+// liegen in **Gruppenkoordinaten**: Die Kreaturen-Gruppen im Spiel sind
+// so gebaut, dass +z nach vorn (Bewegungsrichtung) zeigt und der
+// Ursprung in der Körpermitte liegt (siehe Shark/SeaMonster/Boss/Stalker).
+// Die Augen umgehen Nebel und Licht, damit sie auch im trüben Wasser als
+// Punkte lesbar bleiben.
+export interface AugenOptionen {
+  breite: number; // seitlicher Abstand der Augen von der Mitte
+  hoehe: number; // Höhe über der Körpermitte
+  vorne: number; // Abstand nach vorn (z)
+  radius: number;
+  farbe: number;
+  sammlung?: THREE.Material[]; // z. B. für das Ausblenden des Stalkers
+}
+
+export function setzeAugen(parent: THREE.Object3D, o: AugenOptionen): void {
+  const geo = new THREE.SphereGeometry(o.radius, 8, 6);
+  const mat = new THREE.MeshBasicMaterial({ color: o.farbe, fog: false, toneMapped: false });
+  o.sammlung?.push(mat);
+  for (const s of [-1, 1]) {
+    const auge = new THREE.Mesh(geo, mat);
+    auge.position.set(s * o.breite, o.hoehe, o.vorne);
+    parent.add(auge);
+  }
+}
