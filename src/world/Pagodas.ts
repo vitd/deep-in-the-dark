@@ -340,7 +340,7 @@ export function buildPagodas(scene: THREE.Scene, collision: CollisionWorld): voi
   if (b.parts.length === 0) return;
   const merged = mergeGeometries(b.parts);
   for (const g of b.parts) g.dispose();
-  const mat = texturedMat('stone.png', 1, 1);
+  const mat = texturedMat('temple.png', 1, 1);
   mat.vertexColors = true;
   scene.add(new THREE.Mesh(merged, mat));
 }

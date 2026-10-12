@@ -14,6 +14,7 @@ import { buildCliffs } from './Cliffs';
 import { FishManager } from './Fish';
 import { Giant } from './Giant';
 import { LadderDef } from './Ladder';
+import { Lichtschacht } from './Lichtschacht';
 import { Meerespartikel } from './Meerespartikel';
 import { Ocean } from './Ocean';
 import { buildPagodas } from './Pagodas';
@@ -34,6 +35,7 @@ export class World {
   readonly ocean: Ocean;
   readonly collision = new CollisionWorld();
   private readonly partikel = new Meerespartikel();
+  private readonly lichtschacht = new Lichtschacht();
   readonly ladders: LadderDef[];
   private readonly seabed: Seabed;
   private readonly resources: Resources;
@@ -119,6 +121,7 @@ export class World {
     this.ocean = new Ocean();
     scene.add(this.ocean.mesh);
     scene.add(this.partikel.points);
+    scene.add(this.lichtschacht.group);
 
     buildCliffs(scene, this.collision);
     this.seabed = new Seabed(scene, this.collision);
@@ -233,6 +236,7 @@ export class World {
     this.ocean.update(dt, this.fogColor, this.fogDensity);
     this.tmpPartikelAuge.set(playerPos.x, playerPos.y + CONFIG.player.eyeHeight, playerPos.z);
     this.partikel.update(dt, this.tmpPartikelAuge, this.underwater);
+    this.lichtschacht.update(dt, this.tmpPartikelAuge, this.underwater);
     this.seabed.update(playerPos);
     this.resources.update();
     // Fallen im Labyrinth, Perlen der Luftblasen

@@ -308,6 +308,52 @@ function fels(seed) {
   return f;
 }
 
+function tempel(seed) {
+  const S = 256;
+  const block = 64;
+  const f = new Flaeche(S, S);
+  const rausch = wertRauschen(seed);
+  const palette = [hex('#4a5058'), hex('#565d66'), hex('#626a73'), hex('#6e7680')];
+  const rnd = mulberry(seed + 21);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      f.setz(x, y, stufe(x, y, 0.4 + rausch(x, y, 0.1) * 0.5, palette));
+    }
+  }
+  // Behauene Blöcke: Fugen, Kantenlicht, eingemeißelte Glyphe
+  for (let by = 0; by < S; by += block) {
+    for (let bx = 0; bx < S; bx += block) {
+      for (let i = 0; i < 2; i++) {
+        for (let x = bx; x < bx + block; x++) f.setz(x, by + i, hex('#2f353b'));
+        for (let y = by; y < by + block; y++) f.setz(bx + i, y, hex('#2f353b'));
+      }
+      for (let x = bx + 2; x < bx + block; x++) f.setz(x, by + 2, hex('#7d858f'));
+      for (let y = by + 2; y < by + block; y++) f.setz(bx + 2, y, hex('#7d858f'));
+      for (let x = bx + 2; x < bx + block; x++) f.setz(x, by + block - 1, hex('#3c4249'));
+      for (let y = by + 2; y < by + block; y++) f.setz(bx + block - 1, y, hex('#3c4249'));
+      const cx = bx + block / 2;
+      const cy = by + block / 2;
+      if (rnd() < 0.7) {
+        for (let k = -8; k <= 8; k++) {
+          f.setz(cx + k, cy, hex('#333a41'));
+          f.setz(cx, cy + k, hex('#333a41'));
+        }
+        for (let k = -4; k <= 4; k++) {
+          f.setz(cx + k, cy - 4, hex('#333a41'));
+          f.setz(cx + k, cy + 4, hex('#333a41'));
+        }
+      }
+    }
+  }
+  // Verwitterung und Moos
+  for (let i = 0; i < 1400; i++) {
+    const x = Math.floor(rnd() * S);
+    const y = Math.floor(rnd() * S);
+    if (rnd() < 0.5) f.setz(x, y, hex('#2b3a33'));
+  }
+  return f;
+}
+
 function tuer(seed) {
   const S = 128;
   const f = new Flaeche(S, S);
@@ -367,6 +413,7 @@ function wasser(seed) {
 const TEXTUREN = {
   'stone.png': stein(101),
   'rock.png': fels(151),
+  'temple.png': tempel(171),
   'sand.png': sand(202),
   'plank.png': plank(303),
   'boat-wall.png': bootWand(404),

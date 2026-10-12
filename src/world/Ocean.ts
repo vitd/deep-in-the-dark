@@ -70,6 +70,8 @@ uniform float uTime;
 uniform float uClarityMax;
 uniform float uMurk;
 uniform float uOpaqueDepth;
+uniform vec2 uSeeMitte;
+uniform float uSeeRadius;
 varying vec3 vWorldPos;
 
 __DEPTH__
@@ -97,6 +99,19 @@ void main() {
   if (!gl_FrontFacing) {
     // Unterseite der Wasseroberfläche: heller, glasiger
     color = mix(color, vec3(0.55, 0.8, 0.85), 0.35);
+  }
+
+  // Schaum: ein Gürtel an der Wasserlinie vor der Steilküste und
+  // vereinzelte weiße Kämme auf den Wellen. Das Muster driftet langsam
+  // mit der Textur, damit sich der Schaum bewegt.
+  vec2 fuvA = vWorldPos.xz * 0.3 + vec2(uTime * 0.03, -uTime * 0.025);
+  vec2 fuvB = vWorldPos.xz * 0.16 - vec2(uTime * 0.02, uTime * 0.018);
+  float schaumTex = texture2D(uWaterTex, fuvA).g * 0.6 + texture2D(uWaterTex, fuvB).g * 0.4;
+  float ufer = smoothstep(uSeeRadius - 16.0, uSeeRadius - 1.0, length(vWorldPos.xz - uSeeMitte));
+  float kamm = smoothstep(0.66, 0.98, schaumTex) * (1.0 - ufer);
+  float schaum = clamp(ufer * smoothstep(0.4, 0.9, schaumTex) + kamm * 0.55, 0.0, 1.0);
+  if (gl_FrontFacing) {
+    color = mix(color, vec3(0.9, 0.96, 0.98), schaum * 0.75);
   }
 
   float dist = length(cameraPosition - vWorldPos);
@@ -152,6 +167,8 @@ export class Ocean {
         uClarityMax: { value: CONFIG.world.waterClarity.max },
         uMurk: { value: CONFIG.world.waterClarity.murk },
         uOpaqueDepth: { value: CONFIG.world.waterClarity.opaqueDepth },
+        uSeeMitte: { value: new THREE.Vector2(CONFIG.world.lake.center.x, CONFIG.world.lake.center.z) },
+        uSeeRadius: { value: CONFIG.world.lake.radius },
       },
       side: THREE.DoubleSide,
       transparent: true,

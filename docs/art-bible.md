@@ -97,9 +97,12 @@ Körnung überall gleich groß wirkt:
 
 - **Wasser:** Wellen im Vertex-Shader, posterisierte Beleuchtung, Schaum
   über `water.png`, Beer-Lambert-Trübung über die Wassersäule.
+- **Schaum:** ein Gürtel an der Wasserlinie vor der Steilküste plus
+  vereinzelte Kämme auf den Wellen (Wasser-Shader, `uSeeMitte`/`uSeeRadius`).
 - **Unterwasser:** „Marine Snow“ (`world/Meerespartikel.ts`) – langsam
   aufsteigende Teilchen, die dem Spieler folgen; dazu Luftblasen im
-  Tiefentempel.
+  Tiefentempel und Lichtschächte (`world/Lichtschacht.ts`), die additiv
+  von der Oberfläche herabhängen.
 - **Störung / Vignette:** siehe Abschnitt 2.
 - Neue Effekte müssen die Palette nutzen und dürfen die Störung nicht
   entwerten.
@@ -128,17 +131,17 @@ npm run textures     # Texturen neu erzeugen
 |---|---|---|
 | Steilküste + Felsen | `world/Cliffs.ts` | ✓ neu modelliert (`klumpen`), `rock.png`, in die Wand eingelassen |
 | Seeboden + Geröll | `world/Seabed.ts` | ✓ `rock.png`, gedämpfte Palette, Helligkeit korrigiert |
-| Texturen (Sand, Stein, Fels, Holz, Metall, Tür, Wasser) | `tools/gen-textures.mjs` | ✓ neu erzeugt, größer, palettentreu |
+| Texturen (Sand, Stein, Fels, Tempel, Holz, Metall, Tür, Wasser) | `tools/gen-textures.mjs` | ✓ neu erzeugt, größer, palettentreu |
 | Boot (Rumpf, Deck, Räume, Brücke) | `world/Boat.ts`, `Hull.ts`, `Room.ts` | ✓ Rumpf-/Wandtönung, Palette |
-| Wasser + Trübung | `world/Ocean.ts` | ✓ Palette + gemeinsame Sonnenrichtung |
-| Unterwasser-Teilchen | `world/Meerespartikel.ts` | ✓ neu |
+| Wasser + Trübung + Schaum | `world/Ocean.ts` | ✓ Palette, Sonnenrichtung, Küsten-/Kamm-Schaum |
+| Unterwasser-Teilchen + Lichtschächte | `world/Meerespartikel.ts`, `Lichtschacht.ts` | ✓ neu |
 | Vignette | `rendering/PixelRenderer.ts` | ✓ neu |
 | Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | ✓ einheitliches Lambert-Material |
 | Licht/Atmosphäre | `world/World.ts`, `rendering/Palette.ts` | ✓ zentrale Palette + Sonnenrichtung |
-| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ über Palette/`stone.png`; Detailausbau offen |
-| HUD/UI | `styles/ui.css` | offen |
+| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ eigene `temple.png` (behauene Blöcke) |
+| HUD/UI | `styles/ui.css` | ✓ in Farbvariablen zentralisiert (Palette) |
 
-Noch offen (nächste Ausbaustufen): Feinschliff der Tempel- und
-Modell-Details, God-Rays/Kaustik unter Wasser, Schaumlinie an der
-Wasserlinie, HUD-Angleichung.
+Noch offen (nächste Ausbaustufen): Kaustik auf dem Seeboden,
+Modell-Detailfeinschliff, weitere Tempel-Props.
+
 

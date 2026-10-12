@@ -264,7 +264,7 @@ export class Tiefentempel {
     this.perlen = luft.perlen;
     this.luftspiegel = luft.spiegel;
 
-    const steinMat = texturedMat('stone.png', 1, 1);
+    const steinMat = texturedMat('temple.png', 1, 1);
     steinMat.vertexColors = true;
     const stein = mergeGeometries(bau.stein);
     for (const g of bau.stein) g.dispose();

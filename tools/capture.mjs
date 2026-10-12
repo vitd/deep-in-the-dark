@@ -41,6 +41,7 @@ const WIDTH = Number(arg('width', 960));
 const HEIGHT = Number(arg('height', 540));
 const POSEN_ARG = arg('poses', '');
 const LABEL = arg('label', '');
+const HUD = process.argv.includes('--hud');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -172,6 +173,7 @@ async function main() {
 
     await mkdir(OUT, { recursive: true });
     const prefix = LABEL ? `${LABEL}-` : '';
+    if (HUD) await cdp.send('Runtime.evaluate', { expression: 'globalThis.__ditd.hud(true)' });
     console.log(`Aufnahmen: ${posen.length} → ${OUT}`);
 
     for (const pose of posen) {
