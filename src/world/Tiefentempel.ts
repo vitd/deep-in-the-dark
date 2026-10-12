@@ -431,20 +431,36 @@ export class Tiefentempel {
   // den Übergang ins Labyrinth.
   private bauNischen(b: Bau): void {
     const c = INNEN - 1.6;
+    let art = 0;
     for (const sx of [-1, 1]) {
-      for (const sz of [-1, 1]) this.kleineStatue(b, sx * c, sz * c);
+      for (const sz of [-1, 1]) this.kleineStatue(b, sx * c, sz * c, art++);
     }
     const ex = zellMitte(PLAN.eingang);
     const ez = LAB_HALB + WAND / 2;
-    for (const s of [-1, 1]) this.kleineStatue(b, ex + s * 2.6, ez + 1.5);
+    for (const s of [-1, 1]) this.kleineStatue(b, ex + s * 2.6, ez + 1.5, art++);
   }
 
-  private kleineStatue(b: Bau, x: number, z: number): void {
+  // Drei Varianten einer kleinen Wächterfigur, damit die Reihe nicht
+  // gleichförmig wirkt: Wächter mit Kopfschmuck, Träger mit Block,
+  // schlanke Figur mit Brust-Juwel.
+  private kleineStatue(b: Bau, x: number, z: number, art: number): void {
     b.box(x, 0, z, 1.6, 0.4, 1.6, SOCKEL);
-    b.box(x, 0.4, z, 1.0, 2.0, 0.9, BASALT);
-    b.box(x, 2.4, z, 1.5, 0.5, 1.0, BASALT);
-    b.box(x, 2.9, z, 0.8, 0.8, 0.8, GRUENSPAN);
-    b.boxFarbe(x, 3.7, z, 1.0, 0.2, 1.0, 0x9a7440, 1.6);
+    if (art % 3 === 0) {
+      b.box(x, 0.4, z, 1.0, 2.0, 0.9, BASALT);
+      b.box(x, 2.4, z, 1.5, 0.5, 1.0, BASALT);
+      b.box(x, 2.9, z, 0.8, 0.8, 0.8, GRUENSPAN);
+      b.boxFarbe(x, 3.7, z, 1.0, 0.2, 1.0, 0x9a7440, 1.6);
+    } else if (art % 3 === 1) {
+      b.box(x, 0.4, z, 1.0, 1.9, 0.9, BASALT);
+      b.box(x, 2.3, z, 1.4, 0.5, 1.0, BASALT);
+      b.box(x, 2.8, z, 0.8, 0.7, 0.8, BRONZE);
+      b.boxFarbe(x, 1.1, z + 0.95, 1.2, 1.1, 0.7, 0x9a7440, 1.4);
+    } else {
+      b.box(x, 0.4, z, 0.8, 2.3, 0.8, BASALT);
+      b.box(x, 2.7, z, 1.2, 0.4, 0.8, BASALT);
+      b.box(x, 3.1, z, 0.7, 0.7, 0.7, GRUENSPAN);
+      b.glow(x, 1.9, z + 0.42, 0.3, 0.3, 0.06, 0xffd27a);
+    }
   }
 
   // Außenwände mit Tor, Decke, Strebepfeiler, Glimmsteine im Umgang

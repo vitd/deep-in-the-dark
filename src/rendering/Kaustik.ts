@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CONFIG } from '../config';
 import { pixelTexture } from './Textures';
 
 // Kaustik auf dem Seeboden: das wandernde Lichtnetz der Sonne auf dem
@@ -7,27 +8,39 @@ import { pixelTexture } from './Textures';
 // So liegt das Muster exakt auf dem (unebenen) Boden, ohne dass eine
 // zweite Fläche verlegt werden muss.
 //
+// Die Stärke hängt von der Tiefe ab (siehe CONFIG.render.kaustik):
+// flach am Ufer ist das Netz deutlich, in der Tiefe läuft es aus.
+//
 // Ein gemeinsamer Satz Uniformen steuert Zeit und Stärke für alle
 // eingehängten Materialien; `aktualisiereKaustik` wird pro Bild aus der
 // Welt aufgerufen.
 
+const K = CONFIG.render.kaustik;
+
 const uZeit = { value: 0 };
-const uStaerke = { value: 0.7 };
+const uStaerke = { value: K.staerke };
+const uTiefeFlach = { value: K.flach };
+const uTiefeTief = { value: K.tief };
 const uTextur = { value: pixelTexture('caustic.png', 1, 1) };
 
 const VERT_KOPF = 'varying vec3 vKausWorld;\n';
 const FRAG_KOPF = /* glsl */ `uniform float uKausZeit;
 uniform float uKausStaerke;
+uniform float uKausTiefeFlach;
+uniform float uKausTiefeTief;
 uniform sampler2D uKausTextur;
 varying vec3 vKausWorld;
 `;
 
 const FRAG_EINSCHUB = /* glsl */ `
   if (uKausStaerke > 0.001) {
+    // Tiefenauslauf: bis uKausTiefeFlach voll, ab uKausTiefeTief aus
+    float tiefe = max(0.0, -vKausWorld.y);
+    float tiefenFade = 1.0 - smoothstep(uKausTiefeFlach, uKausTiefeTief, tiefe);
     vec2 cUv = vKausWorld.xz * 0.05;
     float c1 = texture2D(uKausTextur, cUv + vec2(uKausZeit * 0.010, uKausZeit * 0.007)).r;
     float c2 = texture2D(uKausTextur, cUv * 1.6 - vec2(uKausZeit * 0.008, uKausZeit * 0.012)).r;
-    float c = pow(clamp((c1 + c2 * 0.8) * 0.7, 0.0, 1.0), 1.3) * uKausStaerke;
+    float c = pow(clamp((c1 + c2 * 0.8) * 0.7, 0.0, 1.0), 1.3) * uKausStaerke * tiefenFade;
     gl_FragColor.rgb += c * vec3(0.30, 0.55, 0.60);
   }
 `;
@@ -37,6 +50,8 @@ export function mitKaustik<T extends THREE.Material>(material: T): T {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uKausZeit = uZeit;
     shader.uniforms.uKausStaerke = uStaerke;
+    shader.uniforms.uKausTiefeFlach = uTiefeFlach;
+    shader.uniforms.uKausTiefeTief = uTiefeTief;
     shader.uniforms.uKausTextur = uTextur;
     shader.vertexShader = VERT_KOPF + shader.vertexShader.replace(
       '#include <begin_vertex>',

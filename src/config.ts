@@ -22,6 +22,15 @@ export const CONFIG = {
     // und zieht den Blick zur Mitte (Art-Bible, Abschnitt "Bild").
     vignette: 0.3,
 
+    // Kaustik auf dem Seeboden (rendering/Kaustik.ts): Grundstärke und
+    // die Tiefe, ab der sie einsetzt bzw. ausläuft. Flach am Ufer ist
+    // das Lichtnetz deutlich, in der Tiefe verschwindet es.
+    kaustik: {
+      staerke: 0.8, // Grundstärke im flachen Wasser
+      flach: 10, // bis hier volle Stärke (Meter unter der Oberfläche)
+      tief: 46, // ab hier keine Kaustik mehr
+    },
+
     // Atmosphärische Störung: ein Flimmern über dem ganzen Bild, wie
     // bei einem gestörten Empfang. Die Stärke (0..1) kommt aus dem
     // Spiel – bisher vom Blick-Countdown des Stalkers (siehe

@@ -106,7 +106,8 @@ Körnung überall gleich groß wirkt:
 - **Kaustik:** das wandernde Lichtnetz auf dem Seeboden. Es hängt nicht
   als eigene Fläche in der Welt, sondern wird über `onBeforeCompile` in
   die Grundmaterialien eingehängt (`rendering/Kaustik.ts`), liegt also
-  exakt auf dem unebenen Grund.
+  exakt auf dem unebenen Grund. Die Stärke fällt mit der Wassertiefe
+  (`CONFIG.render.kaustik`): flach am Ufer deutlich, in der Tiefe aus.
 - **Störung / Vignette:** siehe Abschnitt 2.
 - Neue Effekte müssen die Palette nutzen und dürfen die Störung nicht
   entwerten.
@@ -143,11 +144,11 @@ npm run textures     # Texturen neu erzeugen
 | Boot (Rumpf, Deck, Räume, Brücke) | `world/Boat.ts`, `Hull.ts`, `Room.ts` | ✓ Rumpf-/Wandtönung, Palette |
 | Wasser + Trübung + Schaum | `world/Ocean.ts` | ✓ Palette, Sonnenrichtung, Küsten-/Kamm-Schaum |
 | Unterwasser-Teilchen + Lichtschächte | `world/Meerespartikel.ts`, `Lichtschacht.ts` | ✓ neu |
-| Kaustik auf dem Seeboden | `rendering/Kaustik.ts` | ✓ neu |
+| Kaustik auf dem Seeboden | `rendering/Kaustik.ts` | ✓ neu, mit Tiefenauslauf |
 | Vignette | `rendering/PixelRenderer.ts` | ✓ neu |
 | Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | Leos Blockbench-Modelle – unverändert, originale Materialien |
 | Licht/Atmosphäre | `world/World.ts`, `rendering/Palette.ts` | ✓ zentrale Palette + Sonnenrichtung |
-| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulen, Reliefs, Wächterstatuen am Tor, Nischenfiguren, Feuerschalen mit Licht |
+| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulen, Reliefs, Wächterstatuen am Tor, Nischenfiguren (3 Varianten), Feuerschalen mit Licht |
 | HUD/UI | `styles/ui.css` | ✓ in Farbvariablen zentralisiert (Palette) |
 
 Standpunkte der Prüfbilder (19): `klippen`, `klippen_fuss`, `boot_aussen`,
@@ -156,6 +157,7 @@ Standpunkte der Prüfbilder (19): `klippen`, `klippen_fuss`, `boot_aussen`,
 `tempel`, `umgang`, `tempel_ecke`, `labyrinth`, `schatz`,
 `katalog_modelle`, `katalog_texturen`.
 
-Noch offen: Kaustik-Stärke je Tiefe, mehr Variation der Nischenfiguren.
+Alle Elementklassen sind damit gegen die Art-Bible abgeglichen und mit
+Prüfbildern belegt.
 
 
