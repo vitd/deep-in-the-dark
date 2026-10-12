@@ -130,6 +130,11 @@ Prüfbilder: `tools/capture.mjs` erzeugt Aufnahmen fester Kameraposen
 (`src/dev/photo.ts`). Vorher/Nachher liegen unter `art/baseline/` und
 `art/nachher/` (gleiche Standpunkte, Seed 1).
 
+Hinweis zur Reproduzierbarkeit: Kameraposen, Geometrie, Licht und
+Effekte sind fest; die **Positionen der Kreaturen** können zwischen zwei
+Aufnahmen leicht abweichen, weil sie von der Aufnahmezeit abhängen
+(bewegte Motive wie Riese/Seemonster laufen dafür absichtlich weiter).
+
 ```bash
 npm run dev          # Server starten
 npm run capture      # -> art/<ordner>/…png
