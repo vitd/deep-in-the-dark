@@ -147,16 +147,15 @@ npm run textures     # Texturen neu erzeugen
 | Vignette | `rendering/PixelRenderer.ts` | ✓ neu |
 | Kreaturen- und Item-Modelle | `public/assets/models/*.glb` | Leos Blockbench-Modelle – unverändert, originale Materialien |
 | Licht/Atmosphäre | `world/World.ts`, `rendering/Palette.ts` | ✓ zentrale Palette + Sonnenrichtung |
-| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulen, Reliefs, Wächterstatuen, Feuerschalen mit Licht |
+| Tempel + Pagoden | `world/Tiefentempel.ts`, `Pagoden.ts` | ✓ `temple.png`, Säulen, Reliefs, Wächterstatuen am Tor, Nischenfiguren, Feuerschalen mit Licht |
 | HUD/UI | `styles/ui.css` | ✓ in Farbvariablen zentralisiert (Palette) |
 
-Standpunkte der Prüfbilder (18): `klippen`, `klippen_fuss`, `boot_aussen`,
+Standpunkte der Prüfbilder (19): `klippen`, `klippen_fuss`, `boot_aussen`,
 `boot_innen`, `boot_motorraum`, `boot_bruecke`, `oberflaeche`,
 `unterwasser_flach`, `seeboden`, `tiefsee`, `riese`, `seemonster`,
-`tempel`, `umgang`, `labyrinth`, `schatz`, `katalog_modelle`,
-`katalog_texturen`.
+`tempel`, `umgang`, `tempel_ecke`, `labyrinth`, `schatz`,
+`katalog_modelle`, `katalog_texturen`.
 
-Noch offen: weitere Tempel-Props (Statuen im Umgang), Kaustik-Stärke je
-Tiefe.
+Noch offen: Kaustik-Stärke je Tiefe, mehr Variation der Nischenfiguren.
 
 

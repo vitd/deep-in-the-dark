@@ -272,6 +272,7 @@ export class Tiefentempel {
     this.bauDach(bau);
     this.bauSaeulen(bau);
     this.bauReliefs(bau);
+    this.bauNischen(bau);
     this.bauTorhaus(bau);
     this.bauWaechter(bau);
     const feuerschalen = this.bauFeuerschalen(bau);
@@ -423,6 +424,27 @@ export class Tiefentempel {
       b.glow(o.x, 1.25, o.z, 0.8, 0.5, 0.8, 0xffb45a);
     }
     return orte;
+  }
+
+  // Kleine Wächterfiguren in den Ecken des Umgangs und zu beiden Seiten
+  // des Labyrintheingangs. Sie gliedern die langen Wände und markieren
+  // den Übergang ins Labyrinth.
+  private bauNischen(b: Bau): void {
+    const c = INNEN - 1.6;
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) this.kleineStatue(b, sx * c, sz * c);
+    }
+    const ex = zellMitte(PLAN.eingang);
+    const ez = LAB_HALB + WAND / 2;
+    for (const s of [-1, 1]) this.kleineStatue(b, ex + s * 2.6, ez + 1.5);
+  }
+
+  private kleineStatue(b: Bau, x: number, z: number): void {
+    b.box(x, 0, z, 1.6, 0.4, 1.6, SOCKEL);
+    b.box(x, 0.4, z, 1.0, 2.0, 0.9, BASALT);
+    b.box(x, 2.4, z, 1.5, 0.5, 1.0, BASALT);
+    b.box(x, 2.9, z, 0.8, 0.8, 0.8, GRUENSPAN);
+    b.boxFarbe(x, 3.7, z, 1.0, 0.2, 1.0, 0x9a7440, 1.6);
   }
 
   // Außenwände mit Tor, Decke, Strebepfeiler, Glimmsteine im Umgang

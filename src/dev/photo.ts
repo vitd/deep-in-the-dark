@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config';
 import type { PlayState } from '../states/PlayState';
-import { RING } from '../world/TempelPlan';
+import { INNEN, RING } from '../world/TempelPlan';
 import { loadModel } from '../rendering/Models';
 import { pixelTexture } from '../rendering/Textures';
 
@@ -123,6 +123,7 @@ function bauePosen(play: PlayState): PoseDef[] {
     { name: 'seemonster', eye: [330, -1.0, 0], ziel: [360, -2, 0], frozen: false, warte: 1500 },
     { name: 'tempel', ...teleport(tempel.vorDemTor, -6) },
     { name: 'umgang', ...umgang },
+    { name: 'tempel_ecke', eye: punkt(RING, 1.55, 26), ziel: punkt(INNEN - 1.6, 1.3, INNEN - 1.6) },
     { name: 'labyrinth', ...teleport(tempel.amLabyrinthEingang, 3) },
     { name: 'schatz', ...teleport(tempel.inDerSchatzkammer) },
     { name: 'katalog_modelle', eye: KATALOG_AUGE, ziel: [0, 25, 0], katalog: 'modelle' },
